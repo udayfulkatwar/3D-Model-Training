@@ -503,8 +503,8 @@
    "id": "O06",
    "wall": "W05",
    "kind": "arch",
-   "center": 4.385,
-   "width": 1.0,
+   "center": 4.285,
+   "width": 0.9,
    "height": 2.1,
    "sill": 0.0,
    "prov": [
