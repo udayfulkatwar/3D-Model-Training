@@ -1,0 +1,889 @@
+{
+ "schema_version": "0.1",
+ "project": {
+  "id": "T03",
+  "name": "Training House T03 (holdout)",
+  "nature": "fictional training plan",
+  "owner": "ASTRA DWELL training workspace (3D-Model-Training)",
+  "permission": "Original fictional layout authored for rehearsal; not a client or ASTRA DWELL production design",
+  "units": "m",
+  "datum": "Origin at the south-west outer corner; z = 0 at FFL",
+  "notes": "Holdout for the plan reader: authored after the reader was frozen at b6cb497 and run once. Portrait 9 x 14 m, corridor, 200/100 mm walls, 150 mm nib between windows, arch with 100 mm nibs."
+ },
+ "tolerances": {
+  "length": 0.005,
+  "area_rel": 0.01
+ },
+ "sources": [
+  {
+   "id": "S-01",
+   "title": "T03 training sketch plan (fictional)",
+   "revision": "A",
+   "date": "2026-10-19",
+   "kind": "plan",
+   "scale": "1:100"
+  }
+ ],
+ "dimensions": [
+  {
+   "id": "D-001",
+   "label": "Overall external length, east-west",
+   "value": 9.0,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "overall",
+    "level": "L00",
+    "axis": "x"
+   }
+  },
+  {
+   "id": "D-002",
+   "label": "Overall external width, north-south",
+   "value": 14.0,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "overall",
+    "level": "L00",
+    "axis": "y"
+   }
+  },
+  {
+   "id": "D-003",
+   "label": "Finished floor level (datum)",
+   "value": 0.0,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "levels.L00.elevation"
+    ]
+   }
+  },
+  {
+   "id": "D-010",
+   "label": "External wall thickness",
+   "value": 0.2,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "wall_types.EXT.thickness"
+    ]
+   }
+  },
+  {
+   "id": "D-011",
+   "label": "Internal partition thickness",
+   "value": 0.1,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "wall_types.INT.thickness"
+    ]
+   }
+  },
+  {
+   "id": "D-020",
+   "label": "Floor to ceiling height",
+   "value": 3.0,
+   "status": "INFERRED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "levels.L00.wall_height"
+    ]
+   },
+   "note": "No section"
+  },
+  {
+   "id": "D-021",
+   "label": "Floor build-up",
+   "value": 0.15,
+   "status": "INFERRED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "levels.L00.floor_thickness"
+    ]
+   },
+   "note": "Visual only"
+  },
+  {
+   "id": "D-022",
+   "label": "Roof slab",
+   "value": 0.15,
+   "status": "INFERRED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "levels.L00.roof_thickness"
+    ]
+   },
+   "note": "Visual only"
+  },
+  {
+   "id": "D-050",
+   "label": "Opening schedule (sizes as listed per opening)",
+   "value": 0.0,
+   "status": "INFERRED",
+   "source": "S-01",
+   "check": {
+    "kind": "none"
+   },
+   "note": "Per-opening sizes typed from the schedule"
+  },
+  {
+   "id": "D-051",
+   "label": "Opening positions: scaling uncertainty",
+   "value": 0.025,
+   "status": "INFERRED",
+   "source": "S-01",
+   "check": {
+    "kind": "none"
+   },
+   "note": "Not dimensioned"
+  },
+  {
+   "id": "D-060",
+   "label": "Room layout as drawn on S-01",
+   "value": 0.0,
+   "status": "INFERRED",
+   "source": "S-01",
+   "check": {
+    "kind": "none"
+   },
+   "note": "Rooms follow the walls"
+  },
+  {
+   "id": "D-70",
+   "label": "Living carpet area (room schedule)",
+   "value": 25.412,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_area",
+    "room": "R01"
+   }
+  },
+  {
+   "id": "D-71",
+   "label": "Kitchen carpet area (room schedule)",
+   "value": 10.553,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_area",
+    "room": "R02"
+   }
+  },
+  {
+   "id": "D-72",
+   "label": "Utility carpet area (room schedule)",
+   "value": 4.095,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_area",
+    "room": "R03"
+   }
+  },
+  {
+   "id": "D-73",
+   "label": "Corridor carpet area (room schedule)",
+   "value": 9.625,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_area",
+    "room": "R04"
+   }
+  },
+  {
+   "id": "D-74",
+   "label": "Bedroom 3 carpet area (room schedule)",
+   "value": 11.725,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_area",
+    "room": "R05"
+   }
+  },
+  {
+   "id": "D-75",
+   "label": "Bedroom 1 carpet area (room schedule)",
+   "value": 17.252,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_area",
+    "room": "R06"
+   }
+  },
+  {
+   "id": "D-76",
+   "label": "Toilet 2 carpet area (room schedule)",
+   "value": 6.715,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_area",
+    "room": "R07"
+   }
+  },
+  {
+   "id": "D-77",
+   "label": "Bedroom 2 carpet area (room schedule)",
+   "value": 16.195,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_area",
+    "room": "R08"
+   }
+  },
+  {
+   "id": "D-78",
+   "label": "Toilet 1 carpet area (room schedule)",
+   "value": 10.863,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_area",
+    "room": "R09"
+   }
+  }
+ ],
+ "levels": [
+  {
+   "id": "L00",
+   "name": "Ground floor",
+   "elevation": 0.0,
+   "wall_height": 3.0,
+   "floor_thickness": 0.15,
+   "roof_thickness": 0.15,
+   "prov": [
+    "D-003",
+    "D-020",
+    "D-021",
+    "D-022"
+   ]
+  }
+ ],
+ "wall_types": [
+  {
+   "id": "EXT",
+   "thickness": 0.2,
+   "prov": [
+    "D-010"
+   ]
+  },
+  {
+   "id": "INT",
+   "thickness": 0.1,
+   "prov": [
+    "D-011"
+   ]
+  }
+ ],
+ "walls": [
+  {
+   "id": "W01",
+   "level": "L00",
+   "type": "EXT",
+   "start": [
+    0.1,
+    0.1
+   ],
+   "end": [
+    8.9,
+    0.1
+   ],
+   "prov": [
+    "D-001",
+    "D-002",
+    "D-010"
+   ]
+  },
+  {
+   "id": "W02",
+   "level": "L00",
+   "type": "EXT",
+   "start": [
+    8.9,
+    0.1
+   ],
+   "end": [
+    8.9,
+    13.9
+   ],
+   "prov": [
+    "D-001",
+    "D-002",
+    "D-010"
+   ]
+  },
+  {
+   "id": "W03",
+   "level": "L00",
+   "type": "EXT",
+   "start": [
+    0.1,
+    13.9
+   ],
+   "end": [
+    8.9,
+    13.9
+   ],
+   "prov": [
+    "D-001",
+    "D-002",
+    "D-010"
+   ]
+  },
+  {
+   "id": "W04",
+   "level": "L00",
+   "type": "EXT",
+   "start": [
+    0.1,
+    0.1
+   ],
+   "end": [
+    0.1,
+    13.9
+   ],
+   "prov": [
+    "D-001",
+    "D-002",
+    "D-010"
+   ]
+  },
+  {
+   "id": "W05",
+   "level": "L00",
+   "type": "INT",
+   "start": [
+    0.1,
+    5.0
+   ],
+   "end": [
+    8.9,
+    5.0
+   ],
+   "prov": [
+    "D-011"
+   ]
+  },
+  {
+   "id": "W06",
+   "level": "L00",
+   "type": "INT",
+   "start": [
+    5.6,
+    0.1
+   ],
+   "end": [
+    5.6,
+    5.0
+   ],
+   "prov": [
+    "D-011"
+   ]
+  },
+  {
+   "id": "W07",
+   "level": "L00",
+   "type": "INT",
+   "start": [
+    5.6,
+    3.6
+   ],
+   "end": [
+    8.9,
+    3.6
+   ],
+   "prov": [
+    "D-011"
+   ]
+  },
+  {
+   "id": "W08",
+   "level": "L00",
+   "type": "INT",
+   "start": [
+    3.6,
+    5.0
+   ],
+   "end": [
+    3.6,
+    13.9
+   ],
+   "prov": [
+    "D-011"
+   ]
+  },
+  {
+   "id": "W09",
+   "level": "L00",
+   "type": "INT",
+   "start": [
+    4.8,
+    5.0
+   ],
+   "end": [
+    4.8,
+    13.9
+   ],
+   "prov": [
+    "D-011"
+   ]
+  },
+  {
+   "id": "W10",
+   "level": "L00",
+   "type": "INT",
+   "start": [
+    0.1,
+    8.6
+   ],
+   "end": [
+    3.6,
+    8.6
+   ],
+   "prov": [
+    "D-011"
+   ]
+  },
+  {
+   "id": "W11",
+   "level": "L00",
+   "type": "INT",
+   "start": [
+    4.8,
+    6.8
+   ],
+   "end": [
+    8.9,
+    6.8
+   ],
+   "prov": [
+    "D-011"
+   ]
+  },
+  {
+   "id": "W12",
+   "level": "L00",
+   "type": "INT",
+   "start": [
+    4.8,
+    11.0
+   ],
+   "end": [
+    8.9,
+    11.0
+   ],
+   "prov": [
+    "D-011"
+   ]
+  }
+ ],
+ "openings": [
+  {
+   "id": "O01",
+   "wall": "W01",
+   "kind": "door",
+   "center": 1.9,
+   "width": 1.0,
+   "height": 2.1,
+   "sill": 0.0,
+   "prov": [
+    "D-050",
+    "D-051"
+   ],
+   "opens_into": "R01"
+  },
+  {
+   "id": "O02",
+   "wall": "W01",
+   "kind": "window",
+   "center": 4.1,
+   "width": 1.8,
+   "height": 1.2,
+   "sill": 0.9,
+   "prov": [
+    "D-050",
+    "D-051"
+   ]
+  },
+  {
+   "id": "O03",
+   "wall": "W04",
+   "kind": "window",
+   "center": 1.2,
+   "width": 1.2,
+   "height": 1.2,
+   "sill": 0.9,
+   "prov": [
+    "D-050",
+    "D-051"
+   ]
+  },
+  {
+   "id": "O04",
+   "wall": "W04",
+   "kind": "window",
+   "center": 2.55,
+   "width": 1.2,
+   "height": 1.2,
+   "sill": 0.9,
+   "prov": [
+    "D-050",
+    "D-051"
+   ]
+  },
+  {
+   "id": "O05",
+   "wall": "W02",
+   "kind": "window",
+   "center": 1.7,
+   "width": 1.2,
+   "height": 1.05,
+   "sill": 1.05,
+   "prov": [
+    "D-050",
+    "D-051"
+   ]
+  },
+  {
+   "id": "O06",
+   "wall": "W06",
+   "kind": "door",
+   "center": 1.9,
+   "width": 0.9,
+   "height": 2.1,
+   "sill": 0.0,
+   "prov": [
+    "D-050",
+    "D-051"
+   ],
+   "opens_into": "R02"
+  },
+  {
+   "id": "O07",
+   "wall": "W07",
+   "kind": "door",
+   "center": 1.6,
+   "width": 0.75,
+   "height": 2.1,
+   "sill": 0.0,
+   "prov": [
+    "D-050",
+    "D-051"
+   ],
+   "opens_into": "R03"
+  },
+  {
+   "id": "O08",
+   "wall": "W02",
+   "kind": "window",
+   "center": 4.2,
+   "width": 0.6,
+   "height": 0.6,
+   "sill": 1.5,
+   "prov": [
+    "D-050",
+    "D-051"
+   ]
+  },
+  {
+   "id": "O09",
+   "wall": "W05",
+   "kind": "arch",
+   "center": 4.1,
+   "width": 0.9,
+   "height": 2.1,
+   "sill": 0.0,
+   "prov": [
+    "D-050",
+    "D-051"
+   ]
+  },
+  {
+   "id": "O10",
+   "wall": "W08",
+   "kind": "door",
+   "center": 0.8,
+   "width": 0.9,
+   "height": 2.1,
+   "sill": 0.0,
+   "prov": [
+    "D-050",
+    "D-051"
+   ],
+   "opens_into": "R05"
+  },
+  {
+   "id": "O11",
+   "wall": "W04",
+   "kind": "window",
+   "center": 6.7,
+   "width": 1.5,
+   "height": 1.2,
+   "sill": 0.9,
+   "prov": [
+    "D-050",
+    "D-051"
+   ]
+  },
+  {
+   "id": "O12",
+   "wall": "W08",
+   "kind": "door",
+   "center": 4.4,
+   "width": 0.9,
+   "height": 2.1,
+   "sill": 0.0,
+   "prov": [
+    "D-050",
+    "D-051"
+   ],
+   "opens_into": "R06"
+  },
+  {
+   "id": "O13",
+   "wall": "W03",
+   "kind": "window",
+   "center": 1.7,
+   "width": 1.5,
+   "height": 1.2,
+   "sill": 0.9,
+   "prov": [
+    "D-050",
+    "D-051"
+   ]
+  },
+  {
+   "id": "O14",
+   "wall": "W04",
+   "kind": "window",
+   "center": 11.1,
+   "width": 1.5,
+   "height": 1.2,
+   "sill": 0.9,
+   "prov": [
+    "D-050",
+    "D-051"
+   ]
+  },
+  {
+   "id": "O15",
+   "wall": "W09",
+   "kind": "door",
+   "center": 0.9,
+   "width": 0.75,
+   "height": 2.1,
+   "sill": 0.0,
+   "prov": [
+    "D-050",
+    "D-051"
+   ],
+   "opens_into": "R07"
+  },
+  {
+   "id": "O16",
+   "wall": "W02",
+   "kind": "window",
+   "center": 5.8,
+   "width": 0.6,
+   "height": 0.6,
+   "sill": 1.5,
+   "prov": [
+    "D-050",
+    "D-051"
+   ]
+  },
+  {
+   "id": "O17",
+   "wall": "W09",
+   "kind": "door",
+   "center": 3.0,
+   "width": 0.9,
+   "height": 2.1,
+   "sill": 0.0,
+   "prov": [
+    "D-050",
+    "D-051"
+   ],
+   "opens_into": "R08"
+  },
+  {
+   "id": "O18",
+   "wall": "W02",
+   "kind": "window",
+   "center": 8.9,
+   "width": 1.5,
+   "height": 1.2,
+   "sill": 0.9,
+   "prov": [
+    "D-050",
+    "D-051"
+   ]
+  },
+  {
+   "id": "O19",
+   "wall": "W09",
+   "kind": "door",
+   "center": 7.0,
+   "width": 0.75,
+   "height": 2.1,
+   "sill": 0.0,
+   "prov": [
+    "D-050",
+    "D-051"
+   ],
+   "opens_into": "R09"
+  },
+  {
+   "id": "O20",
+   "wall": "W03",
+   "kind": "window",
+   "center": 6.7,
+   "width": 0.6,
+   "height": 0.6,
+   "sill": 1.5,
+   "prov": [
+    "D-050",
+    "D-051"
+   ]
+  }
+ ],
+ "rooms": [
+  {
+   "id": "R01",
+   "name": "Living",
+   "level": "L00",
+   "use": "living",
+   "seed": [
+    2.8,
+    2.5
+   ],
+   "prov": [
+    "D-060"
+   ]
+  },
+  {
+   "id": "R02",
+   "name": "Kitchen",
+   "level": "L00",
+   "use": "kitchen",
+   "seed": [
+    7.2,
+    1.8
+   ],
+   "prov": [
+    "D-060"
+   ]
+  },
+  {
+   "id": "R03",
+   "name": "Utility",
+   "level": "L00",
+   "use": "utility",
+   "seed": [
+    7.2,
+    4.3
+   ],
+   "prov": [
+    "D-060"
+   ]
+  },
+  {
+   "id": "R04",
+   "name": "Corridor",
+   "level": "L00",
+   "use": "circulation",
+   "seed": [
+    4.2,
+    9.0
+   ],
+   "prov": [
+    "D-060"
+   ]
+  },
+  {
+   "id": "R05",
+   "name": "Bedroom 3",
+   "level": "L00",
+   "use": "bedroom",
+   "seed": [
+    1.8,
+    6.8
+   ],
+   "prov": [
+    "D-060"
+   ]
+  },
+  {
+   "id": "R06",
+   "name": "Bedroom 1",
+   "level": "L00",
+   "use": "bedroom",
+   "seed": [
+    1.8,
+    11.2
+   ],
+   "prov": [
+    "D-060"
+   ]
+  },
+  {
+   "id": "R07",
+   "name": "Toilet 2",
+   "level": "L00",
+   "use": "toilet",
+   "seed": [
+    6.8,
+    5.9
+   ],
+   "prov": [
+    "D-060"
+   ]
+  },
+  {
+   "id": "R08",
+   "name": "Bedroom 2",
+   "level": "L00",
+   "use": "bedroom",
+   "seed": [
+    6.8,
+    8.9
+   ],
+   "prov": [
+    "D-060"
+   ]
+  },
+  {
+   "id": "R09",
+   "name": "Toilet 1",
+   "level": "L00",
+   "use": "toilet",
+   "seed": [
+    6.8,
+    12.4
+   ],
+   "prov": [
+    "D-060"
+   ]
+  }
+ ]
+}

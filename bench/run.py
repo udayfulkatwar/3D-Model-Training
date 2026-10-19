@@ -118,10 +118,18 @@ def verdict(m: dict, case: str) -> dict:
     return {"pass": all(checks.values()), "missed": [k for k, ok in checks.items() if not ok]}
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    """python -m bench.run [plan ...] [--out name.json]   (default: the development plans)"""
+    argv = sys.argv[1:] if argv is None else argv
+    out_name = "results.json"
+    if "--out" in argv:
+        i = argv.index("--out")
+        out_name = argv[i + 1]
+        argv = argv[:i] + argv[i + 2:]
+    plans = argv or PLANS
     OUT.mkdir(parents=True, exist_ok=True)
     results = {}
-    for p in PLANS:
+    for p in plans:
         truth = ROOT / "projects" / p / "plan.json"
         for case, cfg in CASES.items():
             img = OUT / f"{p}_{case}.png"
@@ -135,7 +143,7 @@ def main() -> int:
             m["reader"] = res.stats
             m["verdict"] = verdict(m, case)
             results[f"{p}/{case}"] = m
-    (OUT / "results.json").write_text(json.dumps(results, indent=2, default=float))
+    (OUT / out_name).write_text(json.dumps(results, indent=2, default=float))
     print(f"{'run':16} {'offset':>7} {'rooms':>5} {'area%':>6} {'rec':>5} {'prec':>5} {'kind':>5} "
           f"{'swing':>5} {'ctr':>5} {'width':>6}  verdict")
     for k, m in results.items():
