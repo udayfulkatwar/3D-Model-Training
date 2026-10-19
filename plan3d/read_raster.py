@@ -36,7 +36,7 @@ MAX_OPENING_M = 3.5       # a longer gap splits a line into two walls
 MIN_OPENING_M = 0.35
 MIN_ROOM_M2 = 0.5
 DOOR_SCORE = 0.6          # leaf + arc evidence needed to call a gap a door
-WINDOW_FILL = 0.8         # a row across the gap this full counts as a glazing line
+WINDOW_FILL = 0.7         # a row across the gap this full (after pen-width bridging) is a glazing line
 DEFAULTS = {"wall_height": 3.0, "floor_thickness": 0.15, "roof_thickness": 0.15,
             "door_height": 2.1, "arch_height": 2.1, "window_sill": 0.9, "window_height": 1.2}
 
@@ -64,16 +64,48 @@ def _binarize(gray: np.ndarray) -> np.ndarray:
     return bw > 0
 
 
-def _hairline_px(ink: np.ndarray) -> float:
-    """Typical pen width: the most common stroke width along stroke centres."""
+def _stroke_widths(ink: np.ndarray) -> np.ndarray:
+    """Histogram of stroke widths (px) sampled along stroke centres."""
     dt = cv2.distanceTransform(ink.astype(np.uint8), cv2.DIST_L2, 3)
     ridge = (dt > 0) & (dt >= cv2.dilate(dt, np.ones((3, 3), np.uint8)))
-    widths = np.round(2 * dt[ridge]).astype(int)
-    return float(np.bincount(widths).argmax()) if widths.size else 1.0
+    return np.bincount(np.round(2 * dt[ridge]).astype(int), minlength=2)
 
 
-def _thick_mask(ink: np.ndarray, hair: float) -> tuple[np.ndarray, int]:
-    k = max(3, int(np.ceil(2.5 * hair)))
+def _hairline_px(ink: np.ndarray) -> float:
+    """Typical pen width: the most common stroke width."""
+    h = _stroke_widths(ink)
+    return float(h[1:].argmax() + 1) if h[1:].any() else 1.0
+
+
+def _line_wall_split(ink: np.ndarray) -> int:
+    """Widest stroke still counted as a drawn line.
+
+    Lines and walls form two clusters of stroke widths; Otsu's method on
+    log-width puts the split in the valley between them. A fixed multiple of
+    the pen width fails when a thick pen meets thin walls.
+    """
+    h = _stroke_widths(ink)
+    w = np.flatnonzero(h[1:]) + 1
+    if len(w) < 2:
+        return 2
+    x, c = np.log(w), h[w].astype(float)
+    best, split = -1.0, int(w[0])
+    for i in range(1, len(w)):
+        a, b = c[:i].sum(), c[i:].sum()
+        between = a * b * ((x[:i] * c[:i]).sum() / a - (x[i:] * c[i:]).sum() / b) ** 2
+        if between > best:
+            best, split = between, int(w[i - 1])
+    return split
+
+
+def _odd(n: int) -> int:
+    """Morphology kernels must be odd: OpenCV anchors even kernels off-centre,
+    which shifts the result by a pixel or two."""
+    return n if n % 2 else n + 1
+
+
+def _thick_mask(ink: np.ndarray, line_max: int) -> tuple[np.ndarray, int]:
+    k = _odd(max(3, line_max + 1))
     return cv2.morphologyEx(ink.astype(np.uint8), cv2.MORPH_OPEN, np.ones((k, k), np.uint8)) > 0, k
 
 
@@ -248,7 +280,8 @@ def _refine_edge(profile: np.ndarray, guess: int, falling: bool) -> float:
     return float(guess)
 
 
-def _classify(w: Wall, op: Opening, ink: np.ndarray, ink_d: np.ndarray, dark: np.ndarray) -> None:
+def _classify(w: Wall, op: Opening, ink: np.ndarray, ink_d: np.ndarray, dark: np.ndarray,
+              hair: float) -> None:
     # sub-pixel gap edges from the darkness profile along the wall centre band
     band = slice(int(w.c - w.t / 4), int(w.c + w.t / 4) + 1)
     prof = dark[band, :].mean(0) if w.orient == "h" else dark[:, band].mean(1)
@@ -260,7 +293,10 @@ def _classify(w: Wall, op: Opening, ink: np.ndarray, ink_d: np.ndarray, dark: np
     c0, c1 = int(np.ceil(op.a)) + 2, int(np.floor(op.b)) - 2
     if r1 > r0 and c1 > c0:
         sub = ink[r0:r1, c0:c1] if w.orient == "h" else ink[c0:c1, r0:r1].T
-        sub = cv2.morphologyEx(sub.astype(np.uint8), cv2.MORPH_CLOSE, np.ones((1, 5), np.uint8))
+        # Bridge breaks up to one pen width (scan noise) but not dash gaps, which
+        # are several pen widths long (an arch drawn dashed must stay an arch).
+        bridge = _odd(int(round(hair)) + 1)
+        sub = cv2.morphologyEx(sub.astype(np.uint8), cv2.MORPH_CLOSE, np.ones((1, bridge), np.uint8))
         fill = float(sub.mean(1).max())
         if fill >= WINDOW_FILL:
             op.kind, op.score = "window", fill
@@ -425,12 +461,12 @@ def read_plan(path: str | Path, out_dir: str | Path, known_width_m: float | None
 
     ink = _binarize(gray)
     hair = _hairline_px(ink)
-    thick, kernel = _thick_mask(ink, hair)
+    thick, kernel = _thick_mask(ink, _line_wall_split(ink))
     skew = _skew_deg(thick)
     if abs(skew) > 0.05:
         gray = _rotate(gray, skew)
         ink = _binarize(gray)
-        thick, kernel = _thick_mask(ink, hair)
+        thick, kernel = _thick_mask(ink, _line_wall_split(ink))
 
     bg = float(np.percentile(gray, 90))
     fg = float(np.median(gray[thick])) if thick.any() else 0.0
@@ -440,7 +476,7 @@ def read_plan(path: str | Path, out_dir: str | Path, known_width_m: float | None
     dt = cv2.distanceTransform(thick.astype(np.uint8), cv2.DIST_L2, 3)
     ridge = (dt > 0) & (dt >= cv2.dilate(dt, np.ones((3, 3), np.uint8)))
     t_max = float(np.percentile(2 * dt[ridge], 99)) if ridge.any() else 10.0
-    run_len = int(np.ceil(1.2 * t_max)) + 2
+    run_len = _odd(int(np.ceil(1.2 * t_max)) + 2)
     hmask = cv2.morphologyEx(thick.astype(np.uint8), cv2.MORPH_OPEN, np.ones((1, run_len), np.uint8)) > 0
     vmask = cv2.morphologyEx(thick.astype(np.uint8), cv2.MORPH_OPEN, np.ones((run_len, 1), np.uint8)) > 0
 
@@ -466,7 +502,7 @@ def read_plan(path: str | Path, out_dir: str | Path, known_width_m: float | None
     for w in walls:
         kept = []
         for op in w.openings:
-            _classify(w, op, ink, ink_d, dark)
+            _classify(w, op, ink, ink_d, dark, hair)
             width_m = (op.b - op.a) / ppm
             if width_m < MIN_OPENING_M:
                 review.append(f"Ignored a {width_m * 1000:.0f} mm gap in a wall (too narrow to be an opening)")
@@ -476,7 +512,7 @@ def read_plan(path: str | Path, out_dir: str | Path, known_width_m: float | None
 
     plan, stats = _to_plan(walls, ppm, x0, y1, Path(path).name, known_width_m, project_id)
     stats.update({"skew_deg": round(skew, 3), "hairline_px": hair, "kernel_px": kernel,
-                  "run_len_px": run_len, "px_per_m": round(ppm, 4)})
+                  "run_len_px": run_len, "px_per_m": round(ppm, 4), "origin_px": [x0, y1]})
     review = _review(plan, stats, review)
     overlay = _overlay(gray, walls, plan, ppm, x0, y1)
     (out_dir / "plan.json").write_text(json.dumps(plan, indent=1) + "\n")

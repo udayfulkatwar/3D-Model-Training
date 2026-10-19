@@ -29,7 +29,7 @@ MARGIN_M = 2.2
 DPI = 100
 
 
-def render(plan_path: str | Path, out_png: str | Path, px_per_m: float) -> dict:
+def render(plan_path: str | Path, out_png: str | Path, px_per_m: float, pen_m: float = PEN_M) -> dict:
     plan, errors = load_plan(plan_path)
     assert plan is not None, errors
     lay = plan2d.build_layout(plan, sorted(plan.levels)[0])
@@ -42,7 +42,7 @@ def render(plan_path: str | Path, out_png: str | Path, px_per_m: float) -> dict:
     ax.set_ylim(y0, y0 + h_px / px_per_m)
     ax.axis("off")
     pt = 72 / DPI                                     # points per pixel
-    hair = max(1.0, PEN_M * px_per_m) * pt
+    hair = max(1.0, pen_m * px_per_m) * pt
     font = lambda metres: metres * px_per_m * pt     # noqa: E731
 
     # walls (poche) minus openings

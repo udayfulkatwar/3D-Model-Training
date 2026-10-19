@@ -28,6 +28,12 @@ CASES = {
     "clean-60": {"ppm": 60, "degrade": False},
     "scan-100": {"ppm": 100, "degrade": True},
 }
+# Exploratory drawing styles never used while developing the reader (not pre-registered).
+EXPLORE = {
+    "clean-80": {"ppm": 80, "degrade": False},
+    "thickpen-100": {"ppm": 100, "degrade": False, "pen_m": 0.03},
+    "thickpen-scan-100": {"ppm": 100, "degrade": True, "pen_m": 0.03},
+}
 TARGETS = {   # pre-registered; do not edit after results are known
     "clean": {"offset_mm": 15, "rooms": 1.0, "area_err": 0.02, "recall": 1.0, "precision": 1.0,
               "kind": 1.0, "swing": 0.9, "width_mm": 30},
@@ -103,7 +109,7 @@ def score(truth_path: Path, draft_path: Path) -> dict:
 
 
 def verdict(m: dict, case: str) -> dict:
-    t = TARGETS["scan" if case.startswith("scan") else "clean"]
+    t = TARGETS["scan" if "scan" in case else "clean"]
     checks = {
         "offset": m["offset_mm"] <= t["offset_mm"],
         "rooms": m["rooms"] >= t["rooms"],
@@ -126,14 +132,18 @@ def main(argv: list[str] | None = None) -> int:
         i = argv.index("--out")
         out_name = argv[i + 1]
         argv = argv[:i] + argv[i + 2:]
+    cases = CASES
+    if "--explore" in argv:
+        argv = [a for a in argv if a != "--explore"]
+        cases = EXPLORE
     plans = argv or PLANS
     OUT.mkdir(parents=True, exist_ok=True)
     results = {}
     for p in plans:
         truth = ROOT / "projects" / p / "plan.json"
-        for case, cfg in CASES.items():
+        for case, cfg in cases.items():
             img = OUT / f"{p}_{case}.png"
-            info = render(truth, img, cfg["ppm"])
+            info = render(truth, img, cfg["ppm"], **({"pen_m": cfg["pen_m"]} if "pen_m" in cfg else {}))
             if cfg["degrade"]:
                 jpg = img.with_suffix(".jpg")
                 degrade(img, jpg)

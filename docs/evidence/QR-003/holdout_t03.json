@@ -1,0 +1,144 @@
+{
+  "t03/clean-100": {
+    "offset_mm": 5.16,
+    "rooms": 1.0,
+    "area_err_max": 0.0036,
+    "recall": 1.0,
+    "precision": 1.0,
+    "kind": 1.0,
+    "swing": 1.0,
+    "center_err_mm": 8.2,
+    "width_err_mm": 11.0,
+    "width_bias_mm": {
+      "door": 0.0,
+      "window": -20.0,
+      "arch": 0.0
+    },
+    "builds_without_fail": true,
+    "missed": [],
+    "spurious": [],
+    "wrong_kind": [],
+    "counts": {
+      "truth_openings": 20,
+      "draft_openings": 20,
+      "truth_rooms": 9,
+      "draft_rooms": 9
+    },
+    "reader": {
+      "walls": 12,
+      "openings": 20,
+      "rooms": 9,
+      "wall_types": {
+        "WT200": 0.2,
+        "WT105": 0.105,
+        "WT100": 0.1
+      },
+      "skew_deg": 0.0,
+      "hairline_px": 2.0,
+      "kernel_px": 5,
+      "run_len_px": 28,
+      "px_per_m": 100.0966
+    },
+    "verdict": {
+      "pass": true,
+      "missed": []
+    }
+  },
+  "t03/clean-60": {
+    "offset_mm": 2.36,
+    "rooms": 1.0,
+    "area_err_max": 0.0065,
+    "recall": 1.0,
+    "precision": 1.0,
+    "kind": 0.95,
+    "swing": 1.0,
+    "center_err_mm": 7.6,
+    "width_err_mm": 11.0,
+    "width_bias_mm": {
+      "door": 0.0,
+      "window": -20.0,
+      "arch": 0.0
+    },
+    "builds_without_fail": false,
+    "missed": [],
+    "spurious": [],
+    "wrong_kind": [
+      "O09 arch read as window"
+    ],
+    "counts": {
+      "truth_openings": 20,
+      "draft_openings": 20,
+      "truth_rooms": 9,
+      "draft_rooms": 9
+    },
+    "reader": {
+      "walls": 12,
+      "openings": 20,
+      "rooms": 9,
+      "wall_types": {
+        "WT210": 0.21,
+        "WT200": 0.2,
+        "WT115": 0.115,
+        "WT100": 0.1
+      },
+      "skew_deg": 0.0,
+      "hairline_px": 2.0,
+      "kernel_px": 5,
+      "run_len_px": 19,
+      "px_per_m": 60.0119
+    },
+    "verdict": {
+      "pass": false,
+      "missed": [
+        "kind",
+        "builds"
+      ]
+    }
+  },
+  "t03/scan-100": {
+    "offset_mm": 5.26,
+    "rooms": 1.0,
+    "area_err_max": 0.0058,
+    "recall": 1.0,
+    "precision": 1.0,
+    "kind": 1.0,
+    "swing": 1.0,
+    "center_err_mm": 8.2,
+    "width_err_mm": 13.2,
+    "width_bias_mm": {
+      "door": -0.6,
+      "window": -23.2,
+      "arch": -5.0
+    },
+    "builds_without_fail": true,
+    "missed": [],
+    "spurious": [],
+    "wrong_kind": [],
+    "counts": {
+      "truth_openings": 20,
+      "draft_openings": 20,
+      "truth_rooms": 9,
+      "draft_rooms": 9
+    },
+    "reader": {
+      "walls": 12,
+      "openings": 20,
+      "rooms": 9,
+      "wall_types": {
+        "WT200": 0.2,
+        "WT110": 0.11,
+        "WT105": 0.105,
+        "WT100": 0.1
+      },
+      "skew_deg": -1.5,
+      "hairline_px": 2.0,
+      "kernel_px": 5,
+      "run_len_px": 28,
+      "px_per_m": 100.1095
+    },
+    "verdict": {
+      "pass": true,
+      "missed": []
+    }
+  }
+}
