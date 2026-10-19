@@ -70,3 +70,20 @@ afterwards.
 ## Results
 
 (Filled in after the runs; see QUALITY_REPORTS.md.)
+
+## Holdout 2 (registered before T04 exists; reader frozen at 9e10138)
+
+After the first holdout (T03) the reader was changed three times using
+T03 and exploratory-style results, so those runs are no longer unseen.
+Holdout 2 checks the changed reader on a new plan, T04, authored after
+the freeze and run once:
+
+| Case | Resolution | Degradation |
+|---|---|---|
+| clean-100 | 100 px/m | none |
+| scan2-150 | 150 px/m (never used before) | −2.5° rotation (opposite sign, larger), blur σ=1.2, noise σ=18, JPEG q=50 |
+
+Targets: the clean and scan columns above, unchanged. T04 will include
+features not yet seen: a free-standing wing wall, a 100 mm nib at a
+corner window, back-to-back doors on one partition, a 2.4 m window and a
+1.8 m external door.

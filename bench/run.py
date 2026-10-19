@@ -34,6 +34,11 @@ EXPLORE = {
     "thickpen-100": {"ppm": 100, "degrade": False, "pen_m": 0.03},
     "thickpen-scan-100": {"ppm": 100, "degrade": True, "pen_m": 0.03},
 }
+# Holdout 2 (docs/T006_PLAN_READING.md): new resolution and a harsher, opposite-sign scan.
+HOLDOUT2 = {
+    "clean-100": {"ppm": 100, "degrade": False},
+    "scan2-150": {"ppm": 150, "degrade": {"rotate_deg": -2.5, "blur": 1.2, "noise": 18.0, "jpeg": 50, "seed": 11}},
+}
 TARGETS = {   # pre-registered; do not edit after results are known
     "clean": {"offset_mm": 15, "rooms": 1.0, "area_err": 0.02, "recall": 1.0, "precision": 1.0,
               "kind": 1.0, "swing": 0.9, "width_mm": 30},
@@ -136,6 +141,9 @@ def main(argv: list[str] | None = None) -> int:
     if "--explore" in argv:
         argv = [a for a in argv if a != "--explore"]
         cases = EXPLORE
+    if "--holdout2" in argv:
+        argv = [a for a in argv if a != "--holdout2"]
+        cases = HOLDOUT2
     plans = argv or PLANS
     OUT.mkdir(parents=True, exist_ok=True)
     results = {}
@@ -146,7 +154,7 @@ def main(argv: list[str] | None = None) -> int:
             info = render(truth, img, cfg["ppm"], **({"pen_m": cfg["pen_m"]} if "pen_m" in cfg else {}))
             if cfg["degrade"]:
                 jpg = img.with_suffix(".jpg")
-                degrade(img, jpg)
+                degrade(img, jpg, **(cfg["degrade"] if isinstance(cfg["degrade"], dict) else {}))
                 img = jpg
             res = read_plan(img, OUT / f"{p}_{case}", known_width_m=info["overall_x_m"])
             m = score(truth, OUT / f"{p}_{case}" / "plan.json")
