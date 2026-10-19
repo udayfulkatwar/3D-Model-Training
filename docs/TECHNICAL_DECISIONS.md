@@ -67,6 +67,22 @@ deleted. "Revisit if" states what evidence would change the decision.
   traceable and nothing is reusable. This is roadmap item "code-based
   building generator".
 
+### ADR-009 — Plan reader: classical image processing, human review, no AGPL
+- **Date:** 2026-10-19 · **Status:** Accepted
+- **Decision:** read plans with deterministic OpenCV steps (stroke-width
+  split, projection-profile deskew, run-length wall extraction,
+  sub-pixel grey-level measurement, symbol tests for openings) rather
+  than a learned model. Output is always a draft marked INFERRED and
+  goes through a review sheet. PDF rasterization uses pypdfium2.
+- **Why:** each step can be inspected and tested, and failure causes can
+  be found and fixed (QR-003). No training data is available yet.
+  PyMuPDF is AGPL (L-021).
+- **Rejected for now:** ML segmentation models, which need labelled real
+  drawings and would hide failure causes; vector-PDF parsing, which is
+  worth adding once real CAD-exported PDFs are available.
+- **Revisit if:** real-drawing results (T-010) show styles the classical
+  steps cannot handle.
+
 ### ADR-008 — plan3d core: Python + shapely + manifold3d, Blender optional
 - **Date:** 2026-10-19 · **Status:** Accepted
 - **Decision:** 2D layout with shapely (GEOS); 3D solids with manifold3d

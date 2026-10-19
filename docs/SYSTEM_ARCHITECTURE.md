@@ -38,6 +38,12 @@ from reading the public site only.
 ## 2b. Training pipeline in this repo: plan3d v0.1 — IMPLEMENTED
 
 ```
+ drawing.png / .jpg / .pdf ─► plan3d.read_raster (T-006) ─► draft plan.json + review.md + overlay.png
+                                                                │  person confirms / corrects
+                                                                ▼
+```
+
+```
  projects/<p>/plan.json ─► schema + reference + provenance checks (Q01–Q03)
           │
           ▼

@@ -69,7 +69,76 @@ afterwards.
 
 ## Results
 
-(Filled in after the runs; see QUALITY_REPORTS.md.)
+Every run in order, with no runs left out. Generated from the files in
+[evidence/QR-003](evidence/QR-003/). "Openings found · correct kind" counts
+truth openings matched within 0.3 m, then how many of those had the right kind.
+
+| Stage | Run | Wall offset mm | Rooms | Max area err | Openings found / correct kind | Swing | Width err mm | Builds | Verdict |
+|---|---|---|---|---|---|---|---|---|---|
+| Dev, first run | t01/clean-100 | 5.00 | 8/8 | 0.62% | 13/15 · 13 | 1.00 | 9.2 | yes | MISS: recall, precision |
+|  | t01/clean-60 | 5.50 | 6/8 | 1.55% | 12/15 · 12 | 1.00 | 10.0 | yes | MISS: rooms, recall, precision |
+|  | t01/scan-100 | 177.28 | 0/8 | - | 0/15 · 0 | - | - | no | MISS: offset, rooms, area, recall, precision, kind, width, builds |
+|  | t02/clean-100 | 1.80 | 5/5 | 0.35% | 11/11 · 11 | 1.00 | 10.9 | yes | PASS |
+|  | t02/clean-60 | 5.32 | 3/5 | 0.28% | 8/11 · 8 | 1.00 | 15.0 | no | MISS: rooms, recall, precision, builds |
+|  | t02/scan-100 | 221.35 | 0/5 | - | 0/11 · 0 | - | - | no | MISS: offset, rooms, area, recall, precision, kind, width, builds |
+| T03 holdout 1 (reader b6cb497, first run) | t03/clean-100 | 5.16 | 9/9 | 0.36% | 20/20 · 20 | 1.00 | 11.0 | yes | PASS |
+|  | t03/clean-60 | 2.36 | 9/9 | 0.65% | 20/20 · 19 | 1.00 | 11.0 | no | MISS: kind, builds |
+|  | t03/scan-100 | 5.26 | 9/9 | 0.58% | 20/20 · 20 | 1.00 | 13.2 | yes | PASS |
+| Dev + T03 after post-holdout fixes (9e10138) | t01/clean-100 | 1.15 | 8/8 | 0.51% | 15/15 · 15 | 1.00 | 9.3 | yes | PASS |
+|  | t01/clean-60 | 4.80 | 8/8 | 1.55% | 15/15 · 15 | 1.00 | 9.3 | yes | PASS |
+|  | t01/scan-100 | 1.15 | 8/8 | 0.51% | 15/15 · 15 | 1.00 | 9.3 | yes | PASS |
+|  | t02/clean-100 | 1.80 | 5/5 | 0.35% | 11/11 · 11 | 1.00 | 10.9 | yes | PASS |
+|  | t02/clean-60 | 3.81 | 5/5 | 0.45% | 11/11 · 11 | 1.00 | 10.9 | yes | PASS |
+|  | t02/scan-100 | 1.80 | 5/5 | 0.35% | 11/11 · 11 | 1.00 | 10.9 | yes | PASS |
+|  | t03/clean-100 | 0.19 | 9/9 | 0.29% | 20/20 · 20 | 1.00 | 11.0 | yes | PASS |
+|  | t03/clean-60 | 2.36 | 9/9 | 0.65% | 20/20 · 20 | 1.00 | 11.0 | yes | PASS |
+|  | t03/scan-100 | 0.30 | 9/9 | 0.29% | 20/20 · 20 | 1.00 | 11.2 | yes | PASS |
+| Exploratory styles (9e10138; used for tuning) | t01/clean-80 | 4.60 | 8/8 | 1.03% | 15/15 · 15 | 1.00 | 7.0 | yes | PASS |
+|  | t01/thickpen-100 | 1.76 | 8/8 | 0.51% | 15/15 · 15 | 1.00 | 16.3 | yes | PASS |
+|  | t01/thickpen-scan-100 | 1.76 | 8/8 | 0.51% | 15/15 · 15 | 1.00 | 18.7 | yes | PASS |
+|  | t02/clean-80 | 0.00 | 5/5 | 0.00% | 11/11 · 11 | 1.00 | 8.2 | yes | PASS |
+|  | t02/thickpen-100 | 2.86 | 5/5 | 0.35% | 11/11 · 11 | 1.00 | 16.4 | yes | PASS |
+|  | t02/thickpen-scan-100 | 2.86 | 5/5 | 0.35% | 11/11 · 11 | 1.00 | 19.5 | yes | PASS |
+|  | t03/clean-80 | 0.28 | 9/9 | 0.36% | 20/20 · 20 | 1.00 | 8.2 | yes | PASS |
+|  | t03/thickpen-100 | 1.36 | 9/9 | 0.58% | 20/20 · 20 | 1.00 | 19.3 | yes | PASS |
+|  | t03/thickpen-scan-100 | 1.36 | 9/9 | 0.58% | 20/20 · 20 | 1.00 | 23.0 | yes | PASS |
+| T04 holdout 2 (reader 9e10138, first run) | t04/clean-100 | 1.70 | 6/6 | 0.71% | 15/15 · 15 | 1.00 | 10.7 | yes | PASS |
+|  | t04/scan2-150 | 3.19 | 6/6 | 0.93% | 15/15 · 15 | 1.00 | 11.3 | yes | PASS |
+
+### Reading the history honestly
+
+1. **First run: 1/6.** Causes were diagnosed, not tuned around: a deskew
+   method that cannot see small rotations, horizontal and vertical walls
+   grouped together when their pixel positions happened to coincide,
+   dropped wall nibs and short walls, broken glazing lines in scans, and a
+   connectivity rule stricter than the end-snapping rule.
+2. **Holdout 1 (T03), first run: 2/3.** At 60 px/m a dashed arch was read
+   as a window (a fixed 4 px gap bridge closed 4 px dash gaps). The
+   wrong kind cut the corridor off, and plan3d's circulation check
+   failed the draft rather than passing it silently.
+3. **Post-holdout fixes.** The exploratory thick-pen style exposed two
+   real bugs (even-sized kernels shift masks by 1–2 px; a fixed
+   pen-width multiple deletes 100 mm walls). After fixing them, every dev,
+   T03 and exploratory run passes, **but all of these were used for
+   tuning.**
+4. **Holdout 2 (T04), first run: 2/2.** A new plan with new features (wing
+   wall, 100 mm corner nib, 2.4 m window, 1.8 m door), plus a resolution
+   and skew never used before. This is the best available evidence for
+   unseen *synthetic* drawings.
+
+### What this does and does not show
+
+- It shows the reader handles this drawing style (filled walls,
+  CAD-like symbols) across 60–150 px/m, ±2.5° skew, blur, noise and JPEG,
+  on four different layouts.
+- It does **not** show performance on real drawings. Every test drawing
+  comes from one renderer, so real CAD exports, hand-drafted plans,
+  hatched or hollow walls, text over walls, furniture blocks drawn
+  thick, and photos with perspective are all untested. The next step is
+  a small set of real drawings the company owns or has permission to use,
+  with the truth measured by hand.
+- Known bias: window widths read about 20 mm narrow, because jamb lines
+  sit at the wall ends. Doors and arches show no bias.
 
 ## Holdout 2 (registered before T04 exists; reader frozen at 9e10138)
 

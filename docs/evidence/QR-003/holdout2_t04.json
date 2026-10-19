@@ -1,0 +1,101 @@
+{
+  "t04/clean-100": {
+    "offset_mm": 1.7,
+    "rooms": 1.0,
+    "area_err_max": 0.0071,
+    "recall": 1.0,
+    "precision": 1.0,
+    "kind": 1.0,
+    "swing": 1.0,
+    "center_err_mm": 0.7,
+    "width_err_mm": 10.7,
+    "width_bias_mm": {
+      "door": 0.0,
+      "window": -20.0,
+      "arch": 0.0
+    },
+    "builds_without_fail": true,
+    "missed": [],
+    "spurious": [],
+    "wrong_kind": [],
+    "counts": {
+      "truth_openings": 15,
+      "draft_openings": 15,
+      "truth_rooms": 6,
+      "draft_rooms": 6
+    },
+    "reader": {
+      "walls": 10,
+      "openings": 15,
+      "rooms": 6,
+      "wall_types": {
+        "WT240": 0.24,
+        "WT230": 0.23,
+        "WT120": 0.12
+      },
+      "skew_deg": 0.0,
+      "hairline_px": 2.0,
+      "kernel_px": 7,
+      "run_len_px": 31,
+      "px_per_m": 100.0,
+      "origin_px": [
+        220.0,
+        1120.0
+      ]
+    },
+    "verdict": {
+      "pass": true,
+      "missed": []
+    }
+  },
+  "t04/scan2-150": {
+    "offset_mm": 3.19,
+    "rooms": 1.0,
+    "area_err_max": 0.0093,
+    "recall": 1.0,
+    "precision": 1.0,
+    "kind": 1.0,
+    "swing": 1.0,
+    "center_err_mm": 3.1,
+    "width_err_mm": 11.3,
+    "width_bias_mm": {
+      "door": -2.0,
+      "window": -20.0,
+      "arch": 0.0
+    },
+    "builds_without_fail": true,
+    "missed": [],
+    "spurious": [],
+    "wrong_kind": [],
+    "counts": {
+      "truth_openings": 15,
+      "draft_openings": 15,
+      "truth_rooms": 6,
+      "draft_rooms": 6
+    },
+    "reader": {
+      "walls": 10,
+      "openings": 15,
+      "rooms": 6,
+      "wall_types": {
+        "WT240": 0.24,
+        "WT235": 0.235,
+        "WT225": 0.225,
+        "WT120": 0.12
+      },
+      "skew_deg": 2.5,
+      "hairline_px": 2.0,
+      "kernel_px": 7,
+      "run_len_px": 45,
+      "px_per_m": 150.0117,
+      "origin_px": [
+        329.90661394487125,
+        1680.0
+      ]
+    },
+    "verdict": {
+      "pass": true,
+      "missed": []
+    }
+  }
+}

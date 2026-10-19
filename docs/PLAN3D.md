@@ -19,6 +19,24 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 cd viewer && npm install && node check.mjs out/t01                    # writes out/t01/browser_*.png
 ```
 
+## Reading a drawing into a draft (T-006)
+
+```bash
+.venv/bin/python -m plan3d read drawing.png -o drafts/house --known-width 12.0 --build
+```
+
+- `--known-width` is the overall east–west external length read off the
+  drawing. It sets the scale and is the only value marked CONFIRMED. Use
+  `--px-per-m` instead if the scale is known.
+- Output: `plan.json` (draft), `review.md` (what to confirm), `overlay.png`
+  (detected walls, openings and rooms over the drawing) and, with
+  `--build`, the full plan3d build in `build/`.
+- Works on filled-wall drawings (PNG/JPG; PDF page 1 via pypdfium2) with
+  up to ±5° skew. Room names, heights and sills are not read; they appear
+  as defaults or open questions in the review sheet.
+- Accuracy on synthetic test drawings: [T006_PLAN_READING.md](T006_PLAN_READING.md#results).
+  Not yet tested on real drawings.
+
 ## How a plan is described
 
 | Section | Contents |

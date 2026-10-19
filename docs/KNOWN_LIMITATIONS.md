@@ -46,6 +46,19 @@ in this repo until the founder adopts it themselves.
 | Daylight check counts window area only | Not a daylight factor and not a code check |
 | Browser check uses software GL | Proves loading and correctness, not phone performance (T-003) |
 
+## Plan reader v0.1 (T-006)
+
+| Limit | Effect / workaround |
+|---|---|
+| Tested only on synthetic drawings from one renderer | Accuracy on real CAD exports, scans and photos is unknown. Every draft must be reviewed |
+| Filled (poché) walls only | Hollow double-line or hatched walls are not detected |
+| Orthogonal walls, skew ≤ ±5° | Diagonal or curved walls are lost; no perspective correction for photos |
+| No text reading (no OCR) | Room names and uses, dimension values, heights and sills are not read |
+| Windows read ~20 mm narrow | Jamb lines at the wall ends; correct widths in review |
+| Wall thickness ±5 mm on scans | e.g. 115 mm read as 120 mm; snap types in review |
+| One floor per image, first PDF page only | Crop multi-plan sheets before reading |
+| Door swing is the leaf side only | The hinge side is not exported |
+
 ## Unverified items
 
 - Website source location, build and deployment process (G-01).

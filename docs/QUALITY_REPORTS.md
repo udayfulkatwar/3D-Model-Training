@@ -76,3 +76,50 @@ Carpet area 105.862 m² (1,139.5 sq ft) on a 120 m² built-up footprint.
 - Frame rate or load time on any real phone or GPU (software rendering only).
 - Use on a real client drawing; opening positions against a drawing.
 - Multi-level buildings (warned, unverified), Unreal/Twinmotion import.
+
+---
+
+## QR-003: plan reader v0.1 (T-006)
+
+- **Date:** 2026-10-19 · **Scope:** training repo only
+- **Method and targets:** [T006_PLAN_READING.md](T006_PLAN_READING.md),
+  pre-registered in commit `8baef24` before the reader existed.
+- **Evidence:** [docs/evidence/QR-003/](evidence/QR-003/): every run's
+  metrics as JSON, plus the overlay, drawing and review sheet for the
+  hardest holdout run.
+
+### Summary
+
+| Stage | Result |
+|---|---|
+| Development, first run | 1/6 runs met all targets |
+| Holdout 1 (T03), first run | 2/3 (one arch read as a window at 60 px/m; the draft failed QA, so it was not silently accepted) |
+| After post-holdout fixes | 18/18 dev, T03 and exploratory runs (tuned on these; not unseen) |
+| **Holdout 2 (T04), first run** | **2/2**: 15/15 openings, 6/6 rooms, correct kinds and swings; wall offset 1.7–3.2 mm; area error ≤ 0.93% |
+| Regression tests | 47 tests pass (5 hardest reading cases included) |
+
+### Defects found and fixed (each now covered by a test or benchmark case)
+
+1. Gradient-histogram deskew could not see a 1.5° rotation (staircase
+   edges). Replaced by projection-profile search.
+2. Horizontal and vertical walls were grouped together when their pixel
+   positions coincided (north wall merged into west wall).
+3. Wall nibs shorter than the run-length kernel were dropped, merging
+   two openings into one false arch. Fixed with a second pass along known wall lines.
+4. Short walls (a 1.4 m wall made only of nibs) were lost. They are now
+   recovered from leftover wall pixels.
+5. The connectivity filter used a stricter reach than end snapping, so it dropped valid walls.
+6. Fixed 4 px gap bridging read a dashed arch as glazing. Bridging now
+   matches the pen width.
+7. **Even-sized morphology kernels shifted masks by 1–2 px** (OpenCV
+   anchor). Fixing this cut T01 wall offset from 5.0 to 1.15 mm.
+8. A fixed 2.5× pen-width cutoff deleted 100 mm walls under a thick pen.
+   The cutoff is now an Otsu split of the stroke-width histogram.
+9. plan3d crashed when a door had no interior side. It now reports this.
+
+### Not verified
+
+- **Any real drawing.** All test drawings come from one synthetic
+  renderer (see "What this does and does not show" in T006_PLAN_READING.md).
+- Text reading (room names, dimensions): there is no OCR.
+- Hollow/hatched walls, curved or diagonal walls, perspective photos, PDFs with vector content.

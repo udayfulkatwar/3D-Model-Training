@@ -4,20 +4,25 @@ Engineering workspace for ASTRA DWELL ("Experience Spaces Before They're Built."
 rehearsal, training and tooling for turning 2D architectural drawings into
 interactive 3D experiences.
 
-**Status (2026-10-19): `plan3d` v0.1 implemented and tested on the fictional
-training plan T01.** See [docs/PLAN3D.md](docs/PLAN3D.md).
+**Status (2026-10-19):** `plan3d` v0.1 builds checked 3D models from a
+plan file (T-001). The plan reader turns a floor-plan image into a draft
+plan file for human review (T-006). Both are tested on fictional training
+plans only. See [docs/PLAN3D.md](docs/PLAN3D.md).
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-.venv/bin/python -m plan3d build projects/t01/plan.json -o out/t01
-.venv/bin/python -m pytest -q
+.venv/bin/python -m plan3d build projects/t01/plan.json -o out/t01          # plan -> model
+.venv/bin/python -m plan3d read drawing.png -o drafts/x --known-width 12 --build   # drawing -> draft -> model
+.venv/bin/python -m pytest -q                                               # 47 tests
+.venv/bin/python -m bench.run                                               # reader benchmark
 ```
 
 | Path | Contents |
 |---|---|
 | `plan3d/` | Generator: schema, 2D layout, 3D solids, QA, reports |
-| `projects/t01/plan.json` | Training House T01 (fictional 12 × 10 m 3BHK) |
-| `tests/` | 38 tests, mostly proving each QA check fails on its defect |
+| `projects/t01…t04/` | Fictional training plans (T03, T04 = reader holdouts) |
+| `bench/` | Renders plans as test drawings and scores the reader |
+| `tests/` | 47 tests: QA checks fail on their defects; reader hard cases |
 | `viewer/` | three.js r186 viewer + headless-browser load check |
 | `docs/evidence/` | Saved QA evidence referenced by QUALITY_REPORTS.md |
 
@@ -41,7 +46,8 @@ Read these before starting any work. Each claim is tagged with its source
 
 | File | Purpose |
 |---|---|
-| [PLAN3D.md](docs/PLAN3D.md) | How to use the plan-to-3D generator |
+| [PLAN3D.md](docs/PLAN3D.md) | How to use the plan-to-3D generator and plan reader |
+| [T006_PLAN_READING.md](docs/T006_PLAN_READING.md) | Reader method, pre-registered targets and all results |
 | [COMPANY_CONTEXT.md](docs/COMPANY_CONTEXT.md) | Company, products, customers, constraints |
 | [ENGINEERING_STANDARDS.md](docs/ENGINEERING_STANDARDS.md) | Units, axes, naming, geometry rules, status labels |
 | [SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md) | What exists today and the target pipeline |
