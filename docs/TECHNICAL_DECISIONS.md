@@ -1,0 +1,56 @@
+# Technical Decisions
+
+ADR-style log. New decisions are appended; superseded ones are marked, never
+deleted. "Revisit if" states what evidence would change the decision.
+
+---
+
+### ADR-001 — Purpose of this repository
+- **Date:** 2026-10-19 · **Status:** Accepted
+- **Decision:** `3D-Model-Training` holds ASTRA DWELL engineering records and
+  rehearsal/tooling code for the 2D-to-3D pipeline. Client deliverables and
+  client drawings are not committed here unless the founder authorizes it.
+- **Why:** the repo was empty; the founder's standing rule is rehearse before
+  client work.
+
+### ADR-002 — Browser 3D stack: React Three Fiber + three.js
+- **Date:** pre-2026-10-19 (existing) · **Status:** Accepted, `[verified 2026-10-19]`
+- **Decision:** keep R3F 9.x / three.js (r186 in production) for web experiences.
+- **Why:** already shipping; runs on phones without installs; GLB + Draco +
+  KTX2 cover compression needs.
+- **Rejected:** streaming Unreal (Pixel Streaming) as the default web path,
+  because of per-user GPU cost and latency. It stays an option for premium
+  sales-gallery use.
+- **Revisit if:** target scenes exceed what mid-range phones can render at an
+  acceptable measured frame rate.
+
+### ADR-003 — Unreal Engine 5.8 for the sales-gallery flat picker and films
+- **Date:** 2026-10-19 · **Status:** Accepted `[reported]`
+- **Decision:** UE 5.8.x with Lumen, Movie Render Graph, a DataTable-driven
+  flat picker (pick volume per flat + CSV/JSON + UMG). Avoid experimental
+  features (Nanite Foliage, Water, Mesh Terrain) in client work.
+- **Constraint:** requires Windows + NVIDIA RTX operated by the founder; AI can
+  write but not run editor scripts.
+
+### ADR-004 — Twinmotion fed directly from Blender
+- **Date:** 2026-10-19 · **Status:** Accepted `[reported]`
+- **Decision:** use Twinmotion 2026.1 (stable, not Preview) for fast stills,
+  360s and phasing, importing FBX/GLB from Blender. No USD import or Blender
+  Direct Link exists, so material names must be consistent for substitution.
+
+### ADR-005 — Cloud GPU first, local hardware later
+- **Date:** 2026-10-19 · **Status:** Accepted `[reported]`
+- **Decision:** rent an AWS Mumbai GPU instance on demand. Buy a local RTX
+  workstation only when cloud spend stays above ~₹15k/month. Request GPU vCPU
+  quota days in advance (new accounts start at 0). Always stop instances; set
+  a budget alert.
+- **Note:** no spending is authorized yet. This records the plan only.
+
+### ADR-006 — Single source of truth for building geometry (proposed)
+- **Date:** 2026-10-19 · **Status:** Proposed, awaiting founder approval
+- **Decision:** introduce a versioned `plan.json` schema (walls, openings,
+  rooms, levels, provenance per value) from which every output (web GLB,
+  FBX, flats inventory) is generated, with scripted QA against the source.
+- **Why:** today each showcase is hand-built in code, so dimensions are not
+  traceable and nothing is reusable. This is roadmap item "code-based
+  building generator".

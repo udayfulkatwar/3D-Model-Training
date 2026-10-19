@@ -1,0 +1,66 @@
+# System Architecture
+
+## 1. Public website (dwell.astragrp.net) — `[verified 2026-10-19]`
+
+Determined by fetching the live site and its JavaScript bundles:
+
+| Aspect | Finding |
+|---|---|
+| Framework | Next.js, static export (Turbopack build; `/_next/static/chunks/*`) |
+| Hosting | GitHub Pages (server `GitHub.com`, Fastly CDN; DNS → `udayfulkatwar.github.io`) |
+| Domain registrar | Squarespace `[reported]` |
+| 3D runtime | three.js **r186** via React Three Fiber **9.8.1** |
+| Loaders present | GLTFLoader, DRACOLoader, KTX2Loader, PMREMGenerator; RectAreaLight used |
+| 3D code chunk | ~1.06 MB raw / ~287 KB gzip (code only, excluding model data) |
+| Pages checked | `/` (home) and `/experience` (Maquette 01, HOUSE H01) |
+
+**Source location unknown to this repo.** The site's source repository is not
+in this session's scope. Its location must be recorded here.
+
+## 2. Content pipelines today
+
+```
+ Drawing dimensions ──► parametric model in code (AI-assisted) ──► GLB ──► R3F viewer on website
+                                                         [reported: H01, Canopy]
+
+ project.json + OSM ──► Blender bpy (headless) ──► FBX / GLB / USD + flats.csv
+                              │                          │
+                              ▼                          ▼
+                       qa_check.py              Cycles CPU stills / 360 / orbit
+                     (26 sanity checks)                  │
+                              │                          ▼
+                              └──────────► unreal/import_*.py  (written, UNTESTED)
+                                            three.js flat picker (artifact prototype)
+                                 [reported: Township 01 v2, in udayfulkatwar/Astra-Management]
+```
+
+## 3. Target architecture (PLANNED)
+
+```
+            ┌────────────────────────────────────────────────┐
+ Source     │ PDF/DWG/DXF/image plans ─► plan.json (schema,  │
+ intake     │ confirmed vs inferred, provenance per value)   │
+            └───────────────────────┬────────────────────────┘
+                                    ▼
+ Geometry   Generator (Python + bpy, deterministic) ─► named, UV'd meshes
+                                    ▼
+ QA         Automated checks (geometry, areas, naming, plan conformance) ─► report
+                                    ▼
+ Outputs    ├─ Web GLB (Draco/meshopt + KTX2, LOD) ─► R3F experience on any phone
+            ├─ FBX/Datasmith ─► Twinmotion stills / films
+            ├─ FBX/USD ─► Unreal 5.8 (Lumen) flat picker, Movie Render Graph films,
+            │             Pixel Streaming (cloud) or packaged .exe (sales office)
+            └─ flats.csv/json ─► inventory data for both pickers
+```
+
+Design principles: one source of truth (plan.json) feeding every output;
+every step scripted and re-runnable; web first because it reaches the most
+buyers at the lowest cost per view.
+
+## 4. Infrastructure
+
+| Item | State |
+|---|---|
+| This repo | Docs only; no CI yet |
+| GPU compute | None owned. Plan: AWS Mumbai GPU instance on demand; buy a local RTX PC only once cloud spend stays above ~₹15k/month `[reported]` |
+| Unreal / Twinmotion | Free under US$1M revenue; need Windows + NVIDIA RTX, operated by the founder `[reported]` |
