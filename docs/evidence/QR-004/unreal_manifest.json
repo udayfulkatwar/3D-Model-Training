@@ -1,0 +1,144 @@
+{
+  "project": "T01",
+  "fbx": "T01.fbx",
+  "meshes": [
+    "SM_T01_L00_WALLS",
+    "SM_T01_L00_FLOOR_R01",
+    "SM_T01_L00_CEILING_R01",
+    "SM_T01_L00_FLOOR_R02",
+    "SM_T01_L00_CEILING_R02",
+    "SM_T01_L00_FLOOR_R03",
+    "SM_T01_L00_CEILING_R03",
+    "SM_T01_L00_FLOOR_R04",
+    "SM_T01_L00_CEILING_R04",
+    "SM_T01_L00_FLOOR_R05",
+    "SM_T01_L00_CEILING_R05",
+    "SM_T01_L00_FLOOR_R06",
+    "SM_T01_L00_CEILING_R06",
+    "SM_T01_L00_FLOOR_R07",
+    "SM_T01_L00_CEILING_R07",
+    "SM_T01_L00_FLOOR_R08",
+    "SM_T01_L00_CEILING_R08",
+    "SM_T01_L00_GLASS_O02",
+    "SM_T01_L00_GLASS_O03",
+    "SM_T01_L00_GLASS_O04",
+    "SM_T01_L00_GLASS_O05",
+    "SM_T01_L00_GLASS_O06",
+    "SM_T01_L00_GLASS_O07",
+    "SM_T01_L00_GLASS_O08"
+  ],
+  "units": "FBX stores centimetres (UnitScaleFactor 1.0, verified by Q17); 1 m = 100 Unreal units",
+  "axes": "Plan +X (east) -> Unreal +X; plan +Y (north) -> Unreal -Y (expected; verify with NorthMarker)",
+  "pivot": "All meshes share the plan origin (outer south-west corner); spawn every actor at 0,0,0",
+  "player_start_cm": [
+    590.0,
+    -258.62,
+    100.0
+  ],
+  "north_marker_cm": [
+    0.0,
+    -100.0,
+    0.0
+  ],
+  "fbx_header": {
+    "UpAxis": 1,
+    "UpAxisSign": 1,
+    "FrontAxis": 2,
+    "FrontAxisSign": 1,
+    "CoordAxis": 0,
+    "CoordAxisSign": 1,
+    "UnitScaleFactor": 0.9999999776482582,
+    "OriginalUnitScaleFactor": 0.9999999776482582
+  },
+  "rooms": [
+    {
+      "RoomID": "R01",
+      "Name": "Living",
+      "Use": "living",
+      "Level": "L00",
+      "SeedUnrealCm": [
+        590.0,
+        -258.62,
+        0.0
+      ]
+    },
+    {
+      "RoomID": "R02",
+      "Name": "Bedroom 3",
+      "Use": "bedroom",
+      "Level": "L00",
+      "SeedUnrealCm": [
+        178.62,
+        -258.62,
+        0.0
+      ]
+    },
+    {
+      "RoomID": "R03",
+      "Name": "Kitchen",
+      "Use": "kitchen",
+      "Level": "L00",
+      "SeedUnrealCm": [
+        1011.38,
+        -258.62,
+        0.0
+      ]
+    },
+    {
+      "RoomID": "R04",
+      "Name": "Bedroom 1 (master)",
+      "Use": "bedroom",
+      "Level": "L00",
+      "SeedUnrealCm": [
+        238.62,
+        -741.38,
+        0.0
+      ]
+    },
+    {
+      "RoomID": "R05",
+      "Name": "Toilet 1",
+      "Use": "toilet",
+      "Level": "L00",
+      "SeedUnrealCm": [
+        550.0,
+        -861.38,
+        0.0
+      ]
+    },
+    {
+      "RoomID": "R06",
+      "Name": "Toilet 2",
+      "Use": "toilet",
+      "Level": "L00",
+      "SeedUnrealCm": [
+        550.0,
+        -620.0,
+        0.0
+      ]
+    },
+    {
+      "RoomID": "R07",
+      "Name": "Dining",
+      "Use": "dining",
+      "Level": "L00",
+      "SeedUnrealCm": [
+        765.0,
+        -741.38,
+        0.0
+      ]
+    },
+    {
+      "RoomID": "R08",
+      "Name": "Bedroom 2",
+      "Use": "bedroom",
+      "Level": "L00",
+      "SeedUnrealCm": [
+        1036.38,
+        -741.38,
+        0.0
+      ]
+    }
+  ],
+  "status": "UNTESTED in Unreal Engine: checked by Blender re-import only"
+}

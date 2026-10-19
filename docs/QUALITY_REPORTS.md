@@ -117,9 +117,48 @@ Carpet area 105.862 m² (1,139.5 sq ft) on a 120 m² built-up footprint.
    The cutoff is now an Otsu split of the stroke-width histogram.
 9. plan3d crashed when a door had no interior side. It now reports this.
 
-### Not verified
+### Not verified (QR-003)
 
 - **Any real drawing.** All test drawings come from one synthetic
   renderer (see "What this does and does not show" in T006_PLAN_READING.md).
 - Text reading (room names, dimensions): there is no OCR.
 - Hollow/hatched walls, curved or diagonal walls, perspective photos, PDFs with vector content.
+
+---
+
+## QR-004: FBX export for Unreal (T-009)
+
+- **Date:** 2026-10-19 · **Scope:** training repo only
+- **Environment:** Blender 5.2.2 LTS Python module (bpy) in a separate
+  worker process; ufbx 0.0.5 as an independent reader.
+- **Evidence:** [docs/evidence/QR-004/](evidence/QR-004/)
+
+### Results
+
+| Check | Result |
+|---|---|
+| T01–T04 build with `--fbx` | All four: 0 FAIL, Q17 passes |
+| Blender re-import (Q17) | 24/24 meshes on T01; names, triangle counts, UVs, materials equal; sizes within 0.1 mm |
+| Units in the FBX header | UnitScaleFactor 1.000000 (cm); coordinates stored at 100× metres |
+| Independent read (ufbx) | 24/24 meshes, unit 0.01 m, bounds exact to 0.000 cm, triangles equal, UVs present |
+| North direction in a left-handed Z-up conversion (ufbx) | Plan north arrives at −Y (Bedroom 1: y −977 to −506 cm), as the Unreal script expects |
+| Tests | 55 pass, 8 of them FBX tests (including mutation tests that a metres-scaled FBX or a missing mesh fails Q17) |
+
+### Defects found during development
+
+1. **Wrong unit assumption, caught before release.** Blender's
+   "FBX All" scaling writes metres with UnitScaleFactor 100, not
+   centimetres. Whether Unreal sizes that correctly depends on an import
+   option. The export now stores centimetres outright, and Q17 fails
+   any other unit.
+2. Blender writes the unit factor as float32 (0.99999998). The check
+   uses a 1e-6 tolerance instead of exact equality.
+
+### Not verified
+
+- **Nothing has been imported into Unreal Engine or Twinmotion.** The
+  Unreal script is written against the documented API but has never run.
+  Axis mapping, collision setup, PlayerStart placement and material
+  import all need the founder's first-import check (PLAN3D.md).
+- ufbx's left-handed Z-up conversion models Unreal's axes; it is not
+  Unreal's importer.

@@ -59,6 +59,17 @@ in this repo until the founder adopts it themselves.
 | One floor per image, first PDF page only | Crop multi-plan sheets before reading |
 | Door swing is the leaf side only | The hinge side is not exported |
 
+## FBX export v0.1 (T-009)
+
+| Limit | Effect / workaround |
+|---|---|
+| Never imported into Unreal or Twinmotion | First import must be checked by the founder (PLAN3D.md checklist) |
+| Needs Blender's Python module (~400 MB, GPL-3.0) | Optional install; runs as a separate process (ADR-010) |
+| Flat colour materials only | No textures; replace with Unreal/Fab materials by name (`M_Wall` etc.) |
+| Collision = complex-as-simple on every mesh | Correct for walking through doors; heavier than simple collision for big projects |
+| No lightmap UVs exported | The import script lets Unreal generate them; not needed with Lumen |
+| FBX not byte-identical between runs | The file holds a creation timestamp; geometry is identical |
+
 ## Unverified items
 
 - Website source location, build and deployment process (G-01).

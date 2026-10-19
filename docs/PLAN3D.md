@@ -37,6 +37,33 @@ cd viewer && npm install && node check.mjs out/t01                    # writes o
 - Accuracy on synthetic test drawings: [T006_PLAN_READING.md](T006_PLAN_READING.md#results).
   Not yet tested on real drawings.
 
+## FBX for Unreal Engine / Twinmotion (T-009)
+
+```bash
+.venv/bin/pip install -r requirements-fbx.txt          # adds Blender's Python module (~400 MB)
+.venv/bin/python -m plan3d build projects/t01/plan.json -o out/t01 --fbx
+```
+
+Writes `out/t01/unreal/`:
+
+| File | What it is |
+|---|---|
+| `T01.fbx` | One static mesh per part (`SM_T01_L00_WALLS`, `…_FLOOR_R01`, …), materials `M_Wall`, `M_Floor`, `M_Ceiling`, `M_Glass`, UVs on every face, flat shading. Stored in **centimetres** (UnitScaleFactor 1), so 1 m = 100 Unreal units without any import conversion. All pivots at the plan origin |
+| `unreal_manifest.json` | Asset names, units, axis mapping, PlayerStart and room positions in Unreal cm |
+| `rooms.csv` | DataTable-ready room schedule (make struct `S_RoomData`: RoomID, Name, Use, Level, AreaM2, AreaSqft) |
+| `import_plan3d.py` | Unreal Editor Python script: imports the FBX, sets walk-through collision, spawns every mesh at 0,0,0, a PlayerStart in the living room, a north marker and basic sun/sky. **Not yet run in Unreal** |
+
+**First import in Unreal (founder, Windows + RTX):**
+1. Enable the *Python Editor Script Plugin*, open an empty level.
+2. Output Log → Python: `py "C:/…/unreal/import_plan3d.py"`.
+3. Check and report back:
+   - T01 measures 1200 × 1000 uu;
+   - the `NorthMarker` text is on the building's north side (expected at Unreal −Y);
+   - Play: you can walk through doors but not walls or windows.
+
+Q17 checks every export: Blender re-imports the FBX, and names, triangle
+counts, sizes (±0.1 mm), UVs, materials and centimetre storage must match.
+
 ## How a plan is described
 
 | Section | Contents |

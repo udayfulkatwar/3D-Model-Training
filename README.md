@@ -6,15 +6,18 @@ interactive 3D experiences.
 
 **Status (2026-10-19):** `plan3d` v0.1 builds checked 3D models from a
 plan file (T-001). The plan reader turns a floor-plan image into a draft
-plan file for human review (T-006). Both are tested on fictional training
+plan file for human review (T-006). `--fbx` adds an FBX + Unreal import
+bundle (T-009, not yet tried in Unreal). All tested on fictional training
 plans only. See [docs/PLAN3D.md](docs/PLAN3D.md).
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python -m plan3d build projects/t01/plan.json -o out/t01          # plan -> model
 .venv/bin/python -m plan3d read drawing.png -o drafts/x --known-width 12 --build   # drawing -> draft -> model
-.venv/bin/python -m pytest -q                                               # 47 tests
+.venv/bin/python -m pytest -q                                               # 55 tests
 .venv/bin/python -m bench.run                                               # reader benchmark
+.venv/bin/pip install -r requirements-fbx.txt                               # optional: Blender for FBX
+.venv/bin/python -m plan3d build projects/t01/plan.json -o out/t01 --fbx    # + Unreal bundle in out/t01/unreal
 ```
 
 | Path | Contents |
@@ -22,7 +25,8 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 | `plan3d/` | Generator: schema, 2D layout, 3D solids, QA, reports |
 | `projects/t01…t04/` | Fictional training plans (T03, T04 = reader holdouts) |
 | `bench/` | Renders plans as test drawings and scores the reader |
-| `tests/` | 47 tests: QA checks fail on their defects; reader hard cases |
+| `tests/` | 55 tests: QA checks fail on their defects; reader hard cases; FBX |
+| `unreal/` | Unreal Editor import script (untested in Unreal) |
 | `viewer/` | three.js r186 viewer + headless-browser load check |
 | `docs/evidence/` | Saved QA evidence referenced by QUALITY_REPORTS.md |
 

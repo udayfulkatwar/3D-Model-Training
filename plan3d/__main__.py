@@ -14,6 +14,7 @@ def main(argv: list[str] | None = None) -> int:
     b = sub.add_parser("build", help="validate a plan, generate the model and reports")
     b.add_argument("plan")
     b.add_argument("-o", "--out", required=True)
+    b.add_argument("--fbx", action="store_true", help="also export FBX + Unreal import bundle (needs bpy)")
     r = sub.add_parser("read", help="read a floor-plan image into a draft plan.json for review")
     r.add_argument("image")
     r.add_argument("-o", "--out", required=True)
@@ -21,6 +22,7 @@ def main(argv: list[str] | None = None) -> int:
     scale.add_argument("--known-width", type=float, help="overall external east-west length in metres")
     scale.add_argument("--px-per-m", type=float)
     r.add_argument("--build", action="store_true", help="also build the draft with plan3d")
+    r.add_argument("--fbx", action="store_true", help="with --build, also export FBX for Unreal")
     args = ap.parse_args(argv)
 
     if args.cmd == "read":
@@ -34,7 +36,7 @@ def main(argv: list[str] | None = None) -> int:
         args.plan = f"{args.out}/plan.json"
         args.out = f"{args.out}/build"
 
-    result = build(args.plan, args.out)
+    result = build(args.plan, args.out, fbx=args.fbx)
     c = result.report.counts()
     for check in result.report.checks:
         print(f"{check.id} {check.status:4} {check.name}")

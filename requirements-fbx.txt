@@ -1,0 +1,5 @@
+# Optional: FBX export for Unreal/Twinmotion (python -m plan3d build ... --fbx).
+# Blender's Python module is GPL-3.0; plan3d only runs it as a separate process
+# (plan3d/fbx_worker.py). See ADR-010 before distributing outside the company.
+-r requirements.txt
+bpy==5.2.2

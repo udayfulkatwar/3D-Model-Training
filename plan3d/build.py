@@ -22,7 +22,7 @@ class BuildResult:
         return not self.report.failed
 
 
-def build(plan_path: str | Path, out_dir: str | Path) -> BuildResult:
+def build(plan_path: str | Path, out_dir: str | Path, fbx: bool = False) -> BuildResult:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     report = qa.Report()
@@ -58,6 +58,14 @@ def build(plan_path: str | Path, out_dir: str | Path) -> BuildResult:
     glb.write_bytes(scene.export(file_type="glb"))
     qa.check_glb_roundtrip(report, glb, parts)
     result.outputs += [glb, reports.write_manifest(plan, layouts, parts, out_dir, __version__)]
+    if fbx:
+        from . import export_fbx
+        if export_fbx.bpy_available():
+            result.outputs += export_fbx.export(plan, parts, layouts, out_dir, report)
+        else:
+            report.new("Q17", "FBX re-import matches what was built").add(
+                "FAIL", "FBX requested but Blender's Python module is not installed "
+                        "(pip install -r requirements-fbx.txt)")
     return _finish(result, plan, layouts)
 
 

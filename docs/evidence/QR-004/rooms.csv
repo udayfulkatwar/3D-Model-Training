@@ -1,0 +1,9 @@
+---,RoomID,Name,Use,Level,AreaM2,AreaSqft
+R01,R01,Living,living,L00,23.021,247.8
+R02,R02,Bedroom 3,bedroom,L00,14.668,157.9
+R03,R03,Kitchen,kitchen,L00,15.61,168.0
+R04,R04,Bedroom 1 (master),bedroom,L00,20.323,218.8
+R05,R05,Toilet 1,toilet,L00,3.897,41.9
+R06,R06,Toilet 2,toilet,L00,3.85,41.4
+R07,R07,Dining,dining,L00,11.239,121.0
+R08,R08,Bedroom 2,bedroom,L00,13.254,142.7

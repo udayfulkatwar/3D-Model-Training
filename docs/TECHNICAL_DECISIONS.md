@@ -67,6 +67,25 @@ deleted. "Revisit if" states what evidence would change the decision.
   traceable and nothing is reusable. This is roadmap item "code-based
   building generator".
 
+### ADR-010 — FBX via an isolated Blender worker, stored in centimetres
+- **Date:** 2026-10-19 · **Status:** Accepted
+- **Decision:** plan3d writes exact meshes to files, and a separate
+  process (`plan3d/fbx_worker.py`, the only code importing bpy) builds
+  and exports the FBX in centimetres (UnitScaleFactor 1) with named
+  `SM_`/`M_` assets and shared plan-origin pivots. A second Blender process
+  re-imports it for Q17.
+- **Why:** Blender's FBX exporter is the most widely used route into
+  Unreal/Twinmotion. Centimetres avoid depending on Unreal's unit-conversion
+  option (L-023). The process boundary keeps plan3d itself free of
+  GPL-3.0 code (L-025).
+- **Legal note (needs a human):** internal use is fine. Before
+  distributing plan3d or the worker outside the company, get legal review
+  of GPL obligations (AD-50 → lawyer).
+- **Rejected:** Autodesk FBX SDK (proprietary licence and install); USD
+  as the only output (Twinmotion cannot import USD).
+- **Revisit if:** the founder's first Unreal import shows a size, axis or
+  material problem.
+
 ### ADR-009 — Plan reader: classical image processing, human review, no AGPL
 - **Date:** 2026-10-19 · **Status:** Accepted
 - **Decision:** read plans with deterministic OpenCV steps (stroke-width
