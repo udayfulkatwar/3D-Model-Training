@@ -6,14 +6,19 @@ reproduced here, mark it `[verified]` with a link to the evidence.
 
 | ID | Date | Area | Lesson | Corrective rule | Source / status |
 |---|---|---|---|---|---|
-| L-001 | 2026-10-19 | Export | Meshes exported without UVs broke textures downstream | Every face gets a UV map; QA checks it | Township 01 v1 audit `[reported]` |
-| L-002 | 2026-10-19 | Geometry | Coplanar overlapping faces render black in Cycles and flicker in real time | Offset ≥ 0.1 m or split; check in QA | `[reported]` |
+| L-001 | 2026-10-19 | Export | Meshes exported without UVs broke textures downstream | Every face gets a UV map; QA checks it | Township 01 v1 audit `[reported]`; check Q15 + GLB round trip `[verified 2026-10-19]` |
+| L-002 | 2026-10-19 | Geometry | Coplanar overlapping faces render black in Cycles and flicker in real time | Offset ≥ 0.1 m or split; check in QA | `[reported]`; detection by Q13 `[verified 2026-10-19]` |
 | L-003 | 2026-10-19 | Geometry | Sunken features hidden under an unbroken ground plane | Cut holes in ground for pools/ramps | `[reported]` |
-| L-004 | 2026-10-19 | GIS | OSM polygons triangulate into collinear slivers (zero-area faces in GLB) | Triangulate ourselves; delete faces < 1e-5 m²; simplify roads 0.05 m | `[reported]` |
-| L-005 | 2026-10-19 | Plan fidelity | Stair windows were placed over lift shafts | Cross-check every element against the plan drawing by overlay | Township 01 v2 review `[reported]` |
-| L-006 | 2026-10-19 | Areas | Typed-in areas can disagree with the model | Compute areas from geometry only | `[reported]` |
+| L-004 | 2026-10-19 | GIS | OSM polygons triangulate into collinear slivers (zero-area faces in GLB) | Triangulate ourselves; delete faces < 1e-5 m²; simplify roads 0.05 m | Reproduced in plan3d with grid-snapped walls `[verified 2026-10-19]` |
+| L-005 | 2026-10-19 | Plan fidelity | Stair windows were placed over lift shafts | Cross-check every element against the plan drawing by overlay | Township 01 v2 review `[reported]`; confirmed by L-016 |
+| L-006 | 2026-10-19 | Areas | Typed-in areas can disagree with the model | Compute areas from geometry only | plan3d derives rooms from walls; Q08/Q14 `[verified 2026-10-19]` |
 | L-007 | 2026-10-19 | Unreal | Blender +Y (north) may arrive as −Y | Check orientation on first import with a north marker | `[reported]` |
 | L-008 | 2026-10-19 | Viewer | Flat pick volumes sit inside walls and are hidden | Draw as overlay (depthTest off, low opacity), dim the rest | `[reported]` |
 | L-009 | 2026-10-19 | Environment | Terrain plane too small reads as sea on the horizon | Extend land to ≈ ±2.5 km | `[reported]` |
 | L-010 | 2026-10-19 | Licensing | Practice models were built from third-party drawings without permission | Only owned designs become showpieces; log permission per drawing | `[reported]` |
 | L-011 | 2026-10-19 | Cloud | New AWS accounts have 0 GPU vCPU quota | Request quota days before need | `[reported]` |
+| L-012 | 2026-10-19 | Geometry | Extending walls by half the other wall's thickness closes joints only at 90°; at 135° it left a spike and notches | Mitred joints from face-line intersections; test joints at several angles | `[verified 2026-10-19]` QR-002 |
+| L-013 | 2026-10-19 | Formats | glTF stores positions as float32: the GLB volume differed from the exact solid by 2.2e-5 m³ | Measure from the float64 model; test GLBs at float32 tolerance; keep origin near the site | `[verified 2026-10-19]` QR-002 |
+| L-014 | 2026-10-19 | Testing | A plan authored together with its register passes by construction. A pass proves nothing until each check has been seen failing | Mutation tests for every check; independent hand arithmetic for areas and volumes | `[verified 2026-10-19]` QR-002 |
+| L-015 | 2026-10-19 | Testing | A failing test was a test-helper bug (removing a door left an empty schema list), not a product bug | Read the failure before "fixing" code | `[verified 2026-10-19]` |
+| L-016 | 2026-10-19 | Review | Reviewing the generated plan drawing caught doors swinging out of their rooms; no automated check had flagged it | Always look at the drawing and 3D views (L-005 confirmed); then automate (`opens_into` check) | `[verified 2026-10-19]` |

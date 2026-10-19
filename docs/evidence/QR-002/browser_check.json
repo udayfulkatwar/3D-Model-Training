@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-19T18:28:48.048Z",
+  "browser": "Chromium 141.0.7390.37",
+  "renderer": "SwiftShader (software)",
+  "views": {
+    "dollhouse": {
+      "load_ms_software": 584,
+      "screenshot": "out/t01/browser_dollhouse.png"
+    },
+    "exterior": {
+      "load_ms_software": 422,
+      "screenshot": "out/t01/browser_exterior.png"
+    }
+  },
+  "three_revision": "186",
+  "meshes_loaded": 24,
+  "meshes_built": 24,
+  "problems": [],
+  "pass": true
+}

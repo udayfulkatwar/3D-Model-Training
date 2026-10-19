@@ -4,7 +4,22 @@ Engineering workspace for ASTRA DWELL ("Experience Spaces Before They're Built."
 rehearsal, training and tooling for turning 2D architectural drawings into
 interactive 3D experiences.
 
-**Status (2026-10-19): initialized. Documentation baseline only; no code yet.**
+**Status (2026-10-19): `plan3d` v0.1 implemented and tested on the fictional
+training plan T01.** See [docs/PLAN3D.md](docs/PLAN3D.md).
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/python -m plan3d build projects/t01/plan.json -o out/t01
+.venv/bin/python -m pytest -q
+```
+
+| Path | Contents |
+|---|---|
+| `plan3d/` | Generator: schema, 2D layout, 3D solids, QA, reports |
+| `projects/t01/plan.json` | Training House T01 (fictional 12 × 10 m 3BHK) |
+| `tests/` | 38 tests, mostly proving each QA check fails on its defect |
+| `viewer/` | three.js r186 viewer + headless-browser load check |
+| `docs/evidence/` | Saved QA evidence referenced by QUALITY_REPORTS.md |
 
 Founder rules in force:
 
@@ -26,6 +41,7 @@ Read these before starting any work. Each claim is tagged with its source
 
 | File | Purpose |
 |---|---|
+| [PLAN3D.md](docs/PLAN3D.md) | How to use the plan-to-3D generator |
 | [COMPANY_CONTEXT.md](docs/COMPANY_CONTEXT.md) | Company, products, customers, constraints |
 | [ENGINEERING_STANDARDS.md](docs/ENGINEERING_STANDARDS.md) | Units, axes, naming, geometry rules, status labels |
 | [SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md) | What exists today and the target pipeline |

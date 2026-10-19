@@ -9,7 +9,7 @@ Status of each capability: `DEMONSTRATED` (exists in a showcase build),
 
 | # | Product | Status | Evidence / gap |
 |---|---|---|---|
-| 1 | Accurate 2D-to-3D conversion | PROTOTYPE | Done per project in code; no reusable plan schema, generator or plan-conformance check. **Largest gap; it drives every other product.** |
+| 1 | Accurate 2D-to-3D conversion | PROTOTYPE | Training: `plan3d` v0.1 (schema, generator, 16 QA checks; QR-002). Gaps: plan input is hand-typed, single level, no FBX. Production showcases are still built per project |
 | 2 | Interactive real-time walkthroughs (web) | DEMONSTRATED | H01 / Maquette 01 on website (R3F, three.js r186) |
 | 3 | Realistic exterior & interior visualization | PROTOTYPE | Cycles CPU stills from Blender; Twinmotion/Unreal pipeline not yet run |
 | 4 | Furniture, materials, colour customization | DEMONSTRATED | H01 material/finish switching `[reported]` |

@@ -1,0 +1,11 @@
+{
+  "name": "plan3d-viewer-check",
+  "private": true,
+  "description": "Loads plan3d GLB output in three.js inside headless Chromium and records evidence",
+  "type": "module",
+  "scripts": { "check": "node check.mjs" },
+  "devDependencies": {
+    "playwright-core": "1.55.0",
+    "three": "0.186.0"
+  }
+}

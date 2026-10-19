@@ -58,11 +58,24 @@ deleted. "Revisit if" states what evidence would change the decision.
   a budget alert.
 - **Note:** no spending is authorized yet. This records the plan only.
 
-### ADR-006 — Single source of truth for building geometry (proposed)
-- **Date:** 2026-10-19 · **Status:** Proposed, awaiting founder approval
+### ADR-006 — Single source of truth for building geometry
+- **Date:** 2026-10-19 · **Status:** Accepted (founder authorized T-001); implemented as plan3d v0.1
 - **Decision:** introduce a versioned `plan.json` schema (walls, openings,
   rooms, levels, provenance per value) from which every output (web GLB,
   FBX, flats inventory) is generated, with scripted QA against the source.
 - **Why:** today each showcase is hand-built in code, so dimensions are not
   traceable and nothing is reusable. This is roadmap item "code-based
   building generator".
+
+### ADR-008 — plan3d core: Python + shapely + manifold3d, Blender optional
+- **Date:** 2026-10-19 · **Status:** Accepted
+- **Decision:** 2D layout with shapely (GEOS); 3D solids with manifold3d
+  (exact, guaranteed-manifold booleans); GLB via trimesh. Rooms are derived
+  from walls (seed point), not drawn. Blender is not a dependency of the
+  core; FBX export for Unreal/Twinmotion will be an optional bpy step.
+- **Why:** everything installs with pip in seconds, runs headless,
+  is deterministic (byte-identical GLB), and is testable in CI. Blender adds
+  a 300 MB+ dependency for a format the web path doesn't need.
+- **Rejected:** hand-built meshes per wall. They produce coplanar overlaps
+  at joints (L-002), and corner handling gets ad hoc.
+- **Revisit if:** curved walls, complex roofs or FBX become the main need.

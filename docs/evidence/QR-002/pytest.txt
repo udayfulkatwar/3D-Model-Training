@@ -1,0 +1,39 @@
+38 passed in 8.90s
+tests/test_checks_catch_defects.py::test_drawing_dimension_mismatch_is_caught
+tests/test_checks_catch_defects.py::test_length_tolerance_boundary[0.004-True]
+tests/test_checks_catch_defects.py::test_length_tolerance_boundary[-0.004-True]
+tests/test_checks_catch_defects.py::test_length_tolerance_boundary[0.006-False]
+tests/test_checks_catch_defects.py::test_length_tolerance_boundary[-0.006-False]
+tests/test_checks_catch_defects.py::test_area_tolerance_is_relative
+tests/test_checks_catch_defects.py::test_parameter_disagreeing_with_register_is_caught
+tests/test_checks_catch_defects.py::test_geometry_built_on_open_question_is_rejected
+tests/test_checks_catch_defects.py::test_gap_in_envelope_blocks_the_build
+tests/test_checks_catch_defects.py::test_missing_partition_merges_rooms
+tests/test_checks_catch_defects.py::test_opening_beyond_wall_end
+tests/test_checks_catch_defects.py::test_opening_cutting_a_crossing_wall
+tests/test_checks_catch_defects.py::test_overlapping_openings
+tests/test_checks_catch_defects.py::test_window_above_ceiling
+tests/test_checks_catch_defects.py::test_door_swing_into_unrelated_room
+tests/test_checks_catch_defects.py::test_room_without_door_is_unreachable
+tests/test_checks_catch_defects.py::test_house_without_entrance
+tests/test_checks_catch_defects.py::test_habitable_room_without_window_warns
+tests/test_checks_catch_defects.py::test_seed_inside_wall
+tests/test_checks_catch_defects.py::test_dangling_reference
+tests/test_checks_catch_defects.py::test_schema_rejects_element_without_provenance
+tests/test_checks_catch_defects.py::test_inferred_value_must_explain_itself
+tests/test_checks_catch_defects.py::test_multi_level_plan_is_flagged_as_unverified
+tests/test_geometry.py::test_coplanar_same_facing_overlap_fails
+tests/test_geometry.py::test_back_to_back_contact_is_only_info
+tests/test_geometry.py::test_degenerate_face_is_caught
+tests/test_geometry.py::test_wall_joints_are_exact_at_any_angle[triangle, 60 deg-pts0-1]
+tests/test_geometry.py::test_wall_joints_are_exact_at_any_angle[chamfer, 90/135 deg-pts1-2]
+tests/test_geometry.py::test_wall_joints_are_exact_at_any_angle[hexagon, 120 deg-pts2-3]
+tests/test_geometry.py::test_wall_joints_are_exact_at_any_angle[L-shape, reflex corner-pts3-4]
+tests/test_geometry.py::test_thick_wall_at_shallow_tee_is_flagged
+tests/test_geometry.py::test_square_foot_conversion_is_exact
+tests/test_t01.py::test_t01_builds_without_failures
+tests/test_t01.py::test_room_areas_match_hand_arithmetic
+tests/test_t01.py::test_wall_volume_matches_analytic_value
+tests/test_t01.py::test_glb_axes_follow_gltf_convention
+tests/test_t01.py::test_every_part_is_named_and_present
+tests/test_t01.py::test_build_is_deterministic

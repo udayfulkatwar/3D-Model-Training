@@ -1,0 +1,81 @@
+# plan3d: traceable plan-to-3D generator (v0.1, training)
+
+`plan3d` turns one `plan.json` (walls, openings, rooms and a register of the
+drawing's dimensions) into a web-ready GLB, a plan drawing, a room schedule
+and QA reports. Every number in the model must trace to a register entry,
+and the generated geometry is checked against the register automatically.
+
+Training tool only (ADR-007). Visualization geometry only. Not for
+construction, and not a building-code compliance check.
+
+## Quick start
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/python -m plan3d build projects/t01/plan.json -o out/t01   # exit 1 on any FAIL
+.venv/bin/python -m pytest -q                                        # 38 tests, ~10 s
+
+# Optional: load the GLB with three.js r186 in headless Chromium
+cd viewer && npm install && node check.mjs out/t01                    # writes out/t01/browser_*.png
+```
+
+## How a plan is described
+
+| Section | Contents |
+|---|---|
+| `sources` | The drawings used (title, revision, date, scale) |
+| `dimensions` | The register. Each value is `CONFIRMED` (stated on a drawing), `INFERRED` (assumed; a `note` saying why is mandatory) or `OPEN` (unknown; no geometry may use it). Each has a `check` that the QA evaluates |
+| `levels`, `wall_types` | Floor level, ceiling height, slab and wall thicknesses |
+| `walls` | Centre-line start/end points. Joints are mitred automatically at any angle |
+| `openings` | Doors, windows and arches by position along a wall, width, height and sill; doors may state `opens_into` |
+| `rooms` | Name, use and a seed point. The room *is* the wall-enclosed region around the seed, so shape and area always come from the walls |
+
+Every wall, opening, room, level and wall type carries `prov`: the register
+entries that justify it.
+
+**Dimension check kinds:** `param` (a typed value must equal the register),
+`overall` (outer extents), `room_clear` (room clear width/depth, bounding
+box), `room_area`, `none`.
+
+## QA checks
+
+| ID | Check | Catches |
+|---|---|---|
+| Q01 | Schema valid | Missing provenance, INFERRED without a reason, bad types |
+| Q02 | Ids and references | Duplicates, dangling references |
+| Q03 | Provenance | Geometry built on an `OPEN` item; lists all `INFERRED` inputs |
+| Q04 | Wall sanity | Zero/short walls, overlapping walls, thick walls poking through at shallow tees |
+| Q05 | Envelope closed | Gaps in the outer walls, empty levels; warns on multi-level plans (unverified) |
+| Q06 | Rooms | Seed in a wall, two rooms in one space (missing partition), unassigned spaces |
+| Q07 | Openings | Beyond the wall, cutting a crossing wall, overlapping, above ceiling, wrong door swing |
+| Q08 | Plan conformance | Geometry disagreeing with the dimension register beyond tolerance |
+| Q09 | Circulation | Rooms unreachable through doors, no entrance |
+| Q10 | Daylight sanity | Habitable rooms without an external window, internal toilets (not a code check) |
+| Q11 | Solids | Non-watertight, empty or inverted meshes |
+| Q12 | Degenerate faces | Sliver triangles (< 1e-5 m²) |
+| Q13 | Coplanar overlaps | Same-facing overlapping faces between parts (z-fighting) |
+| Q14 | Floor areas | 3D floor area differing from the 2D room area |
+| Q15 | UVs | Any exported mesh without UVs |
+| Q16 | GLB round trip | Names, triangle counts, bounds or UVs lost on export |
+
+If Q04–Q07 fail, no model is exported.
+
+## Outputs (`-o <dir>`)
+
+| File | What it is |
+|---|---|
+| `model.glb` | glTF 2.0, metres, Y-up. Plan +X (east) → +X, plan +Y (north) → −Z. Named nodes: `L00_WALLS`, `L00_FLOOR_<room>`, `L00_CEILING_<room>`, `L00_GLASS_<opening>`; materials `wall`, `floor`, `ceiling`, `glass` |
+| `plan_<level>.png` | Generated plan with clear sizes and areas, for overlaying on the source drawing |
+| `rooms.csv` | Room schedule (m, m², sq ft) and which inferred inputs each room depends on |
+| `uncertainty.md` | Every INFERRED value and OPEN question, and what uses it |
+| `qa_report.md/json` | All checks with details |
+| `manifest.json` | Plan hash, axes, per-mesh triangles/volume/bounds, rooms |
+
+Builds are deterministic: the same plan gives a byte-identical GLB.
+
+## Known limits (v0.1)
+
+See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md#plan3d-v01). In short:
+single level only; straight walls; no door leaves, frames, stairs, roof
+parapet or furniture; one material per element type; plan input is typed
+by hand (no PDF/CAD reading yet).

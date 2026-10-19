@@ -1,0 +1,9 @@
+[project]
+name = "plan3d"
+version = "0.1.0"
+description = "ASTRA DWELL training: traceable 2D-plan to 3D-model generator with automated QA"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = [".", "tests"]
+testpaths = ["tests"]

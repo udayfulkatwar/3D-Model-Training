@@ -1,7 +1,21 @@
 # Drawing Assumptions Register
 
-One section per drawing set. **No drawings have been received in this
+One section per drawing set. **No real drawings have been received in this
 repository yet.**
+
+For plans built with plan3d, the register lives in the plan's
+`dimensions` section, and `uncertainty.md` is generated from it on every
+build. Sections here summarize and link to it.
+
+## T01: Training House T01 (S-01 rev A, fictional, 2026-10-19)
+
+- Nature: invented layout for rehearsal; same 12 × 10 m envelope as HOUSE H01,
+  but H01's drawings were not used. No permission issues.
+- Register: [projects/t01/plan.json](../projects/t01/plan.json) → `dimensions`
+  (38 CONFIRMED, 5 INFERRED, 2 OPEN).
+- INFERRED: D-011 partition 115 mm; D-020 ceiling 3.0 m; D-021/D-022 slab
+  build-ups 150 mm; D-050 opening positions scaled (±25 mm).
+- OPEN: D-090 plinth height; D-091 roof parapet and finish. Neither is modelled.
 
 Rules:
 - Record what the drawing states (`CONFIRMED`) separately from what we derived

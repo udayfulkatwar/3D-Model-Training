@@ -1,0 +1,1198 @@
+{
+ "schema_version": "0.1",
+ "project": {
+  "id": "T01",
+  "name": "Training House T01",
+  "nature": "fictional training plan",
+  "owner": "ASTRA DWELL training workspace (3D-Model-Training)",
+  "permission": "Original fictional layout authored for rehearsal; not a client or ASTRA DWELL production design",
+  "units": "m",
+  "datum": "Origin at the south-west outer corner of the external walls; z = 0 at finished floor level",
+  "notes": "Same 12 x 10 m envelope as HOUSE H01 but an invented layout: H01's drawings were not used. Geometry and dimension register were authored together, so conformance passes by construction; tests mutate the plan to prove the checks catch discrepancies."
+ },
+ "tolerances": {
+  "length": 0.005,
+  "area_rel": 0.01
+ },
+ "sources": [
+  {
+   "id": "S-01",
+   "title": "T01 training sketch plan with room schedule and opening schedule (fictional)",
+   "revision": "A",
+   "date": "2026-10-19",
+   "kind": "plan",
+   "scale": "1:100"
+  }
+ ],
+ "dimensions": [
+  {
+   "id": "D-001",
+   "label": "Overall external length, east-west",
+   "value": 12.0,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "overall",
+    "level": "L00",
+    "axis": "x"
+   }
+  },
+  {
+   "id": "D-002",
+   "label": "Overall external width, north-south",
+   "value": 10.0,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "overall",
+    "level": "L00",
+    "axis": "y"
+   }
+  },
+  {
+   "id": "D-003",
+   "label": "Finished floor level (datum)",
+   "value": 0.0,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "levels.L00.elevation"
+    ]
+   }
+  },
+  {
+   "id": "D-010",
+   "label": "External wall thickness",
+   "value": 0.23,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "wall_types.EXT.thickness"
+    ]
+   }
+  },
+  {
+   "id": "D-011",
+   "label": "Internal partition thickness",
+   "value": 0.115,
+   "status": "INFERRED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "wall_types.INT.thickness"
+    ]
+   },
+   "note": "Partitions not dimensioned on S-01; assumed half-brick 115 mm"
+  },
+  {
+   "id": "D-020",
+   "label": "Floor to ceiling height",
+   "value": 3.0,
+   "status": "INFERRED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "levels.L00.wall_height"
+    ]
+   },
+   "note": "No section supplied; typical residential value assumed"
+  },
+  {
+   "id": "D-021",
+   "label": "Floor build-up below FFL",
+   "value": 0.15,
+   "status": "INFERRED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "levels.L00.floor_thickness"
+    ]
+   },
+   "note": "Visual only; no structural meaning"
+  },
+  {
+   "id": "D-022",
+   "label": "Roof slab thickness",
+   "value": 0.15,
+   "status": "INFERRED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "levels.L00.roof_thickness"
+    ]
+   },
+   "note": "Visual only; no structural meaning"
+  },
+  {
+   "id": "D-030",
+   "label": "Door height (D1, D2, D3)",
+   "value": 2.1,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "openings.O01.height",
+     "openings.O09.height",
+     "openings.O10.height",
+     "openings.O11.height",
+     "openings.O13.height",
+     "openings.O14.height",
+     "openings.O15.height"
+    ]
+   }
+  },
+  {
+   "id": "D-031",
+   "label": "Main door width (D1)",
+   "value": 1.0,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "openings.O01.width"
+    ]
+   }
+  },
+  {
+   "id": "D-032",
+   "label": "Internal door width (D2)",
+   "value": 0.9,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "openings.O09.width",
+     "openings.O10.width",
+     "openings.O11.width",
+     "openings.O15.width"
+    ]
+   }
+  },
+  {
+   "id": "D-033",
+   "label": "Toilet door width (D3)",
+   "value": 0.75,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "openings.O13.width",
+     "openings.O14.width"
+    ]
+   }
+  },
+  {
+   "id": "D-034",
+   "label": "Living-dining arch width (A1)",
+   "value": 1.6,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "openings.O12.width"
+    ]
+   }
+  },
+  {
+   "id": "D-035",
+   "label": "Living-dining arch height (A1)",
+   "value": 2.4,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "openings.O12.height"
+    ]
+   }
+  },
+  {
+   "id": "D-036",
+   "label": "Door and arch sill (flush threshold)",
+   "value": 0.0,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "openings.O01.sill",
+     "openings.O09.sill",
+     "openings.O10.sill",
+     "openings.O11.sill",
+     "openings.O12.sill",
+     "openings.O13.sill",
+     "openings.O14.sill",
+     "openings.O15.sill"
+    ]
+   }
+  },
+  {
+   "id": "D-040",
+   "label": "Window WN1 width",
+   "value": 1.5,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "openings.O02.width",
+     "openings.O03.width",
+     "openings.O05.width",
+     "openings.O07.width",
+     "openings.O08.width"
+    ]
+   }
+  },
+  {
+   "id": "D-041",
+   "label": "Window WN1 height",
+   "value": 1.2,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "openings.O02.height",
+     "openings.O03.height",
+     "openings.O05.height",
+     "openings.O07.height",
+     "openings.O08.height"
+    ]
+   }
+  },
+  {
+   "id": "D-042",
+   "label": "Window WN1 sill",
+   "value": 0.9,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "openings.O02.sill",
+     "openings.O03.sill",
+     "openings.O05.sill",
+     "openings.O07.sill",
+     "openings.O08.sill"
+    ]
+   }
+  },
+  {
+   "id": "D-043",
+   "label": "Window WN2 (kitchen) width",
+   "value": 1.2,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "openings.O04.width"
+    ]
+   }
+  },
+  {
+   "id": "D-044",
+   "label": "Window WN2 (kitchen) height",
+   "value": 1.05,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "openings.O04.height"
+    ]
+   }
+  },
+  {
+   "id": "D-045",
+   "label": "Window WN2 (kitchen) sill",
+   "value": 1.05,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "openings.O04.sill"
+    ]
+   }
+  },
+  {
+   "id": "D-046",
+   "label": "Ventilator WN3 width",
+   "value": 0.6,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "openings.O06.width"
+    ]
+   }
+  },
+  {
+   "id": "D-047",
+   "label": "Ventilator WN3 height",
+   "value": 0.6,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "openings.O06.height"
+    ]
+   }
+  },
+  {
+   "id": "D-048",
+   "label": "Ventilator WN3 sill",
+   "value": 1.5,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "openings.O06.sill"
+    ]
+   }
+  },
+  {
+   "id": "D-050",
+   "label": "Opening positions along walls: scaling uncertainty",
+   "value": 0.025,
+   "status": "INFERRED",
+   "source": "S-01",
+   "check": {
+    "kind": "none"
+   },
+   "note": "Openings are not dimensioned on S-01; positions scaled from the drawing (expect +/-25 mm)"
+  },
+  {
+   "id": "D-060",
+   "label": "Living clear width (E-W)",
+   "value": 4.885,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_clear",
+    "room": "R01",
+    "axis": "x"
+   }
+  },
+  {
+   "id": "D-061",
+   "label": "Living clear depth (N-S)",
+   "value": 4.7125,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_clear",
+    "room": "R01",
+    "axis": "y"
+   }
+  },
+  {
+   "id": "D-062",
+   "label": "Bedroom 3 clear width (E-W)",
+   "value": 3.1125,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_clear",
+    "room": "R02",
+    "axis": "x"
+   }
+  },
+  {
+   "id": "D-063",
+   "label": "Bedroom 3 clear depth (N-S)",
+   "value": 4.7125,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_clear",
+    "room": "R02",
+    "axis": "y"
+   }
+  },
+  {
+   "id": "D-064",
+   "label": "Kitchen clear width (E-W)",
+   "value": 3.3125,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_clear",
+    "room": "R03",
+    "axis": "x"
+   }
+  },
+  {
+   "id": "D-065",
+   "label": "Kitchen clear depth (N-S)",
+   "value": 4.7125,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_clear",
+    "room": "R03",
+    "axis": "y"
+   }
+  },
+  {
+   "id": "D-066",
+   "label": "Bedroom 1 (master) clear width (E-W)",
+   "value": 4.3125,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_clear",
+    "room": "R04",
+    "axis": "x"
+   }
+  },
+  {
+   "id": "D-067",
+   "label": "Bedroom 1 (master) clear depth (N-S)",
+   "value": 4.7125,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_clear",
+    "room": "R04",
+    "axis": "y"
+   }
+  },
+  {
+   "id": "D-068",
+   "label": "Toilet 1 clear width (E-W)",
+   "value": 1.685,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_clear",
+    "room": "R05",
+    "axis": "x"
+   }
+  },
+  {
+   "id": "D-069",
+   "label": "Toilet 1 clear depth (N-S)",
+   "value": 2.3125,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_clear",
+    "room": "R05",
+    "axis": "y"
+   }
+  },
+  {
+   "id": "D-070",
+   "label": "Toilet 2 clear width (E-W)",
+   "value": 1.685,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_clear",
+    "room": "R06",
+    "axis": "x"
+   }
+  },
+  {
+   "id": "D-071",
+   "label": "Toilet 2 clear depth (N-S)",
+   "value": 2.285,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_clear",
+    "room": "R06",
+    "axis": "y"
+   }
+  },
+  {
+   "id": "D-072",
+   "label": "Dining clear width (E-W)",
+   "value": 2.385,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_clear",
+    "room": "R07",
+    "axis": "x"
+   }
+  },
+  {
+   "id": "D-073",
+   "label": "Dining clear depth (N-S)",
+   "value": 4.7125,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_clear",
+    "room": "R07",
+    "axis": "y"
+   }
+  },
+  {
+   "id": "D-074",
+   "label": "Bedroom 2 clear width (E-W)",
+   "value": 2.8125,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_clear",
+    "room": "R08",
+    "axis": "x"
+   }
+  },
+  {
+   "id": "D-075",
+   "label": "Bedroom 2 clear depth (N-S)",
+   "value": 4.7125,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_clear",
+    "room": "R08",
+    "axis": "y"
+   }
+  },
+  {
+   "id": "D-080",
+   "label": "Living carpet area (room schedule)",
+   "value": 23.02,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_area",
+    "room": "R01"
+   }
+  },
+  {
+   "id": "D-081",
+   "label": "Bedroom 1 carpet area (room schedule)",
+   "value": 20.32,
+   "status": "CONFIRMED",
+   "source": "S-01",
+   "check": {
+    "kind": "room_area",
+    "room": "R04"
+   }
+  },
+  {
+   "id": "D-090",
+   "label": "Plinth height above finished ground",
+   "value": null,
+   "status": "OPEN",
+   "source": "S-01",
+   "check": {
+    "kind": "none"
+   },
+   "note": "Not on S-01; ground and steps are not modelled until answered"
+  },
+  {
+   "id": "D-091",
+   "label": "Roof parapet height and finish",
+   "value": null,
+   "status": "OPEN",
+   "source": "S-01",
+   "check": {
+    "kind": "none"
+   },
+   "note": "Not on S-01; roof is a flat slab without parapet until answered"
+  }
+ ],
+ "levels": [
+  {
+   "id": "L00",
+   "name": "Ground floor",
+   "elevation": 0.0,
+   "wall_height": 3.0,
+   "floor_thickness": 0.15,
+   "roof_thickness": 0.15,
+   "prov": [
+    "D-003",
+    "D-020",
+    "D-021",
+    "D-022"
+   ]
+  }
+ ],
+ "wall_types": [
+  {
+   "id": "EXT",
+   "thickness": 0.23,
+   "description": "External masonry wall, plastered",
+   "prov": [
+    "D-010"
+   ]
+  },
+  {
+   "id": "INT",
+   "thickness": 0.115,
+   "description": "Internal half-brick partition, plastered",
+   "prov": [
+    "D-011"
+   ]
+  }
+ ],
+ "walls": [
+  {
+   "id": "W01",
+   "level": "L00",
+   "type": "EXT",
+   "start": [
+    0.115,
+    0.115
+   ],
+   "end": [
+    11.885,
+    0.115
+   ],
+   "prov": [
+    "D-001",
+    "D-002",
+    "D-010"
+   ]
+  },
+  {
+   "id": "W02",
+   "level": "L00",
+   "type": "EXT",
+   "start": [
+    11.885,
+    0.115
+   ],
+   "end": [
+    11.885,
+    9.885
+   ],
+   "prov": [
+    "D-001",
+    "D-002",
+    "D-010"
+   ]
+  },
+  {
+   "id": "W03",
+   "level": "L00",
+   "type": "EXT",
+   "start": [
+    0.115,
+    9.885
+   ],
+   "end": [
+    11.885,
+    9.885
+   ],
+   "prov": [
+    "D-001",
+    "D-002",
+    "D-010"
+   ]
+  },
+  {
+   "id": "W04",
+   "level": "L00",
+   "type": "EXT",
+   "start": [
+    0.115,
+    0.115
+   ],
+   "end": [
+    0.115,
+    9.885
+   ],
+   "prov": [
+    "D-001",
+    "D-002",
+    "D-010"
+   ]
+  },
+  {
+   "id": "W05",
+   "level": "L00",
+   "type": "INT",
+   "start": [
+    0.115,
+    5.0
+   ],
+   "end": [
+    11.885,
+    5.0
+   ],
+   "prov": [
+    "D-011",
+    "D-061",
+    "D-067"
+   ]
+  },
+  {
+   "id": "W06",
+   "level": "L00",
+   "type": "INT",
+   "start": [
+    3.4,
+    0.115
+   ],
+   "end": [
+    3.4,
+    5.0
+   ],
+   "prov": [
+    "D-011",
+    "D-062"
+   ]
+  },
+  {
+   "id": "W07",
+   "level": "L00",
+   "type": "INT",
+   "start": [
+    8.4,
+    0.115
+   ],
+   "end": [
+    8.4,
+    5.0
+   ],
+   "prov": [
+    "D-011",
+    "D-060",
+    "D-064"
+   ]
+  },
+  {
+   "id": "W08",
+   "level": "L00",
+   "type": "INT",
+   "start": [
+    4.6,
+    5.0
+   ],
+   "end": [
+    4.6,
+    9.885
+   ],
+   "prov": [
+    "D-011",
+    "D-066"
+   ]
+  },
+  {
+   "id": "W09",
+   "level": "L00",
+   "type": "INT",
+   "start": [
+    6.4,
+    5.0
+   ],
+   "end": [
+    6.4,
+    9.885
+   ],
+   "prov": [
+    "D-011",
+    "D-068"
+   ]
+  },
+  {
+   "id": "W10",
+   "level": "L00",
+   "type": "INT",
+   "start": [
+    4.6,
+    7.4
+   ],
+   "end": [
+    6.4,
+    7.4
+   ],
+   "prov": [
+    "D-011",
+    "D-069",
+    "D-071"
+   ]
+  },
+  {
+   "id": "W11",
+   "level": "L00",
+   "type": "INT",
+   "start": [
+    8.9,
+    5.0
+   ],
+   "end": [
+    8.9,
+    9.885
+   ],
+   "prov": [
+    "D-011",
+    "D-072",
+    "D-074"
+   ]
+  }
+ ],
+ "openings": [
+  {
+   "id": "O01",
+   "wall": "W01",
+   "kind": "door",
+   "center": 5.885,
+   "width": 1.0,
+   "height": 2.1,
+   "sill": 0.0,
+   "prov": [
+    "D-031",
+    "D-030",
+    "D-036",
+    "D-050"
+   ],
+   "opens_into": "R01"
+  },
+  {
+   "id": "O02",
+   "wall": "W01",
+   "kind": "window",
+   "center": 4.485,
+   "width": 1.5,
+   "height": 1.2,
+   "sill": 0.9,
+   "prov": [
+    "D-040",
+    "D-041",
+    "D-042",
+    "D-050"
+   ]
+  },
+  {
+   "id": "O03",
+   "wall": "W01",
+   "kind": "window",
+   "center": 1.635,
+   "width": 1.5,
+   "height": 1.2,
+   "sill": 0.9,
+   "prov": [
+    "D-040",
+    "D-041",
+    "D-042",
+    "D-050"
+   ]
+  },
+  {
+   "id": "O04",
+   "wall": "W01",
+   "kind": "window",
+   "center": 10.035,
+   "width": 1.2,
+   "height": 1.05,
+   "sill": 1.05,
+   "prov": [
+    "D-043",
+    "D-044",
+    "D-045",
+    "D-050"
+   ]
+  },
+  {
+   "id": "O05",
+   "wall": "W03",
+   "kind": "window",
+   "center": 2.235,
+   "width": 1.5,
+   "height": 1.2,
+   "sill": 0.9,
+   "prov": [
+    "D-040",
+    "D-041",
+    "D-042",
+    "D-050"
+   ]
+  },
+  {
+   "id": "O06",
+   "wall": "W03",
+   "kind": "window",
+   "center": 5.385,
+   "width": 0.6,
+   "height": 0.6,
+   "sill": 1.5,
+   "prov": [
+    "D-046",
+    "D-047",
+    "D-048",
+    "D-050"
+   ]
+  },
+  {
+   "id": "O07",
+   "wall": "W03",
+   "kind": "window",
+   "center": 7.535,
+   "width": 1.5,
+   "height": 1.2,
+   "sill": 0.9,
+   "prov": [
+    "D-040",
+    "D-041",
+    "D-042",
+    "D-050"
+   ]
+  },
+  {
+   "id": "O08",
+   "wall": "W02",
+   "kind": "window",
+   "center": 7.335,
+   "width": 1.5,
+   "height": 1.2,
+   "sill": 0.9,
+   "prov": [
+    "D-040",
+    "D-041",
+    "D-042",
+    "D-050"
+   ]
+  },
+  {
+   "id": "O09",
+   "wall": "W06",
+   "kind": "door",
+   "center": 4.185,
+   "width": 0.9,
+   "height": 2.1,
+   "sill": 0.0,
+   "prov": [
+    "D-032",
+    "D-030",
+    "D-036",
+    "D-050"
+   ],
+   "opens_into": "R02"
+  },
+  {
+   "id": "O10",
+   "wall": "W07",
+   "kind": "door",
+   "center": 3.885,
+   "width": 0.9,
+   "height": 2.1,
+   "sill": 0.0,
+   "prov": [
+    "D-032",
+    "D-030",
+    "D-036",
+    "D-050"
+   ],
+   "opens_into": "R03"
+  },
+  {
+   "id": "O11",
+   "wall": "W05",
+   "kind": "door",
+   "center": 3.885,
+   "width": 0.9,
+   "height": 2.1,
+   "sill": 0.0,
+   "prov": [
+    "D-032",
+    "D-030",
+    "D-036",
+    "D-050"
+   ],
+   "opens_into": "R04"
+  },
+  {
+   "id": "O12",
+   "wall": "W05",
+   "kind": "arch",
+   "center": 7.285,
+   "width": 1.6,
+   "height": 2.4,
+   "sill": 0.0,
+   "prov": [
+    "D-034",
+    "D-035",
+    "D-036",
+    "D-050"
+   ]
+  },
+  {
+   "id": "O13",
+   "wall": "W09",
+   "kind": "door",
+   "center": 1.2,
+   "width": 0.75,
+   "height": 2.1,
+   "sill": 0.0,
+   "prov": [
+    "D-033",
+    "D-030",
+    "D-036",
+    "D-050"
+   ],
+   "opens_into": "R06"
+  },
+  {
+   "id": "O14",
+   "wall": "W08",
+   "kind": "door",
+   "center": 3.6,
+   "width": 0.75,
+   "height": 2.1,
+   "sill": 0.0,
+   "prov": [
+    "D-033",
+    "D-030",
+    "D-036",
+    "D-050"
+   ],
+   "opens_into": "R05"
+  },
+  {
+   "id": "O15",
+   "wall": "W11",
+   "kind": "door",
+   "center": 0.8,
+   "width": 0.9,
+   "height": 2.1,
+   "sill": 0.0,
+   "prov": [
+    "D-032",
+    "D-030",
+    "D-036",
+    "D-050"
+   ],
+   "opens_into": "R08"
+  }
+ ],
+ "rooms": [
+  {
+   "id": "R01",
+   "name": "Living",
+   "level": "L00",
+   "use": "living",
+   "seed": [
+    5.9,
+    2.5575
+   ],
+   "prov": [
+    "D-060",
+    "D-061"
+   ]
+  },
+  {
+   "id": "R02",
+   "name": "Bedroom 3",
+   "level": "L00",
+   "use": "bedroom",
+   "seed": [
+    1.7575,
+    2.5575
+   ],
+   "prov": [
+    "D-062",
+    "D-063"
+   ]
+  },
+  {
+   "id": "R03",
+   "name": "Kitchen",
+   "level": "L00",
+   "use": "kitchen",
+   "seed": [
+    10.1425,
+    2.5575
+   ],
+   "prov": [
+    "D-064",
+    "D-065"
+   ]
+  },
+  {
+   "id": "R04",
+   "name": "Bedroom 1 (master)",
+   "level": "L00",
+   "use": "bedroom",
+   "seed": [
+    2.3575,
+    7.4425
+   ],
+   "prov": [
+    "D-066",
+    "D-067"
+   ]
+  },
+  {
+   "id": "R05",
+   "name": "Toilet 1",
+   "level": "L00",
+   "use": "toilet",
+   "seed": [
+    5.5,
+    8.6425
+   ],
+   "prov": [
+    "D-068",
+    "D-069"
+   ]
+  },
+  {
+   "id": "R06",
+   "name": "Toilet 2",
+   "level": "L00",
+   "use": "toilet",
+   "seed": [
+    5.5,
+    6.2
+   ],
+   "prov": [
+    "D-070",
+    "D-071"
+   ]
+  },
+  {
+   "id": "R07",
+   "name": "Dining",
+   "level": "L00",
+   "use": "dining",
+   "seed": [
+    7.65,
+    7.4425
+   ],
+   "prov": [
+    "D-072",
+    "D-073"
+   ]
+  },
+  {
+   "id": "R08",
+   "name": "Bedroom 2",
+   "level": "L00",
+   "use": "bedroom",
+   "seed": [
+    10.3925,
+    7.4425
+   ],
+   "prov": [
+    "D-074",
+    "D-075"
+   ]
+  }
+ ]
+}

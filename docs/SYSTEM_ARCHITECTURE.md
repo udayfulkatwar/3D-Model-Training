@@ -35,6 +35,26 @@ from reading the public site only.
                                  [reported: Township 01 v2, in udayfulkatwar/Astra-Management]
 ```
 
+## 2b. Training pipeline in this repo: plan3d v0.1 — IMPLEMENTED
+
+```
+ projects/<p>/plan.json ─► schema + reference + provenance checks (Q01–Q03)
+          │
+          ▼
+ plan2d: wall strips + mitred joints ─► footprint ─► enclosed regions ─► rooms by seed
+          │      openings placed on walls, circulation graph       (Q04–Q10)
+          ▼
+ mesh3d: manifold3d prisms; walls minus opening voids; per-room floor/ceiling; glazing
+          │                                                         (Q11–Q14)
+          ▼
+ export: box UVs, Z-up → glTF Y-up ─► model.glb ─► re-import check   (Q15–Q16)
+          │
+          └─► plan PNG, rooms.csv, uncertainty.md, qa_report, manifest.json
+ viewer/check.mjs: three.js r186 in headless Chromium loads the GLB and compares to manifest
+```
+
+Details: [PLAN3D.md](PLAN3D.md). Evidence: QR-002.
+
 ## 3. Target architecture (PLANNED)
 
 ```

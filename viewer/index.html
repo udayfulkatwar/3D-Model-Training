@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>plan3d viewer</title>
+<link rel="icon" href="data:,">
+<style>
+  html, body { margin: 0; height: 100%; background: #f5f5f7; color: #1d1d1f;
+               font: 13px/1.4 Inter, system-ui, sans-serif; }
+  canvas { display: block; }
+  #ui { position: absolute; top: 12px; left: 12px; max-width: 260px; padding: 10px 12px;
+        background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+  #ui small { color: #6e6e73; display: block; margin-top: 6px; }
+  #room { margin-top: 6px; font-weight: 600; }
+</style>
+<script type="importmap">
+{ "imports": {
+    "three": "./node_modules/three/build/three.module.js",
+    "three/addons/": "./node_modules/three/examples/jsm/" } }
+</script>
+</head>
+<body>
+<div id="ui">
+  <b id="title">plan3d viewer</b>
+  <div id="info">Loading…</div>
+  <label><input type="checkbox" id="ceilings"> Show ceilings</label>
+  <div id="room">Click a floor to identify the room</div>
+  <small>Training model. Not for construction.</small>
+</div>
+<script type="module">
+// Usage: index.html?model=<glb url>&manifest=<manifest.json url>&view=dollhouse|exterior
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const q = new URLSearchParams(location.search);
+const view = q.get('view') || 'dollhouse';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf5f5f7);
+scene.add(new THREE.HemisphereLight(0xffffff, 0xb8b0a6, 1.4));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+sun.position.set(8, 15, 6);          // glTF frame: +Z is plan south
+scene.add(sun);
+
+const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.05, 500);
+const controls = new OrbitControls(camera, renderer.domElement);
+
+const [gltf, manifest] = await Promise.all([
+  new GLTFLoader().loadAsync(q.get('model')),
+  q.get('manifest') ? fetch(q.get('manifest')).then(r => r.json()) : null,
+]);
+scene.add(gltf.scene);
+
+const rooms = Object.fromEntries((manifest?.rooms ?? []).map(r => [r.RoomID, r]));
+const ceilings = [], floors = [], meshes = [];
+gltf.scene.traverse(o => {
+  if (!o.isMesh) return;
+  if (o.name.includes('_CEILING_')) ceilings.push(o);
+  if (o.name.includes('_FLOOR_')) floors.push(o);
+  const g = o.geometry;
+  meshes.push({
+    name: o.name,
+    triangles: (g.index ? g.index.count : g.attributes.position.count) / 3,
+    hasUV: !!g.attributes.uv,
+    material: o.material.name,
+    transparent: o.material.transparent,
+  });
+});
+const setCeilings = on => ceilings.forEach(c => (c.visible = on));
+document.getElementById('ceilings').onchange = e => { setCeilings(e.target.checked); render(); };
+setCeilings(view === 'exterior');
+document.getElementById('ceilings').checked = view === 'exterior';
+
+const box = new THREE.Box3().setFromObject(gltf.scene);
+const size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());
+const s = Math.max(size.x, size.z);
+controls.target.copy(center);
+if (view === 'exterior') camera.position.set(center.x + 0.9 * s, center.y + 0.35 * s, center.z + 1.1 * s);
+else camera.position.set(center.x + 0.25 * s, center.y + 1.2 * s, center.z + 0.85 * s);
+controls.update();
+
+if (manifest) {
+  document.getElementById('title').textContent = manifest.plan.name;
+  document.getElementById('info').textContent =
+    `${manifest.rooms.length} rooms · carpet ${manifest.carpet_area_total_m2} m² ` +
+    `(${manifest.carpet_area_total_sqft} sq ft)`;
+} else {
+  document.getElementById('info').textContent = `${meshes.length} meshes`;
+}
+
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+renderer.domElement.addEventListener('click', e => {
+  ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const hit = ray.intersectObjects(floors, false)[0];
+  const id = hit?.object.name.split('_FLOOR_')[1];
+  const r = rooms[id];
+  document.getElementById('room').textContent = r
+    ? `${r.Name}: ${r.ClearX_m.toFixed(3)} × ${r.ClearY_m.toFixed(3)} m, ${r.Area_m2} m² (${r.Area_sqft} sq ft)`
+    : 'Click a floor to identify the room';
+});
+
+const render = () => renderer.render(scene, camera);
+controls.addEventListener('change', render);
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  render();
+});
+render();
+
+const b = box;
+window.__viewer = {
+  ready: true,
+  three: THREE.REVISION,
+  meshes,
+  bounds: [b.min.toArray(), b.max.toArray()],
+};
+</script>
+</body>
+</html>

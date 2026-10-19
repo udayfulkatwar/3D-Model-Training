@@ -1,0 +1,550 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://astra-dwell.training/plan3d/plan.schema.json",
+  "title": "plan3d building plan",
+  "description": "Single source of truth for one building. All lengths in metres, plan coordinates in a right-handed X (east) / Y (north) / Z (up) frame. Every geometric element cites the dimension-register entries that justify it.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "project",
+    "tolerances",
+    "sources",
+    "dimensions",
+    "levels",
+    "wall_types",
+    "walls",
+    "openings",
+    "rooms"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "project": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "nature",
+        "owner",
+        "permission",
+        "units",
+        "datum"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nature": {
+          "type": "string",
+          "description": "e.g. 'fictional training plan', 'client drawing set'"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "permission": {
+          "type": "string",
+          "description": "Who owns the design and what use is permitted"
+        },
+        "units": {
+          "const": "m"
+        },
+        "datum": {
+          "type": "string",
+          "description": "What plan origin (0,0) and elevation 0 refer to"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "tolerances": {
+      "type": "object",
+      "required": [
+        "length",
+        "area_rel"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "length": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Max |measured - stated| for lengths, metres"
+        },
+        "area_rel": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Max relative area difference"
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "revision",
+          "date",
+          "kind"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "kind": {
+            "enum": [
+              "plan",
+              "section",
+              "elevation",
+              "site",
+              "schedule",
+              "brochure",
+              "verbal",
+              "other"
+            ]
+          },
+          "scale": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "dimensions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "status",
+          "source",
+          "check"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Metres or square metres; null only when status is OPEN"
+          },
+          "status": {
+            "enum": [
+              "CONFIRMED",
+              "INFERRED",
+              "OPEN"
+            ]
+          },
+          "source": {
+            "$ref": "#/$defs/id"
+          },
+          "note": {
+            "type": "string"
+          },
+          "check": {
+            "$ref": "#/$defs/check"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "enum": [
+                    "CONFIRMED",
+                    "INFERRED"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "value"
+              ],
+              "properties": {
+                "value": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "INFERRED"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "note"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "levels": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "elevation",
+          "wall_height",
+          "floor_thickness",
+          "roof_thickness",
+          "prov"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "elevation": {
+            "type": "number",
+            "description": "Finished floor level, metres"
+          },
+          "wall_height": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "Finished floor to ceiling, metres"
+          },
+          "floor_thickness": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "roof_thickness": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "prov": {
+            "$ref": "#/$defs/prov"
+          }
+        }
+      }
+    },
+    "wall_types": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "thickness",
+          "prov"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "thickness": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "description": {
+            "type": "string"
+          },
+          "prov": {
+            "$ref": "#/$defs/prov"
+          }
+        }
+      }
+    },
+    "walls": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "level",
+          "type",
+          "start",
+          "end",
+          "prov"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "level": {
+            "$ref": "#/$defs/id"
+          },
+          "type": {
+            "$ref": "#/$defs/id"
+          },
+          "start": {
+            "$ref": "#/$defs/xy",
+            "description": "Centre-line start point"
+          },
+          "end": {
+            "$ref": "#/$defs/xy",
+            "description": "Centre-line end point"
+          },
+          "prov": {
+            "$ref": "#/$defs/prov"
+          }
+        }
+      }
+    },
+    "openings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "wall",
+          "kind",
+          "center",
+          "width",
+          "height",
+          "sill",
+          "prov"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "wall": {
+            "$ref": "#/$defs/id"
+          },
+          "kind": {
+            "enum": [
+              "door",
+              "window",
+              "arch"
+            ]
+          },
+          "center": {
+            "type": "number",
+            "description": "Distance along the wall centre-line from wall start to opening centre"
+          },
+          "width": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "height": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "sill": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Bottom of opening above finished floor"
+          },
+          "prov": {
+            "$ref": "#/$defs/prov"
+          },
+          "opens_into": {
+            "$ref": "#/$defs/id",
+            "description": "Doors only: room the leaf swings into (drawing convention); defaults to the non-exterior side"
+          }
+        }
+      }
+    },
+    "rooms": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "level",
+          "use",
+          "seed",
+          "prov"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "level": {
+            "$ref": "#/$defs/id"
+          },
+          "use": {
+            "enum": [
+              "living",
+              "dining",
+              "kitchen",
+              "bedroom",
+              "toilet",
+              "circulation",
+              "utility",
+              "other"
+            ]
+          },
+          "seed": {
+            "$ref": "#/$defs/xy",
+            "description": "Any point strictly inside the room; the room is the wall-enclosed region containing it"
+          },
+          "prov": {
+            "$ref": "#/$defs/prov"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$"
+    },
+    "xy": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "prov": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/id"
+      },
+      "uniqueItems": true
+    },
+    "check": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "none"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "targets"
+          ],
+          "properties": {
+            "kind": {
+              "const": "param"
+            },
+            "targets": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z_]+\\.[A-Za-z0-9_-]+\\.[a-z_]+$"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "level",
+            "axis"
+          ],
+          "properties": {
+            "kind": {
+              "const": "overall"
+            },
+            "level": {
+              "$ref": "#/$defs/id"
+            },
+            "axis": {
+              "enum": [
+                "x",
+                "y"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "room",
+            "axis"
+          ],
+          "properties": {
+            "kind": {
+              "const": "room_clear"
+            },
+            "room": {
+              "$ref": "#/$defs/id"
+            },
+            "axis": {
+              "enum": [
+                "x",
+                "y"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "room"
+          ],
+          "properties": {
+            "kind": {
+              "const": "room_area"
+            },
+            "room": {
+              "$ref": "#/$defs/id"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
