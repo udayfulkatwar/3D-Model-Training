@@ -11,6 +11,12 @@
 - Plan-to-3D accuracy can be no better than the source drawings. Undimensioned
   values are inferences and are logged as such.
 
+## Access boundary
+
+ASTRA DWELL production (website and source, `Astra-Management`, company docs,
+artifacts, client material) is **view-only** (ADR-007). Training output stays
+in this repo until the founder adopts it themselves.
+
 ## Capability limits (this environment)
 
 | Limit | Consequence |

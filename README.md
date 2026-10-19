@@ -6,8 +6,17 @@ interactive 3D experiences.
 
 **Status (2026-10-19): initialized. Documentation baseline only; no code yet.**
 
-Founder rule in force: *train and rehearse first; no client model, no paid
-service and no public deployment until the founder authorizes it.*
+Founder rules in force:
+
+- **Independent training workspace.** Everything here is training, separate
+  from ASTRA DWELL's production work.
+- **ASTRA DWELL is view-only.** No edits, commits, deployments, comments or
+  any other change to ASTRA DWELL systems: the website
+  (dwell.astragrp.net) and its source, the `Astra-Management` repo, ASTRA
+  DWELL documents and artifacts, and client material. Reading them for
+  reference is allowed (founder instruction, 2026-10-19).
+- Train and rehearse first; no client model, no paid service and no public
+  deployment until the founder authorizes it.
 
 ## Project records
 

@@ -52,7 +52,7 @@ reports, peer-reviewed analyses), each with a confidence level.
 
 | ID | Gap | Impact | How to close |
 |---|---|---|---|
-| G-01 | Website source repo not available here | Can't modify or test the live product | Founder adds repo to session |
+| G-01 | Website source not readable here | Training can only study the public site, not its code | Founder may share it read-only; it is never modified (ADR-007) |
 | G-02 | No real client drawings to calibrate plan reading | Accuracy claims untested | Use owned/fictional drawings first; then one consented client plan |
 | G-03 | No measured phone performance data | Can't promise device support | Define target device list; measure H01 on real phones |
 | G-04 | Unreal scripts untested | Pipeline unproven end-to-end | Founder runs import on an RTX machine |

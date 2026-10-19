@@ -7,11 +7,23 @@ deleted. "Revisit if" states what evidence would change the decision.
 
 ### ADR-001 — Purpose of this repository
 - **Date:** 2026-10-19 · **Status:** Accepted
-- **Decision:** `3D-Model-Training` holds ASTRA DWELL engineering records and
-  rehearsal/tooling code for the 2D-to-3D pipeline. Client deliverables and
-  client drawings are not committed here unless the founder authorizes it.
+- **Decision:** `3D-Model-Training` is an independent training workspace:
+  engineering records plus rehearsal/tooling code for the 2D-to-3D pipeline.
+  Client deliverables and client drawings are not committed here.
 - **Why:** the repo was empty; the founder's standing rule is rehearse before
-  client work.
+  client work. See ADR-007 for the access boundary.
+
+### ADR-007: ASTRA DWELL production is view-only
+- **Date:** 2026-10-19 · **Status:** Accepted (founder instruction)
+- **Decision:** Claude may only view ASTRA DWELL systems: the website and
+  its source, `udayfulkatwar/Astra-Management`, ASTRA DWELL docs and artifacts,
+  and client material. No edits, commits, pushes, deployments, comments,
+  deletions or configuration changes there. All of Claude's work happens in
+  this training repo. Anything useful that comes out of training is handed
+  to the founder to adopt, or not, at their discretion.
+- **Why:** training must not interfere with the company's live work.
+- **Revisit if:** the founder explicitly grants write access to a named
+  system for a named task.
 
 ### ADR-002 — Browser 3D stack: React Three Fiber + three.js
 - **Date:** pre-2026-10-19 (existing) · **Status:** Accepted, `[verified 2026-10-19]`

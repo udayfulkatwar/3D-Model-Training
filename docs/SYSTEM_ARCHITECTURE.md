@@ -14,8 +14,9 @@ Determined by fetching the live site and its JavaScript bundles:
 | 3D code chunk | ~1.06 MB raw / ~287 KB gzip (code only, excluding model data) |
 | Pages checked | `/` (home) and `/experience` (Maquette 01, HOUSE H01) |
 
-**Source location unknown to this repo.** The site's source repository is not
-in this session's scope. Its location must be recorded here.
+**View-only (ADR-007).** The website and its source belong to ASTRA DWELL
+production. This training repo never modifies them. Findings above come
+from reading the public site only.
 
 ## 2. Content pipelines today
 

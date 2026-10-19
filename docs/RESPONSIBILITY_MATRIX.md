@@ -5,7 +5,12 @@ They are not separate trained agents and not qualified professionals. For
 each task one role leads and, for material decisions, a different role reviews.
 
 Column key: **AI can do** = Claude can do this within this environment's
-tools. **Human required** = must be done or signed off by a person.
+tools, **in this training repo only**. **Human required** = must be done or
+signed off by a person.
+
+**Access boundary (ADR-007):** ASTRA DWELL production systems, documents,
+artifacts and client material are view-only for every role. No role edits,
+deploys, comments on or deletes anything there.
 
 | Group | Roles | AI can do | Human required |
 |---|---|---|---|
