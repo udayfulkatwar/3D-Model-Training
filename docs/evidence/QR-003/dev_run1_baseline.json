@@ -1,0 +1,272 @@
+{
+  "t01/clean-100": {
+    "offset_mm": 5.0,
+    "rooms": 1.0,
+    "area_err_max": 0.0062,
+    "recall": 0.8666666666666667,
+    "precision": 0.9285714285714286,
+    "kind": 1.0,
+    "swing": 1.0,
+    "center_err_mm": 7.1,
+    "width_err_mm": 9.2,
+    "width_bias_mm": {
+      "door": 0.0,
+      "window": -20.0,
+      "arch": -0.0
+    },
+    "builds_without_fail": true,
+    "counts": {
+      "truth_openings": 15,
+      "draft_openings": 14,
+      "truth_rooms": 8,
+      "draft_rooms": 8
+    },
+    "reader": {
+      "walls": 11,
+      "openings": 14,
+      "rooms": 8,
+      "wall_types": {
+        "WT230": 0.23,
+        "WT120": 0.12
+      },
+      "skew_deg": 0.003,
+      "hairline_px": 2.0,
+      "kernel_px": 5,
+      "run_len_px": 30,
+      "px_per_m": 100.0833
+    },
+    "verdict": {
+      "pass": false,
+      "missed": [
+        "recall",
+        "precision"
+      ]
+    }
+  },
+  "t01/clean-60": {
+    "offset_mm": 5.5,
+    "rooms": 0.75,
+    "area_err_max": 0.0155,
+    "recall": 0.8,
+    "precision": 0.9230769230769231,
+    "kind": 1.0,
+    "swing": 1.0,
+    "center_err_mm": 4.6,
+    "width_err_mm": 10.0,
+    "width_bias_mm": {
+      "door": 0.0,
+      "window": -20.0,
+      "arch": 0.0
+    },
+    "builds_without_fail": true,
+    "counts": {
+      "truth_openings": 15,
+      "draft_openings": 13,
+      "truth_rooms": 8,
+      "draft_rooms": 7
+    },
+    "reader": {
+      "walls": 11,
+      "openings": 13,
+      "rooms": 7,
+      "wall_types": {
+        "WT235": 0.235,
+        "WT100": 0.1
+      },
+      "skew_deg": 0.002,
+      "hairline_px": 2.0,
+      "kernel_px": 5,
+      "run_len_px": 21,
+      "px_per_m": 60.0
+    },
+    "verdict": {
+      "pass": false,
+      "missed": [
+        "rooms",
+        "recall",
+        "precision"
+      ]
+    }
+  },
+  "t01/scan-100": {
+    "offset_mm": 177.28,
+    "rooms": 0.0,
+    "area_err_max": null,
+    "recall": 0.0,
+    "precision": 0.0,
+    "kind": 0.0,
+    "swing": null,
+    "center_err_mm": NaN,
+    "width_err_mm": NaN,
+    "width_bias_mm": {},
+    "builds_without_fail": false,
+    "counts": {
+      "truth_openings": 15,
+      "draft_openings": 0,
+      "truth_rooms": 8,
+      "draft_rooms": 0
+    },
+    "reader": {
+      "walls": 2,
+      "openings": 0,
+      "rooms": 0,
+      "wall_types": {
+        "WT895": 0.895,
+        "WT485": 0.485
+      },
+      "skew_deg": -0.056,
+      "hairline_px": 2.0,
+      "kernel_px": 5,
+      "run_len_px": 30,
+      "px_per_m": 26.5111
+    },
+    "verdict": {
+      "pass": false,
+      "missed": [
+        "offset",
+        "rooms",
+        "area",
+        "recall",
+        "precision",
+        "kind",
+        "width",
+        "builds"
+      ]
+    }
+  },
+  "t02/clean-100": {
+    "offset_mm": 1.8,
+    "rooms": 1.0,
+    "area_err_max": 0.0035,
+    "recall": 1.0,
+    "precision": 1.0,
+    "kind": 1.0,
+    "swing": 1.0,
+    "center_err_mm": 2.0,
+    "width_err_mm": 10.9,
+    "width_bias_mm": {
+      "door": 0.0,
+      "window": -20.0,
+      "arch": 0.0
+    },
+    "builds_without_fail": true,
+    "counts": {
+      "truth_openings": 11,
+      "draft_openings": 11,
+      "truth_rooms": 5,
+      "draft_rooms": 5
+    },
+    "reader": {
+      "walls": 10,
+      "openings": 11,
+      "rooms": 5,
+      "wall_types": {
+        "WT300": 0.3,
+        "WT150": 0.15
+      },
+      "skew_deg": 0.004,
+      "hairline_px": 2.0,
+      "kernel_px": 5,
+      "run_len_px": 39,
+      "px_per_m": 100.0
+    },
+    "verdict": {
+      "pass": true,
+      "missed": []
+    }
+  },
+  "t02/clean-60": {
+    "offset_mm": 5.32,
+    "rooms": 0.6,
+    "area_err_max": 0.0028,
+    "recall": 0.7272727272727273,
+    "precision": 0.8888888888888888,
+    "kind": 1.0,
+    "swing": 1.0,
+    "center_err_mm": 8.9,
+    "width_err_mm": 15.0,
+    "width_bias_mm": {
+      "door": 0.0,
+      "window": -20.0,
+      "arch": 0.0
+    },
+    "builds_without_fail": false,
+    "counts": {
+      "truth_openings": 11,
+      "draft_openings": 9,
+      "truth_rooms": 5,
+      "draft_rooms": 4
+    },
+    "reader": {
+      "walls": 9,
+      "openings": 9,
+      "rooms": 4,
+      "wall_types": {
+        "WT300": 0.3,
+        "WT160": 0.16,
+        "WT150": 0.15
+      },
+      "skew_deg": -0.003,
+      "hairline_px": 2.0,
+      "kernel_px": 5,
+      "run_len_px": 25,
+      "px_per_m": 60.0
+    },
+    "verdict": {
+      "pass": false,
+      "missed": [
+        "rooms",
+        "recall",
+        "precision",
+        "builds"
+      ]
+    }
+  },
+  "t02/scan-100": {
+    "offset_mm": 221.35,
+    "rooms": 0.0,
+    "area_err_max": null,
+    "recall": 0.0,
+    "precision": 0.0,
+    "kind": 0.0,
+    "swing": null,
+    "center_err_mm": NaN,
+    "width_err_mm": NaN,
+    "width_bias_mm": {},
+    "builds_without_fail": false,
+    "counts": {
+      "truth_openings": 11,
+      "draft_openings": 2,
+      "truth_rooms": 5,
+      "draft_rooms": 1
+    },
+    "reader": {
+      "walls": 5,
+      "openings": 2,
+      "rooms": 1,
+      "wall_types": {
+        "WT745": 0.745,
+        "WT375": 0.375,
+        "WT135": 0.135
+      },
+      "skew_deg": -0.057,
+      "hairline_px": 2.0,
+      "kernel_px": 5,
+      "run_len_px": 39,
+      "px_per_m": 40.4
+    },
+    "verdict": {
+      "pass": false,
+      "missed": [
+        "offset",
+        "rooms",
+        "area",
+        "recall",
+        "precision",
+        "kind",
+        "width",
+        "builds"
+      ]
+    }
+  }
+}

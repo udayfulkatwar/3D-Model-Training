@@ -142,7 +142,7 @@ def write_drawings(plan, layouts, out: Path) -> Path:
                     p0, p1 = wg.point_at(og.a) + wg.normal * off, wg.point_at(og.b) + wg.normal * off
                     ax.plot([p0[0], p1[0]], [p0[1], p1[1]], color="#2b7bb9", lw=1)
             elif og.kind == "door":
-                target = og.opens_into or next(s for s in og.sides if s != plan2d.EXTERIOR)
+                target = og.opens_into or next((s for s in og.sides if s != plan2d.EXTERIOR), og.sides[0])
                 inside = 1 if og.sides[0] == target else -1
                 hinge = wg.point_at(og.a) + wg.normal * inside * wg.thickness / 2
                 w = og.b - og.a

@@ -14,7 +14,25 @@ def main(argv: list[str] | None = None) -> int:
     b = sub.add_parser("build", help="validate a plan, generate the model and reports")
     b.add_argument("plan")
     b.add_argument("-o", "--out", required=True)
+    r = sub.add_parser("read", help="read a floor-plan image into a draft plan.json for review")
+    r.add_argument("image")
+    r.add_argument("-o", "--out", required=True)
+    scale = r.add_mutually_exclusive_group(required=True)
+    scale.add_argument("--known-width", type=float, help="overall external east-west length in metres")
+    scale.add_argument("--px-per-m", type=float)
+    r.add_argument("--build", action="store_true", help="also build the draft with plan3d")
     args = ap.parse_args(argv)
+
+    if args.cmd == "read":
+        from .read_raster import read_plan
+        res = read_plan(args.image, args.out, args.known_width, args.px_per_m)
+        print(f"{res.stats['walls']} walls, {res.stats['openings']} openings, {res.stats['rooms']} rooms; "
+              f"skew {res.stats['skew_deg']} deg; {res.stats['px_per_m']} px/m")
+        print(f"review: {args.out}/review.md  overlay: {args.out}/overlay.png  draft: {args.out}/plan.json")
+        if not args.build:
+            return 0
+        args.plan = f"{args.out}/plan.json"
+        args.out = f"{args.out}/build"
 
     result = build(args.plan, args.out)
     c = result.report.counts()

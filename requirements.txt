@@ -6,3 +6,6 @@ numpy==2.5.4
 pytest==9.1.1
 shapely==2.2.0
 trimesh==5.1.1
+# plan reader (T-006); both permissively licensed (Apache-2.0 / BSD-3)
+opencv-python-headless==5.0.0.93
+pypdfium2==5.14.0
