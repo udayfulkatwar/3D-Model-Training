@@ -125,3 +125,39 @@ outlines stopping at the column faces, as in framed buildings (common in
 India). Frozen reader: 0/6 (the outlines do not close without the
 columns). Fix: column layers (`COLUMN`, `COLS`) count as wall outlines.
 After: 6/6, and all other 30 runs still pass (36/36).
+
+## Part 2: multi-storey sheets and stairs (registered 2026-10-20, before any code)
+
+Real drawing sets put the ground and first floor plans side by side in one
+file, each titled ("GROUND FLOOR PLAN", "FIRST FLOOR PLAN"), with the stair
+drawn as tread lines on a stair layer, an arrow and the word UP.
+
+**Method.** Split the wall faces into separate plans (clusters more than
+2 m apart). Order them by their title text (ground, first, second, ...;
+otherwise left to right). Align each plan on its outer south-west corner,
+and stack the levels with the reader's default heights. Read each stair
+from its layer (`STAIR`/`STRS`):
+- tread lines parallel to each other, the same length (the width);
+- straight (one run) or dog-leg (two runs side by side, a landing between);
+- climbing direction from the UP text or the arrow's start;
+- risers = treads + 1 per flight.
+
+The riser height then follows from the levels.
+
+**Test files.** The writer gains a `sheet` style: every level of a plan,
+side by side, 3 m apart, titled, with the stair on the lower level drawn
+on `A-FLOR-STRS` (tread lines, a walking line with an arrow, UP) and the
+opening on the upper level as a dashed outline. Also the `poly` wall
+style for the rest.
+
+**Development:** T05 (straight stair). **Holdout (run once, frozen):**
+T06 (dog-leg).
+
+**Targets (per level, as part 1, plus):** level count right; stair type,
+direction, width (± 5 mm), risers (exact), going (± 5 mm) and start (± 10 mm)
+right; draft builds with 0 FAIL, including Q09 (upper rooms reached by
+the stair), Q21 and Q22.
+
+**Honest limit:** with one development plan and one holdout plan by the
+same author, a pass shows the method works on these conventions, not that
+it generalises.
