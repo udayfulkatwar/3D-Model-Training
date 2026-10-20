@@ -219,3 +219,12 @@ Carpet area 105.862 m² (1,139.5 sq ft) on a 120 m² built-up footprint.
 ### Not verified
 - The new parts in Unreal. Bundle v2 has not been imported yet, and the
   import script's new re-run cleanup and level save are untested in Unreal.
+
+### QR-005 follow-up (2026-10-20, read-only via the PC session)
+- **Verified:** materials and collision on all 24 v1 meshes. FLOOR_R01–R08 use M_Floor,
+  CEILING_R01–R08 use M_Ceiling, GLASS_O02–O08 use M_Glass and WALLS uses M_Wall, all with
+  CTF_UseComplexAsSimple and no overrides.
+- **Found:** the v1 script was run a second time instead of v2. Plan3D/T01 then held 58
+  actors (two copies of everything) and no v2 assets. The v1 script has no cleanup step
+  (L-027), so running v2 removes every actor in that folder before re-importing.
+  T01 v2 in Unreal is still pending the founder's re-run.
