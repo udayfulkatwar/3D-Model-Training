@@ -38,6 +38,8 @@ def test_hard_cases_meet_targets(tmp_path, plan_id, ppm, scan, pen_m, case):
     ("t01", 100, None, "hollow-clean-100"),         # 150 mm pier between a door and a window
     ("t02", 60, None, "hollow-clean-60"),           # toilet hatching against a hollow wall
     ("t02", 100, {}, "hollow-scan-100"),            # blurred outlines: pen width from summed darkness
+    ("t05", 100, None, "hollow-clean-100"),         # 0.7 m wall piece between a door and a window
+    ("t04", 100, None, "hollow-clean-100"),         # door leaf beside a furniture line is not a wall
 ])
 def test_hollow_walls_meet_targets(tmp_path, plan_id, ppm, scan, case):
     res, m = _read_case(tmp_path, plan_id, ppm, scan, style="hollow")

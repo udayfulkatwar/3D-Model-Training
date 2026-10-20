@@ -54,7 +54,7 @@ in this repo until the founder adopts it themselves.
 | Limit | Effect / workaround |
 |---|---|
 | Tested only on synthetic drawings from one renderer | Accuracy on real CAD exports, scans and photos is unknown. Every draft must be reviewed |
-| Filled (poché) walls only | Hollow double-line or hatched walls are not detected |
+| Hollow (outline) walls: implemented, not verified | Holdouts went 3/4, then 0/4 on new plans before the last fix; all synthetic plans are now seen. Wall-hatched (brick-pattern) walls are not handled. Needs real CAD drawings (T-010) |
 | Orthogonal walls, skew ≤ ±5° | Diagonal or curved walls are lost; no perspective correction for photos |
 | No text reading (no OCR) | Room names and uses, dimension values, heights and sills are not read |
 | Windows read ~20 mm narrow | Jamb lines at the wall ends; correct widths in review |

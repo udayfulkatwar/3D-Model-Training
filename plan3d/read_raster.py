@@ -158,9 +158,10 @@ def _hollow_interiors(ink: np.ndarray, ppm: float, hair: float) -> np.ndarray:
     # wall band on the same rows; a strip beside a door leaf or furniture does not.
     walls = candidate & (length >= HOLLOW_SHORT_M * ppm)
     cap, reach = HOLLOW_MAX_WALL_M * ppm, int(MAX_OPENING_M * ppm)
-    pier = (~thin & (width >= MIN_WALL_M * ppm * 0.6) & (box_[:, cv2.CC_STAT_WIDTH] <= cap)
-            & (box_[:, cv2.CC_STAT_HEIGHT] <= cap))
-    pending = set(np.flatnonzero((candidate & ~walls) | pier).tolist()) - {0}
+    # anything else wall-thick (short, stubby or a pier) needs the band test
+    band_like = ((typical >= MIN_WALL_M * ppm * 0.6) & (typical <= cap)
+                 & (np.minimum(box_[:, cv2.CC_STAT_WIDTH], box_[:, cv2.CC_STAT_HEIGHT]) <= cap) & ~alongside)
+    pending = set(np.flatnonzero(band_like & ~walls).tolist()) - {0}
     while pending:                                      # a chain of short pieces grows from the long walls
         inside = walls[lab] & (lab > 0)
         found = {i for i in pending

@@ -25,7 +25,7 @@ verified without spending money.
 | — | T-004 | ~~Add the website source repo to this workflow; CI for build + Playwright smoke test~~ | — | — | REJECTED (violates ADR-007: ASTRA DWELL is view-only) |
 | — | T-005 | ~~Rehearse the Unreal import with a training copy of the script~~ | — | — | SUPERSEDED by T-009 (script written) and T-012 (founder import) |
 | 0 | T-010 | **Real-drawing evaluation of the reader**: 5–10 real plans the company owns or has written permission to use; truth measured by hand; same metrics | AD-28 → AD-05 | Founder supplies drawings and permission; AI runs and reports | BLOCKED (needs drawings) |
-| 6 | T-011 | Reader v0.2: OCR for room names and dimension strings (cross-check scale), hollow-wall support | AD-28 → AD-05 | AI | PLANNED (after T-010) |
+| 6 | T-011 | Reader v0.2: OCR for room names and dimension strings (cross-check scale), hollow-wall support | AD-28 → AD-05 | AI | Hollow walls IMPLEMENTED, not verified (holdouts 3/4, then 0/4 before the last fix; see T006_PLAN_READING.md). OCR PLANNED |
 | 7 | T-007 | IFC intake prototype (IfcOpenShell → plan.json/GLB) on a public sample | AD-06 → AD-13 | AI | PLANNED |
 | 8 | T-008 | Write failure case studies (Mars Climate Orbiter, Ariane 5) as unit-safety controls | AD-33 → AD-01 | AI | PLANNED |
 

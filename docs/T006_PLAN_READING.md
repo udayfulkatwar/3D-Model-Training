@@ -274,3 +274,15 @@ a second short piece is missed the same way, and a room merges. The
 development and first holdout plans only had piers ≤ 0.15 m and pieces of
 1 m or more, so the gap went unseen. **Hollow-wall reading is not ready:
 it has passed on plans it was tuned on, and failed on new ones.**
+
+**Fix after holdout 3:** every white region of wall-like typical width
+(not only boxes under 0.45 m) that is not long enough on its own must
+continue a found wall band. With it, all 18 hollow runs pass (T01–T06,
+development and all three holdouts), and all 20 filled-wall runs are
+unchanged. **Every synthetic plan has now been seen while fixing**, so
+these numbers no longer show how the reader does on new drawings. The
+next honest test needs **real CAD-exported plans** (T-010), or a new
+fictional plan authored by someone other than the reader's author.
+
+Status: hollow walls IMPLEMENTED, holdout record 3/4 then 0/4, fixed on
+seen data only. Not VERIFIED.
