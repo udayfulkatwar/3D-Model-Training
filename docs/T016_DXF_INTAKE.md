@@ -90,3 +90,21 @@ How we got here (each from a failing development run):
    anti-aliasing and shrunk by area averaging, and symbols at 1 px.
 2. The room-name register item was set to INFERRED without a number,
    which the schema rejects. Its value is now the number of rooms named.
+
+## Holdout results (T03–T06 ground floors, 3 styles; run once at df126d4)
+
+| Plan | Offset mm | Rooms | Max area err | Recall / precision | Kind | Swing | Width err mm | Names | Verdict |
+|---|---|---|---|---|---|---|---|---|---|
+| t03 (poly, lines, hatched) | 0.00 | 100% | 0.00% | 1.00 / 1.00 | 1.00 | 1.00 | 2.7 | 100% | PASS ×3 |
+| t04 (poly, lines, hatched) | 0.00 | 100% | 0.00% | 1.00 / 1.00 | 1.00 | 1.00 | 2.7 | 100% | PASS ×3 |
+| t05 (poly, lines, hatched) | 0.00 | 100% | 0.00% | 1.00 / 1.00 | 1.00 | 1.00 | 3.1 | 100% | PASS ×3 |
+| t06 (poly, lines, hatched) | 0.00 | 100% | 0.00% | 1.00 / 1.00 | 1.00 | 1.00 | 3.3 | 100% | PASS ×3 |
+
+**12 of 12 holdout runs pass.** This shows the reader handles any plan
+drawn in these conventions, including T04's wing wall, nib and back-to-back
+doors. It does **not** show real-world accuracy. Every test file came from
+our own writer: the same layer names, the same door and window blocks, and
+clean outlines that meet exactly. Real files will differ in layer names
+(`--wall-layers` covers that), block styles, gaps and overlaps in outlines,
+curved walls and text placement. Status: IMPLEMENTED, VERIFIED on
+convention-following files only; real DXF files are needed (T-010).

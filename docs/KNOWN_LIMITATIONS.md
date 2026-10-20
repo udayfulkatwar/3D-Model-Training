@@ -54,6 +54,7 @@ in this repo until the founder adopts it themselves.
 | Limit | Effect / workaround |
 |---|---|
 | Tested only on synthetic drawings from one renderer | Accuracy on real CAD exports, scans and photos is unknown. Every draft must be reviewed |
+| DXF intake tested only on our own convention-following files | Real offices' layer names (use `--wall-layers`), door/window blocks, outline gaps, curved walls and text placement are untested; orthogonal walls only; one plan per file (T-016) |
 | Hollow (outline) walls: implemented, not verified | Holdouts went 3/4, then 0/4 on new plans before the last fix; all synthetic plans are now seen. Wall-hatched (brick-pattern) walls are not handled. Needs real CAD drawings (T-010) |
 | Orthogonal walls, skew ≤ ±5° | Diagonal or curved walls are lost; no perspective correction for photos |
 | No text reading (no OCR) | Room names and uses, dimension values, heights and sills are not read |

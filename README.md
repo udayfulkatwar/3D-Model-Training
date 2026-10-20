@@ -10,13 +10,15 @@ plan file for human review (T-006). `--fbx` adds an FBX + Unreal import
 bundle (T-009), verified in Unreal 5.8 with walk tests (QR-005, QR-007).
 Two-storey houses with straight or dog-leg stairs build and pass QA
 (T-014, T05, T06).
-All tested on fictional training plans only. See [docs/PLAN3D.md](docs/PLAN3D.md).
+AutoCAD DXF plans read into drafts with exact geometry and room names
+(T-016, our own test files). All tested on fictional training plans only. See [docs/PLAN3D.md](docs/PLAN3D.md).
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/python -m plan3d build projects/t01/plan.json -o out/t01          # plan -> model
 .venv/bin/python -m plan3d read drawing.png -o drafts/x --known-width 12 --build   # drawing -> draft -> model
-.venv/bin/python -m pytest -q                                               # 85 tests
+.venv/bin/python -m plan3d read-dxf plan.dxf -o drafts/y --build              # AutoCAD DXF -> draft -> model
+.venv/bin/python -m pytest -q                                               # 96 tests
 .venv/bin/python -m bench.run                                               # reader benchmark
 .venv/bin/pip install -r requirements-fbx.txt                               # optional: Blender for FBX
 .venv/bin/python -m plan3d build projects/t01/plan.json -o out/t01 --fbx    # + Unreal bundle in out/t01/unreal
@@ -26,8 +28,8 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 |---|---|
 | `plan3d/` | Generator: schema, 2D layout, 3D solids, QA, reports |
 | `projects/t01…t06/` | Fictional training plans (T03, T04 = reader holdouts; T05, T06 = two storeys) |
-| `bench/` | Renders plans as test drawings and scores the reader |
-| `tests/` | 85 tests: QA checks fail on their defects; reader hard cases; FBX; stairs |
+| `bench/` | Renders plans as test drawings and DXF files and scores the readers |
+| `tests/` | 96 tests: QA checks fail on their defects; reader hard cases; FBX; stairs |
 | `unreal/` | Unreal Editor import and walk-test scripts (verified in UE 5.8) |
 | `viewer/` | three.js r186 viewer + headless-browser load check |
 | `docs/evidence/` | Saved QA evidence referenced by QUALITY_REPORTS.md |
