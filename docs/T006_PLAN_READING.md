@@ -180,3 +180,38 @@ degradation). T03 and T04 have never been read in hollow style.
 **Targets:** the clean and scan columns above, unchanged. The existing
 filled-wall runs (`python -m bench.run`, `--holdout2` on T04) must not get
 worse on any metric.
+
+### Hollow walls: development results (T01, T02; reader frozen at the commit that adds this section)
+
+| Run | Offset mm | Rooms | Max area err | Recall / precision | Kind | Swing | Width err mm | Verdict |
+|---|---|---|---|---|---|---|---|---|
+| t01/hollow-clean-100 | 1.15 | 100% | 0.51% | 1.00 / 1.00 | 1.00 | 1.00 | 0.0 | PASS |
+| t01/hollow-clean-60 | 6.11 | 100% | 1.55% | 1.00 / 1.00 | 1.00 | 1.00 | 7.3 | PASS |
+| t01/hollow-scan-100 | 1.35 | 100% | 0.14% | 1.00 / 1.00 | 1.00 | 1.00 | 2.3 | PASS |
+| t02/hollow-clean-100 | 1.81 | 100% | 0.53% | 1.00 / 1.00 | 1.00 | 1.00 | 0.0 | PASS |
+| t02/hollow-clean-60 | 5.90 | 100% | 0.80% | 1.00 / 1.00 | 1.00 | 1.00 | 7.7 | PASS |
+| t02/hollow-scan-100 | 3.41 | 100% | 0.54% | 1.00 / 1.00 | 1.00 | 1.00 | 1.4 | PASS |
+
+All 20 filled-wall runs (development, exploratory, T03, holdout 2) are
+unchanged on every metric.
+
+How we got here, in order (each step from a failing development run):
+1. Before any change: 0/6; nothing read.
+2. Fill thin, long white regions: rooms were taken as thin because the
+   median width is pulled down by gaps around furniture. Width = widest
+   inscribed circle instead.
+3. Renderer fix (before any holdout run): hatching and furniture were
+   drawn across hollow walls, cutting their insides apart. In the filled
+   style this is invisible (black on black). Hollow walls now cover what
+   lies beneath them, as CAD hatch boundaries do.
+4. A 150 mm pier between a door and a window is not "long". Small regions
+   that continue a found wall band on the same rows are piers.
+5. Skewed scans: fill, measure skew, rotate the original, fill again (piers
+   need level bands).
+6. Outline pen: outlines are centred on the wall faces, so filled walls are
+   a pen too thick and openings a pen too narrow. The pen is measured as
+   summed darkness across the outlines (blur-proof; 2.25 px at 100 px/m,
+   the drawn value), and taken off before openings are classified. A
+   wardrobe line along a wall face was otherwise read as glazing.
+7. Thick-pen filled drawings tripped the hollow test. Hollow mode now needs
+   more wall inside than solid wall-thick ink (separation ≥ 10×).

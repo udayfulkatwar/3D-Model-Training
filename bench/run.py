@@ -39,6 +39,18 @@ HOLDOUT2 = {
     "clean-100": {"ppm": 100, "degrade": False},
     "scan2-150": {"ppm": 150, "degrade": {"rotate_deg": -2.5, "blur": 1.2, "noise": 18.0, "jpeg": 50, "seed": 11}},
 }
+# Hollow (outline) walls, registered 2026-10-20 (docs/T006_PLAN_READING.md): development on T01/T02 ...
+HOLLOW = {
+    "hollow-clean-100": {"ppm": 100, "degrade": False, "style": "hollow"},
+    "hollow-clean-60": {"ppm": 60, "degrade": False, "style": "hollow"},
+    "hollow-scan-100": {"ppm": 100, "degrade": True, "style": "hollow"},
+}
+# ... and a holdout on T03/T04, run once after the reader is frozen.
+HOLLOW_HOLDOUT = {
+    "hollow-clean-100": {"ppm": 100, "degrade": False, "style": "hollow"},
+    "hollow-scan2-150": {"ppm": 150, "style": "hollow",
+                         "degrade": {"rotate_deg": -2.5, "blur": 1.2, "noise": 18.0, "jpeg": 50, "seed": 11}},
+}
 TARGETS = {   # pre-registered; do not edit after results are known
     "clean": {"offset_mm": 15, "rooms": 1.0, "area_err": 0.02, "recall": 1.0, "precision": 1.0,
               "kind": 1.0, "swing": 0.9, "width_mm": 30},
@@ -144,6 +156,12 @@ def main(argv: list[str] | None = None) -> int:
     if "--holdout2" in argv:
         argv = [a for a in argv if a != "--holdout2"]
         cases = HOLDOUT2
+    if "--hollow" in argv:
+        argv = [a for a in argv if a != "--hollow"]
+        cases = HOLLOW
+    if "--hollow-holdout" in argv:
+        argv = [a for a in argv if a != "--hollow-holdout"]
+        cases = HOLLOW_HOLDOUT
     plans = argv or PLANS
     OUT.mkdir(parents=True, exist_ok=True)
     results = {}
@@ -151,7 +169,7 @@ def main(argv: list[str] | None = None) -> int:
         truth = ROOT / "projects" / p / "plan.json"
         for case, cfg in cases.items():
             img = OUT / f"{p}_{case}.png"
-            info = render(truth, img, cfg["ppm"], **({"pen_m": cfg["pen_m"]} if "pen_m" in cfg else {}))
+            info = render(truth, img, cfg["ppm"], **{k: cfg[k] for k in ("pen_m", "style") if k in cfg})
             if cfg["degrade"]:
                 jpg = img.with_suffix(".jpg")
                 degrade(img, jpg, **(cfg["degrade"] if isinstance(cfg["degrade"], dict) else {}))

@@ -10,10 +10,10 @@ from bench.run import ROOT, score, verdict
 from plan3d.read_raster import _odd, read_plan
 
 
-def _read_case(tmp_path, plan_id, ppm, scan=None, pen_m=None):
+def _read_case(tmp_path, plan_id, ppm, scan=None, pen_m=None, style="poche"):
     truth = ROOT / "projects" / plan_id / "plan.json"
     img = tmp_path / "drawing.png"
-    info = render(truth, img, ppm, **({"pen_m": pen_m} if pen_m else {}))
+    info = render(truth, img, ppm, style=style, **({"pen_m": pen_m} if pen_m else {}))
     if scan is not None:
         degrade(img, tmp_path / "drawing.jpg", **scan)
         img = tmp_path / "drawing.jpg"
@@ -32,6 +32,23 @@ def test_hard_cases_meet_targets(tmp_path, plan_id, ppm, scan, pen_m, case):
     _, m = _read_case(tmp_path, plan_id, ppm, scan, pen_m)
     v = verdict(m, case)
     assert v["pass"], (v["missed"], m["missed"], m["spurious"], m["wrong_kind"])
+
+
+@pytest.mark.parametrize("plan_id,ppm,scan,case", [
+    ("t01", 100, None, "hollow-clean-100"),         # 150 mm pier between a door and a window
+    ("t02", 60, None, "hollow-clean-60"),           # toilet hatching against a hollow wall
+    ("t02", 100, {}, "hollow-scan-100"),            # blurred outlines: pen width from summed darkness
+])
+def test_hollow_walls_meet_targets(tmp_path, plan_id, ppm, scan, case):
+    res, m = _read_case(tmp_path, plan_id, ppm, scan, style="hollow")
+    assert res.stats["hollow_walls"]
+    v = verdict(m, case)
+    assert v["pass"], (v["missed"], m["missed"], m["spurious"], m["wrong_kind"])
+
+
+def test_filled_walls_are_not_read_as_hollow(tmp_path):
+    res, _ = _read_case(tmp_path, "t03", 100, {}, pen_m=0.03)    # thick pen once tripped the hollow test
+    assert not res.stats["hollow_walls"]
 
 
 def test_reader_never_confirms_what_it_measured(tmp_path):

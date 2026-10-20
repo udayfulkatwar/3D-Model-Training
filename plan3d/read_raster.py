@@ -43,6 +43,11 @@ DEFAULTS = {"wall_height": 3.0, "floor_thickness": 0.15, "roof_thickness": 0.15,
 
 # ---------------------------------------------------------------- image prep
 
+HOLLOW_MAX_WALL_M = 0.45  # a hollow wall's inside is at most this wide
+HOLLOW_ELONGATION = 4.0   # and at least this many times longer than wide
+HOLLOW_CONTACT = 0.5      # glazing strips and hatching run alongside each other; walls do not
+HOLLOW_SOLID_M = 0.05     # ink this thick is a filled wall; outlines, even blurred, are thinner
+
 def load_gray(path: str | Path, page: int = 0, dpi: int = 200) -> np.ndarray:
     path = Path(path)
     if path.suffix.lower() == ".pdf":
@@ -96,6 +101,133 @@ def _line_wall_split(ink: np.ndarray) -> int:
         if between > best:
             best, split = between, int(w[i - 1])
     return split
+
+
+def _rough_ppm(ink: np.ndarray, known_width_m: float | None, px_per_m: float | None) -> float:
+    """Scale before any wall is found: the widest ink component is the building."""
+    if px_per_m is not None:
+        return px_per_m
+    n, _, stats, _ = cv2.connectedComponentsWithStats(ink.astype(np.uint8), connectivity=8)
+    widest = max(stats[1:, cv2.CC_STAT_WIDTH], default=1) if n > 1 else ink.shape[1]
+    return float(widest) / known_width_m
+
+
+def _hollow_interiors(ink: np.ndarray, ppm: float, hair: float) -> np.ndarray:
+    """Mask of the insides of hollow (outline-only) walls.
+
+    A wall's inside is a white region that is thin (up to HOLLOW_MAX_WALL_M),
+    long, and does not run alongside another thin region. Window glazing
+    strips and floor hatching are thin too, but come in groups that share
+    long borders, so they are left alone.
+    """
+    sealed = cv2.dilate(ink.astype(np.uint8), np.ones((3, 3), np.uint8)) > 0   # close pinholes in scanned lines
+    white = (~sealed).astype(np.uint8)
+    n, lab, box_, _ = cv2.connectedComponentsWithStats(white, connectivity=4)
+    dt = cv2.distanceTransform(white, cv2.DIST_L2, 3)
+    area = np.bincount(lab.ravel(), minlength=n).astype(float)
+    width = np.zeros(n)                                  # widest inscribed circle; +2 undoes the 1 px seal per side
+    np.maximum.at(width, lab.ravel(), 2 * dt.ravel() + 2)
+    length = area / np.maximum(width, 1.0)
+    thin = ((width >= MIN_WALL_M * ppm * 0.6) & (width <= HOLLOW_MAX_WALL_M * ppm)
+            & (length >= HOLLOW_ELONGATION * width))
+    thin[0] = False
+    # pairs of thin regions running alongside each other across one drawn line (glazing strips,
+    # hatching). A wall only touches such regions at their ends, so it is not paired.
+    reach = int(np.ceil(hair)) + 3
+    tl = np.where(thin[lab], lab, 0)
+    pairs: dict[tuple[int, int], int] = {}
+    for dy, dx in ((0, reach), (reach, 0)):
+        a = tl[: tl.shape[0] - dy, : tl.shape[1] - dx]
+        b = tl[dy:, dx:]
+        both = (a > 0) & (b > 0) & (a != b)
+        keys, counts = np.unique(np.minimum(a[both], b[both]) * n + np.maximum(a[both], b[both]),
+                                 return_counts=True)
+        for k, cnt in zip(keys.tolist(), counts.tolist()):
+            pairs[divmod(k, n)] = pairs.get(divmod(k, n), 0) + cnt
+    alongside = np.zeros(n, bool)
+    for (i, j), cnt in pairs.items():
+        if cnt >= HOLLOW_CONTACT * min(length[i], length[j]):
+            alongside[i] = alongside[j] = True
+    walls = thin & ~alongside
+    inside = walls[lab] & (lab > 0)
+    # piers: short wall pieces between two openings are not long, but they continue a wall's band
+    cap, reach = HOLLOW_MAX_WALL_M * ppm, int(MAX_OPENING_M * ppm)
+    small = (~thin & (width >= MIN_WALL_M * ppm * 0.6) & (box_[:, cv2.CC_STAT_WIDTH] <= cap)
+             & (box_[:, cv2.CC_STAT_HEIGHT] <= cap))
+    small[0] = False
+    for i in np.flatnonzero(small):
+        x, y, w, h = box_[i, :4]
+        if _continues_band(inside, x, y, w, h, reach) or _continues_band(inside.T, y, x, h, w, reach):
+            walls[i] = True
+    return walls[lab] & (lab > 0)
+
+
+def _continues_band(inside: np.ndarray, x: int, y: int, w: int, h: int, reach: int) -> bool:
+    """True if, along the rows y..y+h, a wall band with the same rows (+/- 3 px)
+    is found within `reach` px left or right of the box x..x+w."""
+    mid = y + h // 2
+    for cols in (range(x - 1, max(x - reach, 0) - 1, -1), range(x + w, min(x + w + reach, inside.shape[1]))):
+        hit = next((c for c in cols if inside[mid, c]), None)
+        if hit is None:
+            continue
+        col = inside[:, hit]
+        r0, r1 = mid, mid
+        while r0 > 0 and col[r0 - 1]:
+            r0 -= 1
+        while r1 + 1 < len(col) and col[r1 + 1]:
+            r1 += 1
+        if abs(r0 - y) <= 3 and abs(r1 - (y + h - 1)) <= 3:
+            return True
+    return False
+
+
+def _fill_hollow(gray: np.ndarray, ink: np.ndarray, ppm: float, hair: float) -> tuple[np.ndarray, float] | None:
+    """Paint hollow walls solid so the filled-wall pipeline can read them.
+    Returns (filled grey image, outline pen width px), or None when the
+    drawing has filled walls already."""
+    inside = _hollow_interiors(ink, ppm, hair)
+    k = _odd(max(3, int(round(HOLLOW_SOLID_M * ppm))))
+    solid = cv2.morphologyEx(ink.astype(np.uint8), cv2.MORPH_OPEN, np.ones((k, k), np.uint8)) > 0
+    if inside.sum() < max(solid.sum(), 0.002 * inside.size):
+        return None                                 # filled walls (or too little to be walls)
+    grown = cv2.dilate(inside.astype(np.uint8), np.ones((5, 5), np.uint8)) > 0
+    dark = float(np.percentile(gray[ink], 5)) if ink.any() else 0.0
+    filled = gray.copy()
+    filled[grown & (gray > dark)] = dark            # the inside and the outlines' inner anti-aliasing
+    return filled, _outline_pen(gray, ink, inside, hair)
+
+
+def _outline_pen(gray: np.ndarray, ink: np.ndarray, inside: np.ndarray, hair: float) -> float:
+    """Width of the wall outlines, px, as the sum of darkness across them.
+
+    The reader measures wall thickness the same way (darkness summed across
+    the wall), so this is the amount to take off: blur moves darkness around
+    but does not change its sum. Sampled from the inside of the walls outward.
+    """
+    bg = float(np.percentile(gray, 90))
+    fg = float(np.percentile(gray[ink], 5)) if ink.any() else 0.0
+    dark = np.clip((bg - gray.astype(np.float32)) / max(bg - fg, 1.0), 0, 1)
+    h, w = gray.shape
+    limit = int(3 * hair) + 6
+    ys, xs = np.nonzero(inside)
+    sums = []
+    for i in range(0, len(ys), max(1, len(ys) // 3000)):
+        y, x = ys[i], xs[i]
+        for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+            if not (0 <= y + dy < h and 0 <= x + dx < w) or inside[y + dy, x + dx]:
+                continue                                # only step out across the wall's edge
+            total, seen = 0.0, False
+            for k in range(1, limit):
+                py, px = y + dy * k, x + dx * k
+                if not (0 <= py < h and 0 <= px < w) or inside[py, px]:
+                    break
+                d = float(dark[py, px])
+                if seen and d < 0.05:
+                    sums.append(total)
+                    break
+                seen |= d > 0.5
+                total += d
+    return float(np.median(sums)) if sums else hair
 
 
 def _odd(n: int) -> int:
@@ -457,15 +589,23 @@ def read_plan(path: str | Path, out_dir: str | Path, known_width_m: float | None
         raise ValueError("give exactly one of known_width_m or px_per_m")
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    gray = load_gray(path)
+    original = load_gray(path)
 
-    ink = _binarize(gray)
-    hair = _hairline_px(ink)
+    def prepare(gray):
+        """Binarize; if the walls are drawn hollow, fill them so they read as filled walls."""
+        ink = _binarize(gray)
+        hair = _hairline_px(ink)
+        hollow = _fill_hollow(gray, ink, _rough_ppm(ink, known_width_m, px_per_m), hair)
+        if hollow is None:
+            return gray, ink, hair, None, 0.0
+        filled, pen = hollow
+        return filled, _binarize(filled), hair, hollow, pen
+
+    gray, ink, hair, hollow, pen = prepare(original)
     thick, kernel = _thick_mask(ink, _line_wall_split(ink))
     skew = _skew_deg(thick)
-    if abs(skew) > 0.05:
-        gray = _rotate(gray, skew)
-        ink = _binarize(gray)
+    if abs(skew) > 0.05:                            # straighten the original, then fill again on level bands
+        gray, ink, hair, hollow, pen = prepare(_rotate(original, skew))
         thick, kernel = _thick_mask(ink, _line_wall_split(ink))
 
     bg = float(np.percentile(gray, 90))
@@ -488,6 +628,8 @@ def read_plan(path: str | Path, out_dir: str | Path, known_width_m: float | None
     xe = [w.c + w.t / 2 for w in rough if w.orient == "v"] + [w.b for w in rough if w.orient == "h"]
     ye = [w.c + w.t / 2 for w in rough if w.orient == "h"] + [w.b for w in rough if w.orient == "v"]
     x0, x1, y1 = min(xs), max(xe), max(ye)
+    # a hollow wall's outline is centred on the wall face, so the filled wall is half a pen wider each side
+    x0, x1, y1 = x0 + pen / 2, x1 - pen / 2, y1 - pen / 2
     ppm = px_per_m if px_per_m is not None else (x1 - x0) / known_width_m
 
     pieces = [p for p in pieces if p.t / ppm >= MIN_WALL_M]
@@ -500,6 +642,8 @@ def read_plan(path: str | Path, out_dir: str | Path, known_width_m: float | None
     _snap_ends(walls, tol=3)
     review: list[str] = []
     for w in walls:
+        if pen:                                         # undo the outline's outer half on both faces
+            w.t = max(w.t - pen, 1.0)
         kept = []
         for op in w.openings:
             _classify(w, op, ink, ink_d, dark, hair)
@@ -509,9 +653,13 @@ def read_plan(path: str | Path, out_dir: str | Path, known_width_m: float | None
                 continue
             kept.append(op)
         w.openings = kept
+        if pen:                                         # ... and on the jambs
+            for op in w.openings:
+                op.a, op.b = op.a - pen / 2, op.b + pen / 2
 
     plan, stats = _to_plan(walls, ppm, x0, y1, Path(path).name, known_width_m, project_id)
-    stats.update({"skew_deg": round(skew, 3), "hairline_px": hair, "kernel_px": kernel,
+    stats.update({"hollow_walls": hollow is not None, "outline_pen_px": round(pen, 2),
+                  "skew_deg": round(skew, 3), "hairline_px": hair, "kernel_px": kernel,
                   "run_len_px": run_len, "px_per_m": round(ppm, 4), "origin_px": [x0, y1]})
     review = _review(plan, stats, review)
     overlay = _overlay(gray, walls, plan, ppm, x0, y1)

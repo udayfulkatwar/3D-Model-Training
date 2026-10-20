@@ -18,7 +18,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
-from matplotlib.patches import Arc, Circle, Ellipse, Polygon as MplPolygon, Rectangle  # noqa: E402
+from matplotlib.patches import Arc, Circle, Ellipse, PathPatch, Polygon as MplPolygon, Rectangle  # noqa: E402
+from matplotlib.path import Path as MplPath  # noqa: E402
 from shapely.geometry import LineString, box  # noqa: E402
 
 from plan3d import plan2d  # noqa: E402
@@ -29,7 +30,10 @@ MARGIN_M = 2.2
 DPI = 100
 
 
-def render(plan_path: str | Path, out_png: str | Path, px_per_m: float, pen_m: float = PEN_M) -> dict:
+def render(plan_path: str | Path, out_png: str | Path, px_per_m: float, pen_m: float = PEN_M,
+           style: str = "poche") -> dict:
+    """style "poche": walls filled black; "hollow": walls drawn as outlines
+    (1.5x pen), closed across each opening's jambs, as CAD exports do."""
     plan, errors = load_plan(plan_path)
     assert plan is not None, errors
     lay = plan2d.build_layout(plan, sorted(plan.levels)[0])
@@ -50,6 +54,13 @@ def render(plan_path: str | Path, out_png: str | Path, px_per_m: float, pen_m: f
     for og in lay.openings.values():
         walls = walls.difference(og.rect)
     for g in getattr(walls, "geoms", [walls]):
+        if style == "hollow":                           # outlines on top of a white wall area, so clutter
+            rings = [g.exterior, *g.interiors]          # never shows through a wall, as with filled walls
+            verts = np.concatenate([np.asarray(r.coords) for r in rings])
+            codes = np.concatenate([[MplPath.MOVETO] + [MplPath.LINETO] * (len(r.coords) - 2) + [MplPath.CLOSEPOLY]
+                                    for r in rings])
+            ax.add_patch(PathPatch(MplPath(verts, codes), fc="white", ec="black", lw=1.5 * hair, zorder=10))
+            continue
         ax.add_patch(MplPolygon(g.exterior.coords, closed=True, fc="black", ec="none"))
         for hole in g.interiors:
             ax.add_patch(MplPolygon(hole.coords, closed=True, fc="white", ec="none"))
