@@ -145,7 +145,8 @@ def build_parts(plan: Plan, layouts: dict[str, LevelLayout]) -> list[Part]:
                 parts.append(Part(f"{level_id}_CEILING_{rid}", "ceiling", level_id, _to_trimesh(ceiling), rid))
         for sg in sorted(flights.values(), key=lambda s: s.id):
             if sg.level == level_id:
-                parts.append(Part(f"{level_id}_STAIR_{sg.id}", "stair", level_id, _to_trimesh(stairs.solid(sg)), sg.id))
+                for suffix, lane in stairs.solids(sg):
+                    parts.append(Part(f"{level_id}_STAIR_{sg.id}{suffix}", "stair", level_id, _to_trimesh(lane), sg.id))
 
         details = next(iter(plan.details.values()), None)
         fw = details["frame_width"] if details else 0.0

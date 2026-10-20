@@ -308,8 +308,12 @@ def check_stacking_and_stairs(report: Report, plan: Plan, layouts: dict) -> None
             c.add("FAIL", f"{sg.id}: {sg.to_level} is not the level directly above {sg.level}")
             continue
         two_r_g = 2 * sg.riser + sg.going
+        shape = (f"run {sg.run:.3f} m" if sg.kind == "straight" else
+                 f"dog-leg {' + '.join(str(f.risers) for f in sg.flights)} risers, landing {sg.landing:.3f} m")
         c.add("INFO", f"{sg.id}: {sg.risers} risers of {sg.riser * 1000:.1f} mm, going {sg.going * 1000:.0f} mm, "
-                      f"2R+G = {two_r_g * 1000:.0f} mm, run {sg.run:.3f} m")
+                      f"2R+G = {two_r_g * 1000:.0f} mm, {shape}")
+        if sg.kind == "dogleg" and sg.landing < sg.width:
+            c.add("WARN", f"{sg.id}: half landing {sg.landing:.3f} m is shallower than the stair width {sg.width:.3f} m")
         if sg.riser > stairs.MAX_RISER or sg.going < stairs.MIN_GOING:
             c.add("WARN", f"{sg.id}: riser {sg.riser * 1000:.0f} mm / going {sg.going * 1000:.0f} mm outside "
                           f"{stairs.MAX_RISER * 1000:.0f} / {stairs.MIN_GOING * 1000:.0f} mm (confirm with the code)")
@@ -344,7 +348,7 @@ def check_headroom(report: Report, plan: Plan, parts: list[Part]) -> None:
             hit, t = scene.first_hit_at(p + [0, 0, 1e-4], p + [0, 0, stairs.HEADROOM])
             if hit is not None:
                 c.add("FAIL", f"{sg.id} tread {k + 1}: {hit} {t * stairs.HEADROOM:.3f} m above the tread")
-        c.add("INFO", f"{sg.id}: {sg.risers - 1} treads checked")
+        c.add("INFO", f"{sg.id}: {len(sg.tread_centres())} treads and landings checked")
 
 
 def check_solids(report: Report, parts: list[Part]) -> None:

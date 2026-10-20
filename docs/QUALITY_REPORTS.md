@@ -302,9 +302,23 @@ Carpet area 105.862 m² (1,139.5 sq ft) on a 120 m² built-up footprint.
 | FBX (Q17) | Pass, cm, `M_Stair` |
 | Single-level plans T01–T04 | GLB byte-identical to before the change |
 | Mutation tests | Level not on the one below → FAIL; flight into a wall → FAIL; landing into a wall → reported; 210 mm risers → WARN; stair removed → upper rooms unreachable (Q09 FAIL); a beam over the flight → Q22 FAIL |
-| Tests | 78 pass |
+| Tests | 83 pass |
+
+### Dog-leg stairs (T06)
+| Check | Result |
+|---|---|
+| T06 (fictional G+1, 9 × 12 m, dog-leg 9 + 9 risers, 1.0 m half landing, east stair lobby) | PASS 13, INFO 9, WARN 0, FAIL 0 (with `--fbx`); 48 meshes in three.js, 0 problems |
+| Geometry | Second flight starts at (8.27, 5.00) and ends beside the first flight's foot at (8.27, 3.00); footprint 6.000 m²; each lane watertight with the exact stepped volume plus half the landing |
+| Walk tests | 30/30, including a line up each flight |
+| Mutation tests | Second flight turned the wrong way → the opening cuts the lobby wall (Q21 FAIL); 0.8 m half landing → WARN; missing `turn` → schema error |
 
 ### Defects found and fixed during development
+- Unioning the two dog-leg flights into one solid left 8 sliver faces and a
+  non-watertight mesh (Q11/Q12 FAIL), as with the frames (L-026). Each
+  lane is now its own extrusion; the lanes touch but are not unioned.
+- The plan's walking line treated every stair as one flight, because
+  `StairGeom.flights` builds new objects on each call and an identity test
+  never matched. Now index-based.
 - The browser check took the building height from the ground-floor walls
   only. It now spans all levels.
 - The stair-hall label sat on the stair opening and then in an 11 cm strip.

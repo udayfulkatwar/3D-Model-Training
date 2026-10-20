@@ -468,7 +468,7 @@
     },
     "stairs": {
       "type": "array",
-      "description": "Optional straight stair flights between stacked levels. The riser height is the difference of the two floor levels divided by risers; the stair's footprint becomes an opening in the upper floor.",
+      "description": "Optional stairs between stacked levels: straight flights or dog-legs (two flights and a half landing). The riser height is the difference of the two floor levels divided by risers; the stair's footprint becomes an opening in the upper floor.",
       "items": {
         "type": "object",
         "required": [
@@ -525,8 +525,53 @@
           },
           "prov": {
             "$ref": "#/$defs/prov"
+          },
+          "type": {
+            "enum": [
+              "straight",
+              "dogleg"
+            ],
+            "default": "straight"
+          },
+          "turn": {
+            "enum": [
+              "left",
+              "right"
+            ],
+            "description": "Dog-leg: side of the first flight the second flight lies on"
+          },
+          "landing": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 5,
+            "description": "Dog-leg: half-landing depth (default: width)"
+          },
+          "gap": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2,
+            "description": "Dog-leg: well between the flights (default 0)"
           }
-        }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "dogleg"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "then": {
+              "required": [
+                "turn"
+              ]
+            }
+          }
+        ]
       }
     }
   },

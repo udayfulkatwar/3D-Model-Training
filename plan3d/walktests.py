@@ -56,11 +56,18 @@ def generate(plan: Plan, layouts: dict) -> list[dict]:
                           "end": [*(c - wg.normal * reach), ffl + WALL_PROBE_Z],
                           "expect_hit": True})
     for sg in sorted(stairs.build(plan).values(), key=lambda s: s.id):
-        if sg.level in layouts and sg.to_level in layouts:
-            tests.append({"name": f"stair:{sg.id}", "kind": "stair",
-                          "start": [*(sg.foot - sg.u * stairs.APPROACH), sg.ffl + DOOR_PROBE_Z],
-                          "end": [*(sg.top + sg.u * PROBE_M), sg.ffl_top + DOOR_PROBE_Z],
-                          "expect_hit": False})
+        if sg.level not in layouts or sg.to_level not in layouts:
+            continue
+        flights = sg.flights
+        for i, f in enumerate(flights):                # one line per flight, chest height above the steps
+            z0 = sg.ffl + sg.riser * f.first
+            if i + 1 < len(flights):                   # ends on the half landing
+                end, z1 = sg.flight_top(f) + f.u * sg.landing / 2, sg.ffl + sg.riser * flights[i + 1].first
+            else:
+                end, z1 = sg.top + sg.top_u * PROBE_M, sg.ffl_top
+            tests.append({"name": f"stair:{sg.id}" + (f".{i + 1}" if len(flights) > 1 else ""), "kind": "stair",
+                          "start": [*(f.foot - f.u * stairs.APPROACH), z0 + DOOR_PROBE_Z],
+                          "end": [*end, z1 + DOOR_PROBE_Z], "expect_hit": False})
     return [{**t, "start": [round(float(v), 4) for v in t["start"]],
              "end": [round(float(v), 4) for v in t["end"]]} for t in tests]
 

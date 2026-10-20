@@ -1,8 +1,10 @@
-"""Straight stair flights between stacked levels (T-014).
+"""Stairs between stacked levels (T-014): straight flights and dog-legs.
 
 A stair is given by the centre of its first riser (`start`), the direction it
 climbs (N/E/S/W), its clear width, the number of risers and the going
-(tread depth). The riser height follows from the two levels' floor heights,
+(tread depth). A dog-leg climbs half its risers (rounded up), crosses a half
+landing and climbs the rest back the other way, beside the first flight on
+the side given by `turn`. The riser height follows from the two levels' floor heights,
 so it cannot disagree with them. The top riser is the edge of the upper
 floor slab: the opening (void) in that slab is the stair's footprint.
 """
@@ -13,6 +15,7 @@ from dataclasses import dataclass
 
 import manifold3d as m3d
 import numpy as np
+from shapely import unary_union
 from shapely.geometry import LineString, Point, Polygon
 
 from .model import Plan
@@ -25,44 +28,101 @@ BLONDEL = (0.55, 0.70)   # comfortable 2 x riser + going, metres
 
 
 @dataclass
+class Flight:
+    foot: np.ndarray             # centre of its first riser
+    u: np.ndarray                # unit climbing direction
+    risers: int                  # including the riser at its top end
+    first: int                   # risers climbed before this flight
+
+
+@dataclass
 class StairGeom:
     id: str
     level: str
     to_level: str
     foot: np.ndarray             # centre of the first riser, plan metres
-    u: np.ndarray                # unit climbing direction
+    u: np.ndarray                # unit climbing direction of the first flight
     width: float
     risers: int
     going: float
     ffl: float                   # bottom floor level
     ffl_top: float               # top floor level
+    kind: str = "straight"       # or "dogleg": two flights, half landing, second flight turned back
+    side: float = 1.0            # dogleg: +1 second flight on the left of the first, -1 on the right
+    landing: float = 0.0         # dogleg: half-landing depth
+    gap: float = 0.0             # dogleg: well between the two flights
 
     @property
     def riser(self) -> float:
         return (self.ffl_top - self.ffl) / self.risers
 
     @property
-    def run(self) -> float:
-        """Horizontal length from first riser to the top riser (slab edge)."""
-        return self.going * (self.risers - 1)
-
-    @property
     def across(self) -> np.ndarray:
         return np.array([-self.u[1], self.u[0]])
 
     @property
+    def flights(self) -> list[Flight]:
+        if self.kind == "straight":
+            return [Flight(self.foot, self.u, self.risers, 0)]
+        n1 = (self.risers + 1) // 2
+        f1 = Flight(self.foot, self.u, n1, 0)
+        foot2 = self.foot + self.u * self.going * (n1 - 1) + self.across * self.side * (self.width + self.gap)
+        return [f1, Flight(foot2, -self.u, self.risers - n1, n1)]
+
+    def flight_run(self, f: Flight) -> float:
+        return self.going * (f.risers - 1)
+
+    def flight_top(self, f: Flight) -> np.ndarray:
+        return f.foot + f.u * self.flight_run(f)
+
+    @property
+    def run(self) -> float:
+        """Horizontal length of the first flight (all of a straight stair)."""
+        return self.flight_run(self.flights[0])
+
+    @property
     def top(self) -> np.ndarray:
-        return self.foot + self.u * self.run
+        """Centre of the top riser (the edge of the upper floor)."""
+        return self.flight_top(self.flights[-1])
+
+    @property
+    def top_u(self) -> np.ndarray:
+        """Direction of travel when stepping off the top riser."""
+        return self.flights[-1].u
+
+    def flight_rect(self, f: Flight) -> Polygon:
+        a = np.array([-f.u[1], f.u[0]]) * self.width / 2
+        t = self.flight_top(f)
+        return Polygon([f.foot - a, f.foot + a, t + a, t - a])
+
+    @property
+    def landing_rect(self) -> Polygon | None:
+        if self.kind == "straight":
+            return None
+        base = self.flight_top(self.flights[0])
+        far = base + self.u * self.landing
+        e1 = -self.across * self.side * self.width / 2
+        e2 = self.across * self.side * (self.width * 1.5 + self.gap)
+        return Polygon([base + e1, far + e1, far + e2, base + e2])
 
     @property
     def footprint(self) -> Polygon:
-        a = self.across * self.width / 2
-        return Polygon([self.foot - a, self.foot + a, self.top + a, self.top - a])
+        """Plan area of the flights and landing; also the opening in the floor above."""
+        shapes = [self.flight_rect(f) for f in self.flights]
+        if self.landing_rect is not None:
+            shapes.append(self.landing_rect)
+        return unary_union(shapes) if len(shapes) > 1 else shapes[0]
 
     def tread_centres(self) -> list[np.ndarray]:
-        """(x, y, z) at the middle of each tread's top surface."""
-        return [np.array([*(self.foot + self.u * self.going * (k + 0.5)), self.ffl + self.riser * (k + 1)])
-                for k in range(self.risers - 1)]
+        """(x, y, z) at the middle of each tread's (and the landing's) top surface."""
+        out = []
+        for f in self.flights:
+            out += [np.array([*(f.foot + f.u * self.going * (k + 0.5)), self.ffl + self.riser * (f.first + k + 1)])
+                    for k in range(f.risers - 1)]
+        if self.landing_rect is not None:
+            c = self.landing_rect.centroid
+            out.append(np.array([c.x, c.y, self.ffl + self.riser * self.flights[1].first]))
+        return out
 
 
 def build(plan: Plan) -> dict[str, StairGeom]:
@@ -73,26 +133,57 @@ def build(plan: Plan) -> dict[str, StairGeom]:
         out[s["id"]] = StairGeom(
             s["id"], s["level"], s["to_level"], np.asarray(s["start"], float), np.asarray(DIRS[s["direction"]]),
             s["width"], s["risers"], s["going"],
-            plan.levels[s["level"]]["elevation"], plan.levels[s["to_level"]]["elevation"])
+            plan.levels[s["level"]]["elevation"], plan.levels[s["to_level"]]["elevation"],
+            s.get("type", "straight"), 1.0 if s.get("turn", "left") == "left" else -1.0,
+            s.get("landing", s["width"]), s.get("gap", 0.0))
     return out
 
 
-def solid(sg: StairGeom) -> m3d.Manifold:
-    """Solid flight standing on the lower floor: one stepped profile extruded
-    across the width (unioned boxes would leave slivers, L-026)."""
-    pts = [(0.0, 0.0)]
-    for k in range(sg.risers - 1):
-        z = sg.riser * (k + 1)
-        pts += [(sg.going * k, z), (sg.going * (k + 1), z)]
-    pts.append((sg.run, 0.0))
+def _extrude_lane(sg: StairGeom, pts: list[tuple[float, float]], centre: np.ndarray, width: float) -> m3d.Manifold:
+    """Extrude an (along u, up) profile across a lane of `width` centred on
+    `centre` (the lane's point at along = 0), standing on the lower floor."""
     profile = m3d.CrossSection([np.asarray(pts)], m3d.FillRule.EvenOdd)
-    flight = m3d.Manifold.extrude(profile, sg.width)
-    # local (along, up, across) -> world
+    lane = m3d.Manifold.extrude(profile, width)
     u, a = sg.u, sg.across
-    origin = sg.foot - a * sg.width / 2
-    return flight.transform(np.array([[u[0], 0.0, a[0], origin[0]],
-                                      [u[1], 0.0, a[1], origin[1]],
-                                      [0.0, 1.0, 0.0, sg.ffl]]))
+    origin = centre - a * width / 2
+    # local (along, up, across) -> world
+    return lane.transform(np.array([[u[0], 0.0, a[0], origin[0]],
+                                    [u[1], 0.0, a[1], origin[1]],
+                                    [0.0, 1.0, 0.0, sg.ffl]]))
+
+
+def solids(sg: StairGeom) -> list[tuple[str, m3d.Manifold]]:
+    """(name suffix, solid) per lane, each one stepped profile extruded
+    across its lane and standing on the lower floor. Lanes touch but are
+    never unioned: unions of solids with coincident faces leave slivers
+    (L-026). A straight stair is one lane; a dog-leg is the first flight
+    with its half of the landing, the second flight with the other half,
+    and the landing over the well between them, if any."""
+    G, R = sg.going, sg.riser
+    f1 = sg.flights[0]
+    run1 = sg.flight_run(f1)
+    lane1 = [(0.0, 0.0)]
+    for k in range(f1.risers - 1):
+        lane1 += [(G * k, R * (k + 1)), (G * (k + 1), R * (k + 1))]
+    if sg.kind == "straight":
+        return [("", _extrude_lane(sg, lane1 + [(run1, 0.0)], sg.foot, sg.width))]
+    f2 = sg.flights[1]
+    z_land, far = R * f2.first, run1 + sg.landing
+    lane1 += [(run1, z_land), (far, z_land), (far, 0.0)]
+    # second flight, described in the first flight's along-axis: it climbs back from run1
+    top = run1 - sg.flight_run(f2)
+    lane2 = [(top, 0.0)]
+    for k in reversed(range(f2.risers - 1)):
+        z = R * (f2.first + k + 1)
+        lane2 += [(run1 - G * (k + 1), z), (run1 - G * k, z)]
+    lane2 += [(run1, z_land), (far, z_land), (far, 0.0)]
+    side = sg.across * sg.side
+    out = [("", _extrude_lane(sg, lane1, sg.foot, sg.width)),
+           ("_F2", _extrude_lane(sg, lane2, sg.foot + side * (sg.width + sg.gap), sg.width))]
+    if sg.gap > 0:
+        well = [(run1, 0.0), (run1, z_land), (far, z_land), (far, 0.0)]
+        out.append(("_WELL", _extrude_lane(sg, well, sg.foot + side * (sg.width + sg.gap) / 2, sg.gap)))
+    return out
 
 
 def room_at(lay, point) -> str | None:
@@ -104,13 +195,13 @@ def linked_rooms(sg: StairGeom, layouts: dict) -> tuple[str | None, str | None]:
     """(room at the foot, room at the top landing)."""
     low, up = layouts.get(sg.level), layouts.get(sg.to_level)
     return (room_at(low, sg.foot - sg.u * APPROACH) if low else None,
-            room_at(up, sg.top + sg.u * APPROACH) if up else None)
+            room_at(up, sg.top + sg.top_u * APPROACH) if up else None)
 
 
 def landing_depth(sg: StairGeom, region) -> float:
     """Free floor beyond the top riser, in the climbing direction, up to the
     room boundary."""
-    ray = LineString([sg.top, sg.top + sg.u * 20.0])
+    ray = LineString([sg.top, sg.top + sg.top_u * 20.0])
     inside = ray.intersection(region)
     parts = [g for g in getattr(inside, "geoms", [inside]) if g.length > 0]
     first = min(parts, key=lambda g: Point(sg.top).distance(g), default=None)

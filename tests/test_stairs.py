@@ -25,7 +25,7 @@ def test_t05_builds_clean(t05, run):
     result, st = run(t05)
     assert result.ok and "FAIL" not in st.values() and "WARN" not in st.values()
     assert "R01 -> R11" in details(result, "Q21")                 # living room up to the stair hall
-    assert "17 treads checked" in details(result, "Q22")
+    assert "17 treads and landings checked" in details(result, "Q22")
 
 
 def test_single_level_plans_have_no_stair_findings(t01, run):
@@ -37,7 +37,7 @@ def test_stair_geometry_is_exact(t05):
     plan = Plan(t05)
     sg = stairs.build(plan)["S01"]
     assert sg.riser == pytest.approx(0.175) and sg.run == pytest.approx(4.25)
-    solid = trimesh.Trimesh(*_mesh(stairs.solid(sg)))
+    solid = trimesh.Trimesh(*_mesh(stairs.solids(sg)[0][1]))
     assert solid.is_watertight
     # stepped block: sum of 17 treads' columns, each riser*(k+1) high, going deep, 1 m wide
     assert solid.volume == pytest.approx(sum(0.175 * (k + 1) * 0.25 * 1.0 for k in range(17)))
@@ -120,3 +120,52 @@ def test_stair_walk_line_is_clear(t05):
     results = walktests.run(walktests.generate(plan, layouts), build_parts(plan, layouts))
     stair = next(r for r in results if r["kind"] == "stair")
     assert stair["ok"] and all(r["ok"] for r in results)
+
+
+T06 = json.loads((ROOT / "projects" / "t06" / "plan.json").read_text())
+
+
+@pytest.fixture
+def t06():
+    return copy.deepcopy(T06)
+
+
+def test_t06_dogleg_builds_clean(t06, run):
+    result, st = run(t06)
+    assert result.ok and "FAIL" not in st.values() and "WARN" not in st.values()
+    assert "dog-leg 9 + 9 risers, landing 1.000 m" in details(result, "Q21")
+    assert "17 treads and landings checked" in details(result, "Q22")       # 8 + 8 treads + the landing
+
+
+def test_dogleg_geometry_is_exact(t06):
+    plan = Plan(t06)
+    sg = stairs.build(plan)["S01"]
+    f1, f2 = sg.flights
+    assert np.allclose(f2.foot, [8.27, 5.0]) and np.allclose(sg.top, [8.27, 3.0])     # back beside the first flight
+    assert sg.footprint.area == pytest.approx(2.0 * 3.0)                              # two 1 m lanes x (2 m + 1 m landing)
+    lanes = {name: trimesh.Trimesh(*_mesh(s)) for name, s in stairs.solids(sg)}
+    assert set(lanes) == {"", "_F2"} and all(m.is_watertight for m in lanes.values())
+    landing = 0.175 * 9 * 1.0 * 1.0                                                   # half landing per lane
+    first = sum(0.175 * (k + 1) * 0.25 for k in range(8))
+    second = sum(0.175 * (9 + k + 1) * 0.25 for k in range(8))
+    assert lanes[""].volume == pytest.approx(first + landing)
+    assert lanes["_F2"].volume == pytest.approx(second + landing)
+
+
+def test_dogleg_turned_the_wrong_way_cuts_a_wall(t06, run):
+    item(t06, "stairs", "S01")["turn"] = "left"                  # second flight runs under the lobby wall
+    result, st = run(t06)
+    assert st["Q21"] == "FAIL" and "cuts a wall" in details(result, "Q21")
+
+
+def test_shallow_half_landing_warns(t06, run):
+    item(t06, "stairs", "S01")["landing"] = 0.8
+    item(t06, "dimensions", "D-073")["value"] = 0.8
+    result, st = run(t06)
+    assert st["Q21"] == "WARN" and "half landing 0.800 m" in details(result, "Q21")
+
+
+def test_dogleg_needs_a_turn(t06):
+    from plan3d.model import schema_errors
+    del item(t06, "stairs", "S01")["turn"]
+    assert any("turn" in e for e in schema_errors(t06))

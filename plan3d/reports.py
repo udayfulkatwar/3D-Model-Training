@@ -10,6 +10,7 @@ from datetime import date
 from pathlib import Path
 
 import matplotlib
+import numpy as np
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
@@ -171,17 +172,25 @@ def write_drawings(plan, layouts, out: Path) -> Path:
             ax.text(c.x, c.y, "UNASSIGNED", ha="center", color="red", fontsize=7)
         for sg in flights:
             outline = list(sg.footprint.exterior.coords)
-            if sg.level == lid:                        # flight: treads and an "UP" arrow
+            if sg.level == lid:                        # flights: treads, landing and an "UP" walking line
                 ax.add_patch(MplPolygon(outline, closed=True, fc="none", ec="#1d1d1f", lw=0.8))
-                half = sg.across * sg.width / 2
-                for k in range(1, sg.risers - 1):
-                    p = sg.foot + sg.u * sg.going * k
-                    ax.plot(*zip(p - half, p + half), color="#1d1d1f", lw=0.4)
-                ax.annotate("UP", sg.top - sg.u * 0.2, sg.foot + sg.u * 0.2, fontsize=6, ha="center",
-                            arrowprops=dict(arrowstyle="->", lw=0.6))
+                path, flights = [], sg.flights
+                for i, f in enumerate(flights):
+                    half = np.array([-f.u[1], f.u[0]]) * sg.width / 2
+                    for k in range(1, f.risers - 1):
+                        p = f.foot + f.u * sg.going * k
+                        ax.plot(*zip(p - half, p + half), color="#1d1d1f", lw=0.4)
+                    first, last = i == 0, i == len(flights) - 1
+                    path += [f.foot + f.u * (0.15 if first else -sg.landing / 2),
+                             sg.flight_top(f) + f.u * (-0.15 if last else sg.landing / 2)]
+                if sg.landing_rect is not None:
+                    ax.add_patch(MplPolygon(list(sg.landing_rect.exterior.coords), closed=True, fc="none",
+                                            ec="#1d1d1f", lw=0.6))
+                ax.plot(*zip(*path[:-1]), color="#1d1d1f", lw=0.6)
+                ax.annotate("", path[-1], path[-2], arrowprops=dict(arrowstyle="->", lw=0.6))
+                ax.text(*(path[0] - sg.u * 0.12), "UP", fontsize=6, ha="center", va="top")
             elif sg.to_level == lid:                   # opening in this floor
                 ax.add_patch(MplPolygon(outline, closed=True, fc="none", ec="#6e6e73", lw=0.8, ls="--"))
-                c = sg.footprint.centroid
                 c = sg.foot + sg.u * sg.run * 0.3
                 ax.text(c[0], c[1], f"{sg.id}\nOPEN\nTO\nBELOW", ha="center", va="center", fontsize=6,
                         color="#6e6e73")

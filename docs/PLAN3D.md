@@ -74,7 +74,7 @@ counts, sizes (±0.1 mm), UVs, materials and centimetre storage must match.
 | `walls` | Centre-line start/end points. Joints are mitred automatically at any angle |
 | `openings` | Doors, windows and arches by position along a wall, width, height and sill; doors may state `opens_into` |
 | `rooms` | Name, use and a seed point. The room *is* the wall-enclosed region around the seed, so shape and area always come from the walls |
-| `stairs` (optional) | Straight flights: `level`, `to_level`, `start` (centre of the first riser), `direction` (N/E/S/W), `width`, `risers`, `going` |
+| `stairs` (optional) | `level`, `to_level`, `start` (centre of the first riser), `direction` (N/E/S/W), `width`, `risers`, `going`; `type` `straight` (default) or `dogleg` with `turn` (left/right), `landing` (half-landing depth, default = width) and `gap` (well, default 0) |
 
 Every wall, opening, room, level and wall type carries `prov`: the register
 entries that justify it.
@@ -97,7 +97,10 @@ Where the upper level does not cover the lower one, the lower level gets a
 full-thickness roof. Each stair's riser is the floor-to-floor height divided
 by `risers`; its footprint is cut out of the upper floor and the lower
 ceiling, and the top riser is the slab edge. Rooms on upper levels are
-reached through the stair (Q09). See `projects/t05` (G+1).
+reached through the stair (Q09). A dog-leg climbs half its risers (rounded
+up), crosses the half landing and climbs back beside the first flight; its
+whole footprint is opened in the floor above. See `projects/t05` (G+1,
+straight) and `projects/t06` (G+1, dog-leg).
 
 **Dimension check kinds:** `param` (a typed value must equal the register),
 `overall` (outer extents), `room_clear` (room clear width/depth, bounding
@@ -148,6 +151,6 @@ Builds are deterministic: the same plan gives a byte-identical GLB.
 ## Known limits (v0.1)
 
 See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md#plan3d-v01). In short:
-straight walls; straight stair flights only, without handrails; no roof
+straight walls; straight and dog-leg stairs only, without handrails; no roof
 parapet or furniture; one material per element type; plan input is typed
 by hand (no PDF/CAD reading yet).

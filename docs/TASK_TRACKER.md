@@ -18,7 +18,7 @@ verified without spending money.
 | Pri | ID | Task | Lead → Reviewer | AI / Human | Status |
 |---|---|---|---|---|---|
 | 0 | T-012 | **First Unreal import of T01**: run `import_plan3d.py` and check size, north, collision and materials (PLAN3D.md checklist) | AD-11 → AD-12 | AI via the founder's PC session (Remote Control + Python Remote Execution) | VERIFIED (QR-005, QR-007): import, size, north, PlayerStart, materials/collision, v2 frames/doors exact to 0.0 cm, walk test 26/26 in Unreal |
-| 1 | T-014 | Multi-level stacking (shared slabs, straight stairs, stair openings, Q21/Q22) and roof parapet | AD-13 → AD-05 | AI (parapet needs D-091) | Stacking + straight stairs IMPLEMENTED (QR-008, T05 G+1); not yet in Unreal. Parapet BLOCKED on D-091; dog-leg stairs and handrails PLANNED |
+| 1 | T-014 | Multi-level stacking (shared slabs, straight stairs, stair openings, Q21/Q22) and roof parapet | AD-13 → AD-05 | AI (parapet needs D-091) | Stacking, straight and dog-leg stairs IMPLEMENTED (QR-008, T05/T06 G+1); not yet in Unreal. Parapet BLOCKED on D-091; handrails/guards PLANNED |
 | 1 | T-015 | Unreal: sphere-sweep clear-width test (Q20) and T05 import | AD-11 → AD-12 | AI via PC session | BLOCKED: the PC session's safety check refuses to write scripts sent from this session; needs the founder's one-time approval |
 | 2 | T-002 | Web GLB optimization step (Draco/meshopt + KTX2, size budget) plus a headless load test | AD-18 → AD-34 | AI | PLANNED |
 | 3 | T-003 | Define target-device list and measure H01 on real phones (load time, FPS) | AD-34 → AD-33 | Human measures, AI analyses | PLANNED |
