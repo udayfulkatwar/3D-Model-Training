@@ -193,3 +193,29 @@ Carpet area 105.862 m² (1,139.5 sq ft) on a 120 m² built-up footprint.
 ### Not yet verified
 - Walking test in Play mode (doors passable, walls/glass blocking).
 - NorthMarker text rendering; materials/collision on the remaining 21 meshes.
+
+---
+
+## QR-006: frames, open door leaves and door-swing check (T-013)
+
+- **Date:** 2026-10-20 · **Scope:** training repo only
+- **Evidence:** [docs/evidence/QR-006/](evidence/QR-006/)
+
+| Check | Result |
+|---|---|
+| T01 with `details` (frame 60 mm, leaf 35 mm, both INFERRED D-095/D-096) | 45 parts (14 frames, 7 open leaves); PASS 13, FAIL 0 |
+| Hand check of frame, glass and leaf positions (O01, O02, O15) | Exact to 0.00 mm |
+| Q18 on T01 | All 7 doors open 90° without hitting a wall or another door |
+| Mutation tests | Leaf into a wall and two overlapping swings are flagged; frame width differing from register fails Q08 |
+| Plans without `details` (T02–T04, and T01 with details removed) | Build exactly as before (17 / 30 / 21 / 24 parts) |
+| GLB in three.js r186 (Chromium) | 45/45 parts, materials and UVs match, 0 errors |
+| FBX (Q17) | Pass, 45 meshes, cm |
+| Tests | 62 pass |
+
+### Defect found and fixed
+- The first frame build unioned boxes with coincident faces: Q12 found 6
+  sliver triangles on 5 frames. Frames are now one extruded profile (L-026).
+
+### Not verified
+- The new parts in Unreal. Bundle v2 has not been imported yet, and the
+  import script's new re-run cleanup and level save are untested in Unreal.

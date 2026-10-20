@@ -78,6 +78,15 @@ counts, sizes (±0.1 mm), UVs, materials and centimetre storage must match.
 Every wall, opening, room, level and wall type carries `prov`: the register
 entries that justify it.
 
+**Optional `details`** (one entry: `frame_width`, `door_leaf_thickness`,
+`prov`): when present, every door and window gets a frame lining its
+reveal, and every door gets a leaf standing open at 90° into the room it
+opens into, so walkthroughs pass freely. Window glass sits inside the
+frame. Opening widths are treated as **structural** openings, so the clear
+width is 2 × frame_width less. Doors may set `"hinge": "start" | "end"`
+(default `start`, the end nearer the wall's start point). Arches get no
+frame or leaf. Without `details`, plans build exactly as before.
+
 **Dimension check kinds:** `param` (a typed value must equal the register),
 `overall` (outer extents), `room_clear` (room clear width/depth, bounding
 box), `room_area`, `none`.
@@ -102,6 +111,8 @@ box), `room_area`, `none`.
 | Q14 | Floor areas | 3D floor area differing from the 2D room area |
 | Q15 | UVs | Any exported mesh without UVs |
 | Q16 | GLB round trip | Names, triangle counts, bounds or UVs lost on export |
+| Q17 | FBX round trip (`--fbx`) | FBX not in cm, or names, triangles, sizes, UVs or materials changed |
+| Q18 | Door swing clearance | A door leaf that would hit a wall when opened 90°, or two door swings that overlap |
 
 If Q04–Q07 fail, no model is exported.
 
@@ -109,7 +120,7 @@ If Q04–Q07 fail, no model is exported.
 
 | File | What it is |
 |---|---|
-| `model.glb` | glTF 2.0, metres, Y-up. Plan +X (east) → +X, plan +Y (north) → −Z. Named nodes: `L00_WALLS`, `L00_FLOOR_<room>`, `L00_CEILING_<room>`, `L00_GLASS_<opening>`; materials `wall`, `floor`, `ceiling`, `glass` |
+| `model.glb` | glTF 2.0, metres, Y-up. Plan +X (east) → +X, plan +Y (north) → −Z. Named nodes: `L00_WALLS`, `L00_FLOOR_<room>`, `L00_CEILING_<room>`, `L00_GLASS_<opening>`, and with details `L00_FRAME_<opening>`, `L00_DOOR_<opening>`; materials `wall`, `floor`, `ceiling`, `glass`, `frame`, `door` |
 | `plan_<level>.png` | Generated plan with clear sizes and areas, for overlaying on the source drawing |
 | `rooms.csv` | Room schedule (m, m², sq ft) and which inferred inputs each room depends on |
 | `uncertainty.md` | Every INFERRED value and OPEN question, and what uses it |

@@ -9,7 +9,7 @@ from pathlib import Path
 import jsonschema
 
 SCHEMA_PATH = Path(__file__).parent / "schema" / "plan.schema.json"
-COLLECTIONS = ("sources", "dimensions", "levels", "wall_types", "walls", "openings", "rooms")
+COLLECTIONS = ("sources", "dimensions", "levels", "wall_types", "walls", "openings", "rooms", "details")
 
 
 def load_schema() -> dict:
@@ -33,7 +33,7 @@ class Plan:
         self.duplicate_ids: list[str] = []
         for name in COLLECTIONS:
             index: dict[str, dict] = {}
-            for item in raw[name]:
+            for item in raw.get(name, []):
                 if item["id"] in index:
                     self.duplicate_ids.append(f"{name}.{item['id']}")
                 index[item["id"]] = item
@@ -52,7 +52,7 @@ class Plan:
 
     def elements(self):
         """Yield (collection, item) for every element that must carry provenance."""
-        for name in ("levels", "wall_types", "walls", "openings", "rooms"):
+        for name in ("levels", "wall_types", "walls", "openings", "rooms", "details"):
             for item in getattr(self, name).values():
                 yield name, item
 

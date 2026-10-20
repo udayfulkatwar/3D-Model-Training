@@ -27,7 +27,7 @@ def test_t01_exports_unreal_bundle(tmp_path):
     u = tmp_path / "unreal"
     assert {p.name for p in u.iterdir()} == {"T01.fbx", "unreal_manifest.json", "rooms.csv", "import_plan3d.py"}
     m = json.loads((u / "unreal_manifest.json").read_text())
-    assert len(m["meshes"]) == 24 and all(n.startswith("SM_T01_L00_") for n in m["meshes"])
+    assert len(m["meshes"]) == 45 and all(n.startswith("SM_T01_L00_") for n in m["meshes"])
     assert abs(float(m["fbx_header"]["UnitScaleFactor"]) - 1.0) < 1e-6          # centimetres
     rows = list(csv.DictReader(open(u / "rooms.csv")))
     assert len(rows) == 8 and rows[0]["---"] == rows[0]["RoomID"]               # DataTable row names

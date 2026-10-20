@@ -236,6 +236,26 @@ def check_daylight(report: Report, plan: Plan, layouts: dict) -> None:
                               f"{100 * lit[rid] / region.area:.1f}% of floor area")
 
 
+def check_door_swing(report: Report, plan: Plan, layouts: dict) -> None:
+    c = report.new("Q18", "Door swing clearance (each door can open 90 degrees)")
+    for lay in layouts.values():
+        for og in sorted(lay.openings.values(), key=lambda o: o.id):
+            if og.kind != "door":
+                continue
+            sweep = plan2d.door_sweep(lay, og).buffer(-1e-4)
+            for w in lay.walls.values():
+                if w.id == og.wall_id:
+                    continue
+                hit = sweep.intersection(w.poly).area
+                if hit > 1e-4:
+                    c.add("WARN", f"{og.id}: leaf swing hits wall {w.id} ({hit * 1e4:.0f} cm^2); "
+                                  "change hinge side, swing direction or position")
+            others = [o for o in lay.openings.values() if o.kind == "door" and o.id < og.id]
+            for o in others:
+                if sweep.intersection(plan2d.door_sweep(lay, o).buffer(-1e-4)).area > 1e-4:
+                    c.add("WARN", f"{og.id} and {o.id}: door swings overlap")
+
+
 # ---------------------------------------------------------------- mesh checks
 
 def check_solids(report: Report, parts: list[Part]) -> None:

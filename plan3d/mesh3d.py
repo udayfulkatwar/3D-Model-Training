@@ -15,13 +15,16 @@ from dataclasses import dataclass
 import manifold3d as m3d
 import numpy as np
 import trimesh
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, box
 
+from . import plan2d
 from .model import Plan
 from .plan2d import LevelLayout
 
-GLASS_INSET = 0.002      # glazing inset from reveals, metres
+GLASS_INSET = 0.002      # glazing inset from reveals or frame, metres
 GLASS_THICKNESS = 0.01
+LEAF_FLOOR_GAP = 0.01    # door leaf clears the floor
+LEAF_HEAD_GAP = 0.005    # and the frame head
 
 # Plan frame is Z-up; glTF 2.0 is Y-up. (x, y, z) -> (x, z, -y):
 # plan east (+X) stays +X, plan north (+Y) becomes glTF -Z, up becomes +Y.
@@ -31,6 +34,8 @@ MATERIALS = {
     "wall":    {"baseColorFactor": [0.93, 0.92, 0.89, 1.0], "roughnessFactor": 0.9},
     "floor":   {"baseColorFactor": [0.78, 0.72, 0.64, 1.0], "roughnessFactor": 0.6},
     "ceiling": {"baseColorFactor": [0.97, 0.97, 0.97, 1.0], "roughnessFactor": 0.95},
+    "frame":   {"baseColorFactor": [0.30, 0.20, 0.13, 1.0], "roughnessFactor": 0.55},
+    "door":    {"baseColorFactor": [0.55, 0.40, 0.27, 1.0], "roughnessFactor": 0.5},
     "glass":   {"baseColorFactor": [0.70, 0.82, 0.90, 0.30], "roughnessFactor": 0.05,
                 "alphaMode": "BLEND"},
 }
@@ -85,15 +90,52 @@ def build_parts(plan: Plan, layouts: dict[str, LevelLayout]) -> list[Part]:
             parts.append(Part(f"{level_id}_CEILING_{rid}", "ceiling", level_id,
                               _to_trimesh(_prism(poly, ffl + h, z_top)), rid))
 
+        details = next(iter(plan.details.values()), None)
+        fw = details["frame_width"] if details else 0.0
         for og in sorted(lay.openings.values(), key=lambda o: o.id):
-            if og.kind != "window":
+            if og.kind == "arch":
                 continue
             wg = lay.walls[og.wall_id]
-            pane = wg.strip(og.a + GLASS_INSET, og.b - GLASS_INSET, GLASS_THICKNESS / 2)
-            solid = _prism(pane, ffl + og.sill + GLASS_INSET, ffl + og.head - GLASS_INSET)
-            parts.append(Part(f"{level_id}_GLASS_{og.id}", "glass", level_id,
-                              _to_trimesh(solid), og.id))
+            if details:
+                parts.append(Part(f"{level_id}_FRAME_{og.id}", "frame", level_id,
+                                  _to_trimesh(_frame(wg, og, ffl, fw)), og.id))
+            if og.kind == "window":
+                pane = wg.strip(og.a + fw + GLASS_INSET, og.b - fw - GLASS_INSET, GLASS_THICKNESS / 2)
+                z0, z1 = ffl + og.sill + fw + GLASS_INSET, ffl + og.head - fw - GLASS_INSET
+                parts.append(Part(f"{level_id}_GLASS_{og.id}", "glass", level_id,
+                                  _to_trimesh(_prism(pane, z0, z1)), og.id))
+            elif details:
+                parts.append(Part(f"{level_id}_DOOR_{og.id}", "door", level_id,
+                                  _to_trimesh(_open_leaf(lay, wg, og, ffl, fw, details["door_leaf_thickness"])),
+                                  og.id))
     return parts
+
+
+def _frame(wg, og, ffl: float, fw: float) -> m3d.Manifold:
+    """Frame lining the opening's reveals: jambs and head (U shape) for doors,
+    plus a sill (closed ring) for windows. Built as one profile in the wall's
+    vertical plane and extruded through the wall thickness: unioning boxes
+    with coincident faces leaves sliver triangles (lesson L-004)."""
+    z0, z1 = ffl + og.sill, ffl + og.head
+    outer = box(og.a, z0, og.b, z1)
+    inner = box(og.a + fw, z0 + fw if og.kind == "window" else z0 - 1.0, og.b - fw, z1 - fw)
+    solid = m3d.Manifold.extrude(_cross_section(outer.difference(inner)), wg.thickness)
+    # local (along, z, depth) -> world; depth runs across the wall from face to face
+    d, n, t = wg.direction, wg.normal, wg.thickness
+    origin = wg.start - n * t / 2
+    return solid.transform(np.array([[d[0], 0.0, n[0], origin[0]],
+                                     [d[1], 0.0, n[1], origin[1]],
+                                     [0.0, 1.0, 0.0, 0.0]]))
+
+
+def _open_leaf(lay, wg, og, ffl: float, fw: float, thickness: float) -> m3d.Manifold:
+    """Door leaf standing open at 90 degrees into the room it opens into,
+    so walkthroughs pass freely."""
+    h, u = plan2d.door_hinge(lay, og, inset=fw)
+    n = wg.normal * plan2d.door_side(og)
+    width = og.b - og.a - 2 * fw
+    leaf = Polygon([h, h + n * width, h + n * width + u * thickness, h + u * thickness])
+    return _prism(leaf, ffl + LEAF_FLOOR_GAP, ffl + og.head - fw - LEAF_HEAD_GAP)
 
 
 def box_uv_mesh(solid: trimesh.Trimesh) -> tuple[np.ndarray, np.ndarray, np.ndarray]:

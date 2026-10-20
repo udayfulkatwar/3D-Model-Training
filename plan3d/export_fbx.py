@@ -24,7 +24,8 @@ from .model import Plan
 from .units import sqm_to_sqft
 
 UNREAL_SCRIPT = Path(__file__).resolve().parents[1] / "unreal" / "import_plan3d.py"
-MATERIAL_NAMES = {"wall": "M_Wall", "floor": "M_Floor", "ceiling": "M_Ceiling", "glass": "M_Glass"}
+MATERIAL_NAMES = {"wall": "M_Wall", "floor": "M_Floor", "ceiling": "M_Ceiling", "glass": "M_Glass",
+                  "frame": "M_Frame", "door": "M_Door"}
 
 
 def bpy_available() -> bool:

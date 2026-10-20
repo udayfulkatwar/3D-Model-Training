@@ -1,8 +1,9 @@
 """Import a plan3d FBX into the open Unreal Engine level.
 
-STATUS: UNTESTED IN UNREAL. Written against the Unreal Editor Python API
-(UE 5.x); it has not been run, because the training environment cannot
-run Unreal. Check every step on first use and report what differs.
+STATUS: first run verified in UE 5.8 on 2026-10-20 (QR-005): import,
+size, north, PlayerStart, materials and collision. The re-run cleanup
+(remove_previous) and level save were added afterwards and are not yet
+verified in Unreal.
 
 Usage (Unreal Editor, Python plugin enabled):
   1. Copy this whole folder (FBX, unreal_manifest.json, rooms.csv, this script)
@@ -69,9 +70,21 @@ def spawn(actors, what, loc, label, rot=None):
     return a
 
 
+def remove_previous(actors):
+    """Delete actors this script placed before (Outliner folder Plan3D/<project>),
+    so re-running it replaces the house instead of stacking a second copy
+    (duplicate meshes z-fight). Nothing outside that folder is touched."""
+    folder = f"Plan3D/{MANIFEST['project']}"
+    old = [a for a in actors.get_all_level_actors() if str(a.get_folder_path()) == folder]
+    for a in old:
+        actors.destroy_actor(a)
+    return len(old)
+
+
 def main():
     imported = import_fbx()
     actors = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
+    removed = remove_previous(actors)
     found = 0
     for name in MANIFEST["meshes"]:
         mesh = unreal.EditorAssetLibrary.load_asset(f"{DEST}/{name}")
@@ -92,8 +105,10 @@ def main():
         spawn(actors, unreal.DirectionalLight, (0, 0, 1000), "Sun", unreal.Rotator(0, -40, 135))
         spawn(actors, unreal.SkyLight, (0, 0, 1000), "SkyLight")
         spawn(actors, unreal.SkyAtmosphere, (0, 0, 0), "SkyAtmosphere")
-    unreal.log(f"plan3d: imported {len(imported)} assets, spawned {found}/{len(MANIFEST['meshes'])} meshes "
-               f"into {DEST}. Rooms DataTable source: rooms.csv (struct S_RoomData).")
+    saved = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).save_current_level()
+    unreal.log(f"plan3d: imported {len(imported)} assets, removed {removed} old actors, spawned "
+               f"{found}/{len(MANIFEST['meshes'])} meshes into {DEST}; level saved: {saved}. "
+               f"Rooms DataTable source: rooms.csv (struct S_RoomData).")
 
 
 main()

@@ -5,6 +5,7 @@
 | ID | Task | Status | Date |
 |---|---|---|---|
 | T-000 | Initialize repo: inspect state, website stack, write project records | IMPLEMENTED (records await founder review; website findings in QR-001) | 2026-10-19 |
+| T-013 | Frames, open door leaves, glazing inside frames, door-swing check Q18 (`details`) | IMPLEMENTED; positions exact to 0.00 mm by hand check; GLB/FBX/browser checks pass (QR-006). Parapet (D-091 OPEN) and multi-level not done | 2026-10-20 |
 | T-009 | FBX export for Unreal/Twinmotion + Unreal import script (`--fbx`) | IMPLEMENTED; verified by Blender re-import and an independent reader (QR-004). **Not yet imported into Unreal**; needs the founder's first-import check (T-012) | 2026-10-19 |
 | T-006 | Plan reader v0.1: image → draft plan.json + review sheet + overlay | IMPLEMENTED; pre-registered targets met on holdout 2 (T04, 2/2) and all tuned-on runs; holdout 1 was 2/3 before fixes (QR-003). **Not tested on real drawings** | 2026-10-19 |
 | T-001 | plan.json schema + generator + QA (`plan3d` v0.1) on fictional T01 | IMPLEMENTED; acceptance criteria 1, 3, 5 VERIFIED in training (QR-002); 2 partial (opening positions not checked against a drawing); 4 open (needs T-003 real devices) | 2026-10-19 |
@@ -17,7 +18,7 @@ verified without spending money.
 | Pri | ID | Task | Lead → Reviewer | AI / Human | Status |
 |---|---|---|---|---|---|
 | 0 | T-012 | **First Unreal import of T01**: run `import_plan3d.py` and check size, north, collision and materials (PLAN3D.md checklist) | AD-11 → AD-12 | Founder runs; AI checks via Unreal MCP | PARTLY VERIFIED (QR-005): import, size, north, PlayerStart, materials/collision OK; walk test pending |
-| 1 | T-013 | plan3d v0.2: door leaves and frames, window frames, roof/parapet once D-091 is answered, multi-level stacking | AD-13 → AD-05 | AI | PLANNED |
+| 1 | T-014 | Roof parapet once D-091 is answered; multi-level stacking (stairs, slabs between floors) | AD-13 → AD-05 | AI (needs D-091 answer) | PLANNED |
 | 2 | T-002 | Web GLB optimization step (Draco/meshopt + KTX2, size budget) plus a headless load test | AD-18 → AD-34 | AI | PLANNED |
 | 3 | T-003 | Define target-device list and measure H01 on real phones (load time, FPS) | AD-34 → AD-33 | Human measures, AI analyses | PLANNED |
 | — | T-004 | ~~Add the website source repo to this workflow; CI for build + Playwright smoke test~~ | — | — | REJECTED (violates ADR-007: ASTRA DWELL is view-only) |

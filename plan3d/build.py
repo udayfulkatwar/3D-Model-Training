@@ -40,6 +40,7 @@ def build(plan_path: str | Path, out_dir: str | Path, fbx: bool = False) -> Buil
     qa.check_openings(report, plan, layouts)
     qa.check_dimensions(report, plan, layouts)
     qa.check_circulation(report, plan, layouts)
+    qa.check_door_swing(report, plan, layouts)
     qa.check_daylight(report, plan, layouts)
     result.outputs.append(reports.write_drawings(plan, layouts, out_dir))
 

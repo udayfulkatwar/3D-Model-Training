@@ -614,6 +614,34 @@
     "kind": "none"
    },
    "note": "Not on S-01; roof is a flat slab without parapet until answered"
+  },
+  {
+   "id": "D-095",
+   "label": "Door and window frame width (inside structural opening)",
+   "value": 0.06,
+   "status": "INFERRED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "details.DET.frame_width"
+    ]
+   },
+   "note": "Not on S-01; 60 mm timber frame assumed. Schedule widths are taken as structural openings, so clear widths are 120 mm less"
+  },
+  {
+   "id": "D-096",
+   "label": "Door leaf thickness",
+   "value": 0.035,
+   "status": "INFERRED",
+   "source": "S-01",
+   "check": {
+    "kind": "param",
+    "targets": [
+     "details.DET.door_leaf_thickness"
+    ]
+   },
+   "note": "Not on S-01; typical 35 mm flush door assumed"
   }
  ],
  "levels": [
@@ -1192,6 +1220,17 @@
    "prov": [
     "D-074",
     "D-075"
+   ]
+  }
+ ],
+ "details": [
+  {
+   "id": "DET",
+   "frame_width": 0.06,
+   "door_leaf_thickness": 0.035,
+   "prov": [
+    "D-095",
+    "D-096"
    ]
   }
  ]

@@ -375,6 +375,13 @@
           "opens_into": {
             "$ref": "#/$defs/id",
             "description": "Doors only: room the leaf swings into (drawing convention); defaults to the non-exterior side"
+          },
+          "hinge": {
+            "enum": [
+              "start",
+              "end"
+            ],
+            "description": "Doors only: hinge at the opening end nearer the wall start (default) or end"
           }
         }
       }
@@ -418,6 +425,40 @@
           "seed": {
             "$ref": "#/$defs/xy",
             "description": "Any point strictly inside the room; the room is the wall-enclosed region containing it"
+          },
+          "prov": {
+            "$ref": "#/$defs/prov"
+          }
+        }
+      }
+    },
+    "details": {
+      "type": "array",
+      "maxItems": 1,
+      "description": "Optional construction details. When present, door/window frames and open door leaves are modelled.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "frame_width",
+          "door_leaf_thickness",
+          "prov"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "frame_width": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 0.2,
+            "description": "Visible frame width inside the structural opening, metres"
+          },
+          "door_leaf_thickness": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 0.1
           },
           "prov": {
             "$ref": "#/$defs/prov"

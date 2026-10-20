@@ -142,16 +142,15 @@ def write_drawings(plan, layouts, out: Path) -> Path:
                     p0, p1 = wg.point_at(og.a) + wg.normal * off, wg.point_at(og.b) + wg.normal * off
                     ax.plot([p0[0], p1[0]], [p0[1], p1[1]], color="#2b7bb9", lw=1)
             elif og.kind == "door":
-                target = og.opens_into or next((s for s in og.sides if s != plan2d.EXTERIOR), og.sides[0])
-                inside = 1 if og.sides[0] == target else -1
-                hinge = wg.point_at(og.a) + wg.normal * inside * wg.thickness / 2
+                hinge, u = plan2d.door_hinge(lay, og)
+                n = wg.normal * plan2d.door_side(og)
                 w = og.b - og.a
-                leaf = hinge + wg.normal * inside * w
+                leaf = hinge + n * w
                 ax.plot([hinge[0], leaf[0]], [hinge[1], leaf[1]], color="#e0782f", lw=1)
-                start = math.degrees(math.atan2(wg.direction[1], wg.direction[0]))
-                sweep = 90 * inside
-                ax.add_patch(Arc(hinge, 2 * w, 2 * w, angle=0,
-                                 theta1=min(start, start + sweep), theta2=max(start, start + sweep),
+                a_u = math.degrees(math.atan2(u[1], u[0]))
+                a_n = math.degrees(math.atan2(n[1], n[0]))
+                lo, hi = (a_u, a_n) if (a_n - a_u) % 360 <= 180 else (a_n, a_u)
+                ax.add_patch(Arc(hinge, 2 * w, 2 * w, angle=0, theta1=lo, theta2=hi,
                                  color="#e0782f", lw=0.6, ls="--"))
             else:
                 p0, p1 = wg.point_at(og.a), wg.point_at(og.b)

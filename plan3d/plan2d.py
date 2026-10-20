@@ -56,6 +56,7 @@ class OpeningGeom:
     cut_rect: Polygon            # rect widened by CUT_MARGIN each side
     sides: tuple[str, str] = ("", "")   # room id or EXTERIOR on each side
     opens_into: str | None = None
+    hinge_at_start: bool = True
 
 
 @dataclass
@@ -232,7 +233,31 @@ def _place_openings(plan: Plan, layout: LevelLayout) -> None:
                       for sgn in (1, -1))
         layout.openings[op["id"]] = OpeningGeom(
             op["id"], wg.id, op["kind"], a, b, op["sill"], op["sill"] + op["height"],
-            center, rect, cut, sides, op.get("opens_into"))
+            center, rect, cut, sides, op.get("opens_into"), op.get("hinge", "start") == "start")
+
+
+def door_side(og: OpeningGeom) -> int:
+    """+1 if the door swings to its wall's +normal side, else -1."""
+    target = og.opens_into or next((s for s in og.sides if s != EXTERIOR), og.sides[0])
+    return 1 if og.sides[0] == target else -1
+
+
+def door_hinge(layout: LevelLayout, og: OpeningGeom, inset: float = 0.0):
+    """(hinge point on the swing-side wall face, unit vector from hinge across the opening)."""
+    wg = layout.walls[og.wall_id]
+    s = og.a + inset if og.hinge_at_start else og.b - inset
+    u = wg.direction if og.hinge_at_start else -wg.direction
+    return wg.point_at(s) + wg.normal * door_side(og) * wg.thickness / 2, u
+
+
+def door_sweep(layout: LevelLayout, og: OpeningGeom, steps: int = 24) -> Polygon:
+    """Quarter-disc swept by the leaf when it opens 90 degrees."""
+    wg = layout.walls[og.wall_id]
+    h, u = door_hinge(layout, og)
+    n = wg.normal * door_side(og)
+    r = og.b - og.a
+    arc = [h + r * (np.cos(t) * u + np.sin(t) * n) for t in np.linspace(0, np.pi / 2, steps)]
+    return Polygon([h, *arc])
 
 
 def opening_conflicts(layout: LevelLayout) -> list[str]:

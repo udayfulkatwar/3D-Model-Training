@@ -38,7 +38,7 @@ in this repo until the founder adopts it themselves.
 | Plan input typed by hand | No PDF/DWG/image reading yet (T-006). Typing errors are caught only where the register checks them |
 | Opening positions not checked against the drawing | Only sizes are checked; positions carry INFERRED D-050 |
 | `room_clear` uses the bounding box | Exact for rectangular rooms only; use `room_area` for other shapes |
-| No door leaves, frames, sills, skirting, stairs, furniture | Openings are voids; windows are a single glazing pane |
+| Frames and open door leaves only with `details`; no skirting, stairs or furniture | Doors are always shown open at 90°; no hardware, glazing bars or shutters |
 | Roof = per-room ceiling slabs + wall tops | Visible seams from above; no parapet (D-091 OPEN) |
 | One material per element type | No per-room finishes yet |
 | GLB only, uncompressed | No FBX/Unreal export, Draco/KTX2 or LOD yet (T-002, T-009) |

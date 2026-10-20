@@ -78,9 +78,11 @@ def test_every_part_is_named_and_present(t01, run):
     names = set(trimesh.load(result.out_dir / "model.glb", force="scene").geometry)
     rooms = [r["id"] for r in t01["rooms"]]
     windows = [o["id"] for o in t01["openings"] if o["kind"] == "window"]
+    doors = [o["id"] for o in t01["openings"] if o["kind"] == "door"]
     expected = {"L00_WALLS"} | {f"L00_{k}_{r}" for r in rooms for k in ("FLOOR", "CEILING")} \
-        | {f"L00_GLASS_{w}" for w in windows}
-    assert names == expected
+        | {f"L00_GLASS_{w}" for w in windows} | {f"L00_FRAME_{o}" for o in windows + doors} \
+        | {f"L00_DOOR_{d}" for d in doors}
+    assert names == expected                      # arches get no frame or leaf
 
 
 def test_build_is_deterministic(t01, run):
