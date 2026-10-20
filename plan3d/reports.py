@@ -14,8 +14,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.patches import Arc, Polygon as MplPolygon  # noqa: E402
+from shapely.ops import polylabel, unary_union  # noqa: E402
 
-from . import plan2d  # noqa: E402
+from . import plan2d, stairs  # noqa: E402
 from .units import sqm_to_sqft  # noqa: E402
 
 DISCLAIMER = ("Visualization model only. Not for construction. Automated checks are "
@@ -155,14 +156,35 @@ def write_drawings(plan, layouts, out: Path) -> Path:
             else:
                 p0, p1 = wg.point_at(og.a), wg.point_at(og.b)
                 ax.plot([p0[0], p1[0]], [p0[1], p1[1]], color="#6e6e73", lw=0.8, ls=":")
+        flights = stairs.build(plan).values()
+        open_below = [sg.footprint for sg in flights if sg.to_level == lid]
         for rid, region in lay.room_regions.items():
             r, c = rows[rid], region.representative_point()
+            free = region.difference(unary_union(open_below)) if open_below else region
+            if free.area < region.area:              # keep the label off the stair opening
+                c = polylabel(max(getattr(free, "geoms", [free]), key=lambda g: g.area), tolerance=0.01)
             ax.text(c.x, c.y, f"{r['Name']}\n{r['ClearX_m']:.3f} × {r['ClearY_m']:.3f} m\n"
                     f"{r['Area_m2']:.2f} m² · {r['Area_sqft']:.0f} sq ft",
                     ha="center", va="center", fontsize=7, color="#1d1d1f")
         for poly in lay.unassigned:
             c = poly.representative_point()
             ax.text(c.x, c.y, "UNASSIGNED", ha="center", color="red", fontsize=7)
+        for sg in flights:
+            outline = list(sg.footprint.exterior.coords)
+            if sg.level == lid:                        # flight: treads and an "UP" arrow
+                ax.add_patch(MplPolygon(outline, closed=True, fc="none", ec="#1d1d1f", lw=0.8))
+                half = sg.across * sg.width / 2
+                for k in range(1, sg.risers - 1):
+                    p = sg.foot + sg.u * sg.going * k
+                    ax.plot(*zip(p - half, p + half), color="#1d1d1f", lw=0.4)
+                ax.annotate("UP", sg.top - sg.u * 0.2, sg.foot + sg.u * 0.2, fontsize=6, ha="center",
+                            arrowprops=dict(arrowstyle="->", lw=0.6))
+            elif sg.to_level == lid:                   # opening in this floor
+                ax.add_patch(MplPolygon(outline, closed=True, fc="none", ec="#6e6e73", lw=0.8, ls="--"))
+                c = sg.footprint.centroid
+                c = sg.foot + sg.u * sg.run * 0.3
+                ax.text(c[0], c[1], f"{sg.id}\nOPEN\nTO\nBELOW", ha="center", va="center", fontsize=6,
+                        color="#6e6e73")
         minx, miny, maxx, maxy = lay.footprint.bounds
         ax.annotate("", (minx, miny - 0.6), (maxx, miny - 0.6),
                     arrowprops=dict(arrowstyle="<->", lw=0.6))

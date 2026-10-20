@@ -1,6 +1,7 @@
 """Walk tests: straight probe lines a person would take, with the expected
-outcome. Through every door and arch the line must pass freely; at every
-window and solid stretch of wall it must be blocked.
+outcome. Through every door and arch, and up every stair at chest height,
+the line must pass freely; at every window and solid stretch of wall it
+must be blocked.
 
 The same probes run twice: here against the built meshes (Q19), and in
 Unreal against its collision (unreal/walk_test.py), so a mismatch in Unreal
@@ -11,6 +12,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from . import stairs
 from .mesh3d import Part
 from .model import Plan
 
@@ -53,6 +55,12 @@ def generate(plan: Plan, layouts: dict) -> list[dict]:
                           "start": [*(c + wg.normal * reach), ffl + WALL_PROBE_Z],
                           "end": [*(c - wg.normal * reach), ffl + WALL_PROBE_Z],
                           "expect_hit": True})
+    for sg in sorted(stairs.build(plan).values(), key=lambda s: s.id):
+        if sg.level in layouts and sg.to_level in layouts:
+            tests.append({"name": f"stair:{sg.id}", "kind": "stair",
+                          "start": [*(sg.foot - sg.u * stairs.APPROACH), sg.ffl + DOOR_PROBE_Z],
+                          "end": [*(sg.top + sg.u * PROBE_M), sg.ffl_top + DOOR_PROBE_Z],
+                          "expect_hit": False})
     return [{**t, "start": [round(float(v), 4) for v in t["start"]],
              "end": [round(float(v), 4) for v in t["end"]]} for t in tests]
 

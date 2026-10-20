@@ -33,15 +33,18 @@ in this repo until the founder adopts it themselves.
 
 | Limit | Effect / workaround |
 |---|---|
-| Single level only | Multi-level plans are warned (Q05). Stacked slabs would overlap |
+| Stacked levels need matching outlines in the plan file | Each level is typed separately; levels must stack exactly (Q21). Tested on one G+1 plan (T05) only |
+| Straight stair flights only, solid to the floor | No dog-leg/U stairs, mid-flight landings, winders, spiral stairs, open risers or nosings; space under the stair is filled |
+| No handrails, balustrades or guard rails | Open edges of stair openings and the open side of a flight are unprotected in the model. Q21 does not check fall protection |
+| Stair thresholds (riser ≤ 190 mm, going ≥ 250 mm, 2R+G 550–700 mm) are training values | Not checked against NBC/UDCPR; WARN only |
 | Straight walls only | No curved walls or columns |
 | Plan input typed by hand | No PDF/DWG/image reading yet (T-006). Typing errors are caught only where the register checks them |
 | Opening positions not checked against the drawing | Only sizes are checked; positions carry INFERRED D-050 |
 | `room_clear` uses the bounding box | Exact for rectangular rooms only; use `room_area` for other shapes |
-| Frames and open door leaves only with `details`; no skirting, stairs or furniture | Doors are always shown open at 90°; no hardware, glazing bars or shutters |
+| Frames and open door leaves only with `details`; no skirting or furniture | Doors are always shown open at 90°; no hardware, glazing bars or shutters |
 | Roof = per-room ceiling slabs + wall tops | Visible seams from above; no parapet (D-091 OPEN) |
 | One material per element type | No per-room finishes yet |
-| GLB only, uncompressed | No FBX/Unreal export, Draco/KTX2 or LOD yet (T-002, T-009) |
+| GLB uncompressed | No Draco/KTX2 or LOD yet (T-002); FBX via `--fbx` (T-009) |
 | glTF stores float32 positions | ~1 µm position precision near the origin; fine for buildings, but keep the origin near the site |
 | Daylight check counts window area only | Not a daylight factor and not a code check |
 | Browser check uses software GL | Proves loading and correctness, not phone performance (T-003) |
@@ -63,7 +66,8 @@ in this repo until the founder adopts it themselves.
 
 | Limit | Effect / workaround |
 |---|---|
-| Unreal: T01 imported and walk-tested by line traces (UE 5.8, QR-005, QR-007); Twinmotion never | No walk in Play mode with a real character capsule yet; Twinmotion import pending |
+| Unreal: T01 imported and walk-tested by line traces (UE 5.8, QR-005, QR-007); Twinmotion never | Sphere-sweep clear-width test and T05 (two storeys) not yet run in Unreal; Twinmotion import pending |
+| Unreal's DefaultPawn (0.70 m sphere) cannot pass 0.75 m toilet doors with frames (0.595 m clear, Q20) | Use a walkthrough pawn ≤ 0.55 m wide, or wider doors |
 | Needs Blender's Python module (~400 MB, GPL-3.0) | Optional install; runs as a separate process (ADR-010) |
 | Flat colour materials only | No textures; replace with Unreal/Fab materials by name (`M_Wall` etc.) |
 | Collision = complex-as-simple on every mesh | Correct for walking through doors; heavier than simple collision for big projects |

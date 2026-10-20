@@ -67,7 +67,10 @@ for (const name of Object.keys(built)) {
 }
 for (const name of Object.keys(loaded)) if (!built[name]) problems.push(`${name}: unexpected mesh`);
 const [lo, hi] = seen.bounds;
-const walls = built['L00_WALLS']?.bounds_zup_m;
+// the walls of all levels together span the whole building
+const wallBounds = Object.values(built).filter(m => m.name.endsWith('_WALLS')).map(m => m.bounds_zup_m);
+const walls = wallBounds.length ? [[0, 1, 2].map(i => Math.min(...wallBounds.map(b => b[0][i]))),
+                                   [0, 1, 2].map(i => Math.max(...wallBounds.map(b => b[1][i])))] : null;
 if (walls) {
   // plan (x, y, z) -> glTF (x, z, -y)
   const expectLo = [walls[0][0], walls[0][2], -walls[1][1]], expectHi = [walls[1][0], walls[1][2], -walls[0][1]];

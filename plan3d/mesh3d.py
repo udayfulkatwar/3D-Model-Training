@@ -6,6 +6,13 @@ Stacking per level (z relative to the level's finished floor, FFL):
   ceilings  FFL + wall_height      ..  + roof_thickness (one per room)
 Floors and ceilings never sit under or over a wall, so no two visible faces
 share a plane (lesson L-002).
+
+Stacked levels (T-014): the slab between a level and the one above is split.
+Its lowest CEILING_LAYER belongs to the lower level (ceiling plaster under
+every lower room, the lower walls running up into it); the rest belongs to
+the upper level (its floors and walls). Where the upper level does not cover
+the lower one (terrace), the lower ceiling and walls fill the whole slab
+as a roof. Stair openings cut both layers.
 """
 
 from __future__ import annotations
@@ -15,9 +22,10 @@ from dataclasses import dataclass
 import manifold3d as m3d
 import numpy as np
 import trimesh
+from shapely import unary_union
 from shapely.geometry import Polygon, box
 
-from . import plan2d
+from . import plan2d, stairs
 from .model import Plan
 from .plan2d import LevelLayout
 
@@ -25,6 +33,8 @@ GLASS_INSET = 0.002      # glazing inset from reveals or frame, metres
 GLASS_THICKNESS = 0.01
 LEAF_FLOOR_GAP = 0.01    # door leaf clears the floor
 LEAF_HEAD_GAP = 0.005    # and the frame head
+CEILING_LAYER = 0.02     # lower level's share of a slab between stacked levels
+STACK_TOL = 1e-6
 
 # Plan frame is Z-up; glTF 2.0 is Y-up. (x, y, z) -> (x, z, -y):
 # plan east (+X) stays +X, plan north (+Y) becomes glTF -Z, up becomes +Y.
@@ -38,6 +48,7 @@ MATERIALS = {
     "door":    {"baseColorFactor": [0.55, 0.40, 0.27, 1.0], "roughnessFactor": 0.5},
     "glass":   {"baseColorFactor": [0.70, 0.82, 0.90, 0.30], "roughnessFactor": 0.05,
                 "alphaMode": "BLEND"},
+    "stair":   {"baseColorFactor": [0.62, 0.60, 0.57, 1.0], "roughnessFactor": 0.7},
 }
 
 
@@ -56,10 +67,16 @@ def _cross_section(poly: Polygon) -> m3d.CrossSection:
     return m3d.CrossSection(rings, m3d.FillRule.EvenOdd)
 
 
+def _polygons(geom) -> list[Polygon]:
+    """The polygons in any shapely result (boolean leftovers can be lines or points)."""
+    if geom.geom_type == "Polygon":
+        return [geom] if geom.area > 1e-12 else []
+    return [p for g in getattr(geom, "geoms", []) for p in _polygons(g)]
+
+
 def _prism(geom, z0: float, z1: float) -> m3d.Manifold:
-    polys = list(getattr(geom, "geoms", [geom]))
     solid = m3d.Manifold()
-    for p in polys:
+    for p in _polygons(geom):
         solid = solid + m3d.Manifold.extrude(_cross_section(p), z1 - z0).translate([0, 0, z0])
     return solid
 
@@ -70,25 +87,65 @@ def _to_trimesh(solid: m3d.Manifold) -> trimesh.Trimesh:
                            np.asarray(mesh.tri_verts), process=True)
 
 
+def stacking(plan: Plan) -> dict[str, str]:
+    """{level id: id of the level directly above it} for levels that stack:
+    the upper floor level equals the lower ceiling plus its slab, and the
+    upper floor thickness equals that slab (Q21 reports levels that don't)."""
+    above = {}
+    for lo in plan.levels.values():
+        for up in plan.levels.values():
+            if (abs(up["elevation"] - (lo["elevation"] + lo["wall_height"] + lo["roof_thickness"])) < STACK_TOL
+                    and abs(up["floor_thickness"] - lo["roof_thickness"]) < STACK_TOL):
+                above[lo["id"]] = up["id"]
+    return above
+
+
+def _spaces(lay: LevelLayout) -> list[tuple[str, Polygon]]:
+    spaces = [(rid, poly) for rid, poly in sorted(lay.room_regions.items())]
+    return spaces + [(f"UNASSIGNED{i}", poly) for i, poly in enumerate(lay.unassigned)]
+
+
 def build_parts(plan: Plan, layouts: dict[str, LevelLayout]) -> list[Part]:
     parts: list[Part] = []
+    above = {lo: up for lo, up in stacking(plan).items() if lo in layouts and up in layouts}
+    below = {up: lo for lo, up in above.items()}
+    flights = stairs.build(plan)
+    voids = {lid: unary_union([sg.footprint for sg in flights.values() if sg.to_level == lid])
+             for lid in layouts}
     for level_id, lay in layouts.items():
         lv = plan.levels[level_id]
         ffl, h = lv["elevation"], lv["wall_height"]
         z_bot, z_top = ffl - lv["floor_thickness"], ffl + h + lv["roof_thickness"]
+        if level_id in below:
+            z_bot += CEILING_LAYER                     # the layer under this floor is the ceiling below
+        z_mid = ffl + h + CEILING_LAYER
+        up = above.get(level_id)
+        if up is not None:                             # what the level above puts into the shared slab
+            cover = unary_union([*(p.difference(voids[up]) for _, p in _spaces(layouts[up])),
+                                 layouts[up].footprint])
+            up_void = voids[up]
 
-        walls = _prism(lay.footprint, z_bot, z_top)
+        if up is None:
+            walls = _prism(lay.footprint, z_bot, z_top)
+        else:
+            walls = _prism(lay.footprint, z_bot, z_mid) + _prism(lay.footprint.difference(cover), z_mid, z_top)
         for og in lay.openings.values():
             walls = walls - _prism(og.cut_rect, ffl + og.sill, ffl + og.head)
         parts.append(Part(f"{level_id}_WALLS", "wall", level_id, _to_trimesh(walls)))
 
-        spaces = [(rid, poly) for rid, poly in sorted(lay.room_regions.items())]
-        spaces += [(f"UNASSIGNED{i}", poly) for i, poly in enumerate(lay.unassigned)]
-        for rid, poly in spaces:
+        for rid, poly in _spaces(lay):
             parts.append(Part(f"{level_id}_FLOOR_{rid}", "floor", level_id,
-                              _to_trimesh(_prism(poly, z_bot, ffl)), rid))
-            parts.append(Part(f"{level_id}_CEILING_{rid}", "ceiling", level_id,
-                              _to_trimesh(_prism(poly, ffl + h, z_top)), rid))
+                              _to_trimesh(_prism(poly.difference(voids[level_id]), z_bot, ffl)), rid))
+            if up is None:
+                ceiling = _prism(poly, ffl + h, z_top)
+            else:
+                ceiling = (_prism(poly.difference(up_void), ffl + h, z_mid)
+                           + _prism(poly.difference(cover).difference(up_void), z_mid, z_top))
+            if not ceiling.is_empty():
+                parts.append(Part(f"{level_id}_CEILING_{rid}", "ceiling", level_id, _to_trimesh(ceiling), rid))
+        for sg in sorted(flights.values(), key=lambda s: s.id):
+            if sg.level == level_id:
+                parts.append(Part(f"{level_id}_STAIR_{sg.id}", "stair", level_id, _to_trimesh(stairs.solid(sg)), sg.id))
 
         details = next(iter(plan.details.values()), None)
         fw = details["frame_width"] if details else 0.0

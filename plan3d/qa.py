@@ -15,8 +15,8 @@ import trimesh
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
 
-from . import plan2d
-from .mesh3d import ZUP_TO_YUP, Part
+from . import plan2d, stairs
+from .mesh3d import ZUP_TO_YUP, Part, stacking
 from .model import Plan
 
 DEGENERATE_AREA = 1e-5     # m^2 (lesson L-004)
@@ -81,6 +81,7 @@ def check_references(report: Report, plan: Plan) -> bool:
     refs += [(f"openings.{o['id']}.wall", o["wall"], plan.walls) for o in plan.openings.values()]
     refs += [(f"rooms.{r['id']}.level", r["level"], plan.levels) for r in plan.rooms.values()]
     refs += [(f"dimensions.{d['id']}.source", d["source"], plan.sources) for d in plan.dimensions.values()]
+    refs += [(f"stairs.{s['id']}.{k}", s[k], plan.levels) for s in plan.stairs.values() for k in ("level", "to_level")]
     for coll, item in plan.elements():
         refs += [(f"{coll}.{item['id']}.prov", p, plan.dimensions) for p in item["prov"]]
     for d in plan.dimensions.values():
@@ -142,9 +143,6 @@ def check_walls(report: Report, plan: Plan, layouts: dict) -> None:
 def check_envelope_and_rooms(report: Report, plan: Plan, layouts: dict) -> None:
     env = report.new("Q05", "Envelope closed")
     rooms = report.new("Q06", "Rooms resolve to unique enclosed regions")
-    if len(plan.levels) > 1:
-        env.add("WARN", "plan3d 0.1 is verified for single-level plans only; stacked levels "
-                        "would duplicate slabs (review Q13 before use)")
     for lay in layouts.values():
         for check, status, msg in lay.issues:
             if check != "walls":
@@ -205,12 +203,20 @@ def check_dimensions(report: Report, plan: Plan, layouts: dict) -> None:
 
 
 def check_circulation(report: Report, plan: Plan, layouts: dict) -> None:
-    c = report.new("Q09", "Circulation: every room reachable through doors")
+    c = report.new("Q09", "Circulation: every room reachable through doors and stairs")
+    graph: dict[str, set[str]] = {}
     for lay in layouts.values():
-        graph = plan2d.circulation(lay)
-        reach = plan2d.reachable_from_exterior(graph)
-        if len(graph[plan2d.EXTERIOR]) == 0:
-            c.add("FAIL", f"{lay.level_id}: no door to the exterior")
+        for node, nbrs in plan2d.circulation(lay).items():
+            graph.setdefault(node, set()).update(nbrs)
+    for sg in stairs.build(plan).values():
+        low, up = stairs.linked_rooms(sg, layouts)
+        if low and up:
+            graph.setdefault(low, set()).add(up)
+            graph.setdefault(up, set()).add(low)
+    reach = plan2d.reachable_from_exterior(graph)
+    if not graph.get(plan2d.EXTERIOR):
+        c.add("FAIL", "no door to the exterior")
+    for lay in layouts.values():
         for rid in sorted(lay.room_regions):
             if rid not in reach:
                 c.add("FAIL", f"{rid} ({plan.rooms[rid]['name']}) cannot be reached from the entrance")
@@ -287,6 +293,60 @@ def check_clearance(report: Report, plan: Plan, layouts: dict, parts: list[Part]
     return results
 
 
+def check_stacking_and_stairs(report: Report, plan: Plan, layouts: dict) -> None:
+    """Q21: levels sit on each other; each stair starts and ends in a room,
+    stays clear of walls, and has a comfortable rise and going."""
+    c = report.new("Q21", "Levels stack; stairs fit and climb comfortably")
+    above = stacking(plan)
+    lowest = min((lv["elevation"] for lv in plan.levels.values()), default=0.0)
+    for lv in plan.levels.values():
+        if lv["elevation"] > lowest and lv["id"] not in above.values():
+            c.add("FAIL", f"{lv['id']}: does not sit on a level below (its elevation must equal the lower "
+                          f"floor level + wall height + slab, and its floor thickness that slab)")
+    for sg in sorted(stairs.build(plan).values(), key=lambda s: s.id):
+        if above.get(sg.level) != sg.to_level:
+            c.add("FAIL", f"{sg.id}: {sg.to_level} is not the level directly above {sg.level}")
+            continue
+        two_r_g = 2 * sg.riser + sg.going
+        c.add("INFO", f"{sg.id}: {sg.risers} risers of {sg.riser * 1000:.1f} mm, going {sg.going * 1000:.0f} mm, "
+                      f"2R+G = {two_r_g * 1000:.0f} mm, run {sg.run:.3f} m")
+        if sg.riser > stairs.MAX_RISER or sg.going < stairs.MIN_GOING:
+            c.add("WARN", f"{sg.id}: riser {sg.riser * 1000:.0f} mm / going {sg.going * 1000:.0f} mm outside "
+                          f"{stairs.MAX_RISER * 1000:.0f} / {stairs.MIN_GOING * 1000:.0f} mm (confirm with the code)")
+        if not stairs.BLONDEL[0] <= two_r_g <= stairs.BLONDEL[1]:
+            c.add("WARN", f"{sg.id}: 2R+G {two_r_g * 1000:.0f} mm outside the comfortable "
+                          f"{stairs.BLONDEL[0] * 1000:.0f}-{stairs.BLONDEL[1] * 1000:.0f} mm")
+        low, up = stairs.linked_rooms(sg, layouts)
+        if low is None:
+            c.add("FAIL", f"{sg.id}: the foot of the stair is not inside a room on {sg.level}")
+        elif sg.footprint.difference(layouts[sg.level].room_regions[low]).area > 1e-6:
+            c.add("FAIL", f"{sg.id}: the flight crosses a wall on {sg.level}")
+        if up is None:
+            c.add("FAIL", f"{sg.id}: the top landing is not inside a room on {sg.to_level}")
+            continue
+        region = layouts[sg.to_level].room_regions[up]
+        if sg.footprint.intersection(layouts[sg.to_level].footprint).area > 1e-6:
+            c.add("FAIL", f"{sg.id}: the opening in the {sg.to_level} floor cuts a wall")
+        depth = stairs.landing_depth(sg, region)
+        if depth < sg.width:
+            c.add("WARN", f"{sg.id}: landing {depth:.3f} m deep, less than the stair width {sg.width:.3f} m")
+        else:
+            c.add("INFO", f"{sg.id}: {low} -> {up}, landing {depth:.3f} m deep")
+
+
+def check_headroom(report: Report, plan: Plan, parts: list[Part]) -> None:
+    """Q22: nothing within HEADROOM above any tread."""
+    from . import walktests
+    c = report.new("Q22", f"Stair headroom ({stairs.HEADROOM:.1f} m above every tread)")
+    scene = walktests.Scene(parts)
+    for sg in sorted(stairs.build(plan).values(), key=lambda s: s.id):
+        for k, p in enumerate(sg.tread_centres()):
+            hit, t = scene.first_hit_at(p + [0, 0, 1e-4], p + [0, 0, stairs.HEADROOM])
+            if hit is not None:
+                c.add("FAIL", f"{sg.id} tread {k + 1}: {hit} {t * stairs.HEADROOM:.3f} m above the tread")
+        c.add("INFO", f"{sg.id}: {sg.risers - 1} treads checked")
+
+
 def check_solids(report: Report, parts: list[Part]) -> None:
     c = report.new("Q11", "Solids are closed, finite and positive-volume")
     for p in parts:
@@ -360,14 +420,18 @@ def check_uvs(report: Report, scene: trimesh.Scene) -> None:
 
 
 def check_floor_areas(report: Report, plan: Plan, parts: list[Part], layouts: dict) -> None:
-    c = report.new("Q14", "3D floor areas equal 2D room areas")
+    c = report.new("Q14", "3D floor areas equal 2D room areas (less stair openings)")
+    voids: dict[str, Polygon] = {}
+    for sg in stairs.build(plan).values():
+        voids[sg.to_level] = unary_union([voids.get(sg.to_level, Polygon()), sg.footprint])
     for p in parts:
         if p.role != "floor" or p.ref not in plan.rooms:
             continue
         ffl = plan.levels[p.level]["elevation"]
         m = p.solid
         top = (m.face_normals[:, 2] > 0.999) & (np.abs(m.triangles_center[:, 2] - ffl) < 1e-6)
-        a3, a2 = float(m.area_faces[top].sum()), layouts[p.level].room_regions[p.ref].area
+        region = layouts[p.level].room_regions[p.ref].difference(voids.get(p.level, Polygon()))
+        a3, a2 = float(m.area_faces[top].sum()), region.area
         if abs(a3 - a2) > 1e-6 * max(a2, 1):
             c.add("FAIL", f"{p.name}: 3D {a3:.6f} m^2 vs 2D {a2:.6f} m^2")
 

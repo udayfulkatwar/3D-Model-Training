@@ -9,7 +9,7 @@ from pathlib import Path
 import jsonschema
 
 SCHEMA_PATH = Path(__file__).parent / "schema" / "plan.schema.json"
-COLLECTIONS = ("sources", "dimensions", "levels", "wall_types", "walls", "openings", "rooms", "details")
+COLLECTIONS = ("sources", "dimensions", "levels", "wall_types", "walls", "openings", "rooms", "details", "stairs")
 
 
 def load_schema() -> dict:
@@ -52,7 +52,7 @@ class Plan:
 
     def elements(self):
         """Yield (collection, item) for every element that must carry provenance."""
-        for name in ("levels", "wall_types", "walls", "openings", "rooms", "details"):
+        for name in ("levels", "wall_types", "walls", "openings", "rooms", "details", "stairs"):
             for item in getattr(self, name).values():
                 yield name, item
 

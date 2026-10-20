@@ -127,8 +127,7 @@ def test_inferred_value_must_explain_itself(t01, run):
     assert st["Q01"] == "FAIL"
 
 
-def test_multi_level_plan_is_flagged_as_unverified(t01, run):
+def test_level_without_walls_fails_without_crashing(t01, run):
     t01["levels"].append({**item(t01, "levels", "L00"), "id": "L01", "name": "First", "elevation": 3.15})
     result, st = run(t01)
-    assert "single-level" in details(result, "Q05")
-    assert "L01: level has no walls" in details(result, "Q05") and not result.ok   # no crash
+    assert "L01: level has no walls" in details(result, "Q05") and not result.ok

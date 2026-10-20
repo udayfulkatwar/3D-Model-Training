@@ -273,3 +273,46 @@ Carpet area 105.862 m² (1,139.5 sq ft) on a 120 m² built-up footprint.
 ### Not yet verified
 - Walking with a real character in Play mode (capsule, not lines).
 - Twinmotion import.
+
+---
+
+## QR-008: clear walking width (Q20) and two-storey houses with stairs (T-014)
+
+- **Date:** 2026-10-20 · **Scope:** training repo only
+- **Evidence:** [docs/evidence/QR-008/](evidence/QR-008/) (T05 QA report, plans, browser check; T01 Q20); tests in `tests/test_walktests.py`, `tests/test_stairs.py`
+
+### Clear walking width (Q20)
+| Check | Result |
+|---|---|
+| T01 clear widths (lines along the wall, 21 depths × 3 heights) | 0.9 m doors 0.745 m; 0.75 m toilet doors 0.595 m; main door 0.845 m; arch 1.600 m. Equal to hand arithmetic (width − 2 × 60 mm frame − 35 mm leaf) |
+| Finding | Unreal's DefaultPawn (0.70 m sphere) cannot pass T01's toilet doors O13/O14. Use a walkthrough pawn ≤ 0.55 m wide |
+| Mutation | 0.65 m doors (0.495 m clear) → WARN |
+| In Unreal | **Not run.** The PC session's safety check refused to write the new `walk_test.py` sent from this session ("Code from External"). It ran the old script in the new folder instead (26/26 again, no sphere sweeps). Needs the founder's approval; not worked around |
+
+### Stacked levels and stairs (T-014)
+| Check | Result |
+|---|---|
+| T05 (fictional G+1, 8 × 10 m, 230/115 mm brick, 1 straight stair) | PASS 13, INFO 9, WARN 0, FAIL 0 (with `--fbx`) |
+| Stair S01 | 18 risers × 175.0 mm, going 250 mm, 2R+G 600 mm, run 4.250 m; Living (R01) → Stair hall (R11); landing 1.093 m; headroom clear on all 17 treads |
+| Shared slab | Built once: 20 mm ceiling layer below, floor above; Q13 finds no same-facing coplanar overlap (117 back-to-back contacts, hidden) |
+| Floor area with the stair opening (Q14) | Stair hall floor = 6.355 − 4.250 m² exactly |
+| Stair solid | Watertight; volume equals the sum of 17 tread columns |
+| Walk tests (Q19) incl. a line up the stair at chest height | 28/28 as expected |
+| GLB in three.js r186 | 45/45 meshes, materials and UVs match (the bounds check now spans all levels) |
+| FBX (Q17) | Pass, cm, `M_Stair` |
+| Single-level plans T01–T04 | GLB byte-identical to before the change |
+| Mutation tests | Level not on the one below → FAIL; flight into a wall → FAIL; landing into a wall → reported; 210 mm risers → WARN; stair removed → upper rooms unreachable (Q09 FAIL); a beam over the flight → Q22 FAIL |
+| Tests | 78 pass |
+
+### Defects found and fixed during development
+- The browser check took the building height from the ground-floor walls
+  only. It now spans all levels.
+- The stair-hall label sat on the stair opening and then in an 11 cm strip.
+  It now uses the point farthest from all edges (polylabel).
+- Clearance probing made the test run 5× slower (144 s). One combined
+  triangle array per build brought it back to ~35 s.
+
+### Not verified
+- T05 and the sphere sweeps in Unreal (blocked, see above).
+- Handrails and fall protection are not modelled or checked.
+- Stair rules are training thresholds, not NBC/UDCPR checks.

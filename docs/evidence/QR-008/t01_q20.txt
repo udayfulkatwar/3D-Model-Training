@@ -1,0 +1,2 @@
+- [INFO] Clear widths: door:O01 0.845 m, door:O09 0.745 m, door:O10 0.745 m, door:O11 0.745 m, arch:O12 1.600 m, door:O13 0.595 m, door:O14 0.595 m, door:O15 0.745 m
+- [INFO] Unreal's DefaultPawn (0.70 m) cannot pass door:O13, door:O14; use a walkthrough pawn of at most 0.59 m

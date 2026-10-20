@@ -127,3 +127,22 @@ deleted. "Revisit if" states what evidence would change the decision.
 - **Rejected:** hand-built meshes per wall. They produce coplanar overlaps
   at joints (L-002), and corner handling gets ad hoc.
 - **Revisit if:** curved walls, complex roofs or FBX become the main need.
+
+### ADR-012: Stacked levels share one slab, split into two layers
+- **Date:** 2026-10-20 · **Status:** Accepted
+- **Decision:** a level stacks on another when its floor level equals the
+  lower ceiling plus slab (Q21). The slab between them is built once: the
+  lowest 20 mm belongs to the lower level as ceiling, the rest to the upper
+  level as floor. Lower walls run up into the ceiling layer and upper walls
+  stand on it. Uncovered parts of the lower level keep a full roof slab.
+  Stairs are straight solid flights; their footprint is cut from both
+  layers above.
+- **Why:** building each level's slab separately would put two solids in
+  the same space (z-fighting, double volumes). Splitting the slab keeps one
+  material per mesh: ceilings look like ceilings from below, and floors
+  like floors from above. Q13 confirms no same-facing coplanar faces.
+- **Rejected:** per-face materials (breaks the one-material-per-mesh FBX
+  and Unreal path); dropping lower ceilings under upper floors (the floor
+  material would show on the ceiling).
+- **Revisit if:** real G+n drawings show levels that don't stack exactly
+  (split levels, sunken floors, double-height spaces).

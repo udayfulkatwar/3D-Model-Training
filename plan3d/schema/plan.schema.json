@@ -465,6 +465,69 @@
           }
         }
       }
+    },
+    "stairs": {
+      "type": "array",
+      "description": "Optional straight stair flights between stacked levels. The riser height is the difference of the two floor levels divided by risers; the stair's footprint becomes an opening in the upper floor.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "level",
+          "to_level",
+          "start",
+          "direction",
+          "width",
+          "risers",
+          "going",
+          "prov"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/id"
+          },
+          "level": {
+            "$ref": "#/$defs/id",
+            "description": "Level the flight starts on"
+          },
+          "to_level": {
+            "$ref": "#/$defs/id",
+            "description": "Level the flight arrives at"
+          },
+          "start": {
+            "$ref": "#/$defs/xy",
+            "description": "Centre of the first riser, plan metres"
+          },
+          "direction": {
+            "enum": [
+              "N",
+              "E",
+              "S",
+              "W"
+            ],
+            "description": "Direction of climb"
+          },
+          "width": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 5
+          },
+          "risers": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 40
+          },
+          "going": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1
+          },
+          "prov": {
+            "$ref": "#/$defs/prov"
+          }
+        }
+      }
     }
   },
   "$defs": {

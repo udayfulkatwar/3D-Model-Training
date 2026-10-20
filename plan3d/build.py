@@ -41,6 +41,7 @@ def build(plan_path: str | Path, out_dir: str | Path, fbx: bool = False) -> Buil
     qa.check_dimensions(report, plan, layouts)
     qa.check_circulation(report, plan, layouts)
     qa.check_door_swing(report, plan, layouts)
+    qa.check_stacking_and_stairs(report, plan, layouts)
     qa.check_daylight(report, plan, layouts)
     result.outputs.append(reports.write_drawings(plan, layouts, out_dir))
 
@@ -54,6 +55,7 @@ def build(plan_path: str | Path, out_dir: str | Path, fbx: bool = False) -> Buil
     qa.check_floor_areas(report, plan, parts, layouts)
     qa.check_walk_tests(report, plan, layouts, parts)
     qa.check_clearance(report, plan, layouts, parts)
+    qa.check_headroom(report, plan, parts)
     scene = export_scene(parts)
     qa.check_uvs(report, scene)
 

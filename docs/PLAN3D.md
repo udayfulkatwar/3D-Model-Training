@@ -74,6 +74,7 @@ counts, sizes (±0.1 mm), UVs, materials and centimetre storage must match.
 | `walls` | Centre-line start/end points. Joints are mitred automatically at any angle |
 | `openings` | Doors, windows and arches by position along a wall, width, height and sill; doors may state `opens_into` |
 | `rooms` | Name, use and a seed point. The room *is* the wall-enclosed region around the seed, so shape and area always come from the walls |
+| `stairs` (optional) | Straight flights: `level`, `to_level`, `start` (centre of the first riser), `direction` (N/E/S/W), `width`, `risers`, `going` |
 
 Every wall, opening, room, level and wall type carries `prov`: the register
 entries that justify it.
@@ -86,6 +87,17 @@ frame. Opening widths are treated as **structural** openings, so the clear
 width is 2 × frame_width less. Doors may set `"hinge": "start" | "end"`
 (default `start`, the end nearer the wall's start point). Arches get no
 frame or leaf. Without `details`, plans build exactly as before.
+
+**Stacked levels (T-014).** A level sits on another when its `elevation`
+equals the lower floor level + `wall_height` + `roof_thickness`, and its
+`floor_thickness` equals that slab (Q21 fails otherwise). The shared slab is
+built once: its lowest 20 mm is the lower level's ceiling (lower walls run
+up into it), the rest is the upper level's floor (upper walls stand on it).
+Where the upper level does not cover the lower one, the lower level gets a
+full-thickness roof. Each stair's riser is the floor-to-floor height divided
+by `risers`; its footprint is cut out of the upper floor and the lower
+ceiling, and the top riser is the slab edge. Rooms on upper levels are
+reached through the stair (Q09). See `projects/t05` (G+1).
 
 **Dimension check kinds:** `param` (a typed value must equal the register),
 `overall` (outer extents), `room_clear` (room clear width/depth, bounding
@@ -115,6 +127,8 @@ box), `room_area`, `none`.
 | Q18 | Door swing clearance | A door leaf that would hit a wall when opened 90°, or two door swings that overlap |
 | Q19 | Walk tests | A probe line through a door or arch that is blocked, or one at a wall or window that passes (also run in Unreal by `walk_test.py`) |
 | Q20 | Clear walking width | WARN when the gap left by frames and the open leaf is under 0.50 m; lists doors Unreal's 0.70 m DefaultPawn cannot pass (checked in Unreal with sphere sweeps) |
+| Q21 | Levels stack; stairs fit | A level that does not sit on the one below; a stair that crosses a wall, starts or lands outside a room, cuts an upper wall, has a landing shallower than its width, or is steep (riser > 190 mm, going < 250 mm, 2R+G outside 550–700 mm: WARN) |
+| Q22 | Stair headroom | Anything within 2.0 m above any tread |
 
 If Q04–Q07 fail, no model is exported.
 
@@ -134,6 +148,6 @@ Builds are deterministic: the same plan gives a byte-identical GLB.
 ## Known limits (v0.1)
 
 See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md#plan3d-v01). In short:
-single level only; straight walls; no door leaves, frames, stairs, roof
+straight walls; straight stair flights only, without handrails; no roof
 parapet or furniture; one material per element type; plan input is typed
 by hand (no PDF/CAD reading yet).
