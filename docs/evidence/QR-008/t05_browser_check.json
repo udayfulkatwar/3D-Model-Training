@@ -1,20 +1,24 @@
 {
-  "date": "2026-10-20T07:31:40.971Z",
+  "date": "2026-10-20T07:37:03.214Z",
   "browser": "Chromium 141.0.7390.37",
   "renderer": "SwiftShader (software)",
   "views": {
     "dollhouse": {
-      "load_ms_software": 517,
+      "load_ms_software": 616,
       "screenshot": "out/t05/browser_dollhouse.png"
     },
     "exterior": {
-      "load_ms_software": 374,
+      "load_ms_software": 563,
       "screenshot": "out/t05/browser_exterior.png"
+    },
+    "dollhouse_L00": {
+      "load_ms_software": 436,
+      "screenshot": "out/t05/browser_dollhouse_L00.png"
     }
   },
   "three_revision": "186",
-  "meshes_loaded": 46,
-  "meshes_built": 46,
+  "meshes_loaded": 47,
+  "meshes_built": 47,
   "problems": [],
   "pass": true
 }

@@ -221,3 +221,80 @@ def guard_region(sg: StairGeom, up_layout) -> Polygon:
     arrival = Polygon([t - a, t + a, t + a + out, t - a + out])
     floor = unary_union(list(up_layout.room_regions.values()))
     return band.difference(arrival).difference(up_layout.footprint).intersection(floor)
+
+
+def surface_z(sg: StairGeom, xy) -> float | None:
+    """Height (absolute) of the stair's walking surface at a plan point, or
+    None outside the stair."""
+    p = Point(xy)
+    for f in sg.flights:
+        if sg.flight_rect(f).buffer(1e-9).contains(p):
+            s = float(np.dot(np.asarray(xy) - f.foot, f.u))
+            k = min(max(int(s // sg.going), 0), f.risers - 2)
+            return sg.ffl + sg.riser * (f.first + k + 1)
+    if sg.landing_rect is not None and sg.landing_rect.buffer(1e-9).contains(p):
+        return sg.ffl + sg.riser * sg.flights[1].first
+    return None
+
+
+def balustrade_edges(sg: StairGeom, low_layout) -> list[tuple[np.ndarray, np.ndarray, np.ndarray]]:
+    """(start, end, inward normal) of every stair edge with a drop beside it:
+    outline edges that are not against a wall, not the foot of the first
+    flight and not the top riser; and, on a dog-leg without a well, the side
+    of the second flight above the first."""
+    edges = []
+    poly = sg.footprint.simplify(0)
+    ring = [np.asarray(c) for c in poly.exterior.coords]
+    entry = LineString([sg.foot - sg.across * sg.width / 2, sg.foot + sg.across * sg.width / 2])
+    a = np.array([-sg.top_u[1], sg.top_u[0]]) * sg.width / 2
+    arrival = LineString([sg.top - a, sg.top + a])
+    for p, q in zip(ring, ring[1:]):
+        m, d = (p + q) / 2, (q - p) / np.linalg.norm(q - p)
+        n = np.array([-d[1], d[0]])
+        if not poly.contains(Point(m + n * 0.01)):
+            n = -n                                         # n points into the stair
+        if entry.distance(Point(m)) < 1e-6 or arrival.distance(Point(m)) < 1e-6:
+            continue
+        samples = [p + (q - p) * t for t in (0.1, 0.5, 0.9)]
+        if all(low_layout.footprint.buffer(1e-6).contains(Point(x - n * 0.05)) for x in samples):
+            continue                                       # a wall closes this side
+        edges.append((p, q, n))
+    if sg.kind == "dogleg" and sg.gap == 0:
+        f2 = sg.flights[1]
+        n_in = sg.across * sg.side                     # from the first flight into the second
+        edge = f2.foot - n_in * sg.width / 2
+        edges.append((edge, edge + f2.u * sg.flight_run(f2), n_in))
+    return edges
+
+
+def balustrades(sg: StairGeom, low_layout) -> list[tuple[str, m3d.Manifold]]:
+    """A GUARD_THICKNESS panel just inside each edge with a drop, standing on
+    the treads (stepped bottom) and GUARD_HEIGHT above them along the pitch.
+    One solid per edge (no unions, L-026); where two edges meet, the later
+    one stops short of the corner so they do not overlap."""
+    out, ends = [], []
+    for i, (p, q, n) in enumerate(balustrade_edges(sg, low_layout)):
+        length = float(np.linalg.norm(q - p))
+        d = (q - p) / length
+        t0 = GUARD_THICKNESS if any(np.allclose(p, e) for e in ends) else 0.0
+        t1 = length - (GUARD_THICKNESS if any(np.allclose(q, e) for e in ends) else 0.0)
+        ends += [p, q]
+        cuts = {t0, t1}
+        for f in sg.flights:
+            for k in range(f.risers):
+                cuts.add(float(np.dot(f.foot + f.u * sg.going * k - p, d)))
+        cuts = sorted(t for t in cuts if t0 - 1e-9 <= t <= t1 + 1e-9)
+        zs = [surface_z(sg, p + d * (a + b) / 2 + n * GUARD_THICKNESS / 2) for a, b in zip(cuts, cuts[1:])]
+        if not zs or any(z is None for z in zs):
+            continue
+        z0 = sg.ffl
+        bottom = [pt for (a, b), z in zip(zip(cuts, cuts[1:]), zs) for pt in ((a, z - z0), (b, z - z0))]
+        top = [(t, max(zs[max(j - 1, 0)], zs[min(j, len(zs) - 1)]) - z0 + GUARD_HEIGHT)
+               for j, t in enumerate(cuts)]
+        profile = m3d.CrossSection([np.asarray(bottom + top[::-1])], m3d.FillRule.EvenOdd)
+        panel = m3d.Manifold.extrude(profile, GUARD_THICKNESS)
+        # local (along edge, up, inward) -> world
+        out.append((f"_{i + 1}", panel.transform(np.array([[d[0], 0.0, n[0], p[0]],
+                                                           [d[1], 0.0, n[1], p[1]],
+                                                           [0.0, 1.0, 0.0, z0]]))))
+    return out

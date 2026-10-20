@@ -25,11 +25,12 @@
   <b id="title">plan3d viewer</b>
   <div id="info">Loading…</div>
   <label><input type="checkbox" id="ceilings"> Show ceilings</label>
+  <div id="floorwrap" hidden><label>Show floors up to <select id="floor"></select></label></div>
   <div id="room">Click a floor to identify the room</div>
   <small>Training model. Not for construction.</small>
 </div>
 <script type="module">
-// Usage: index.html?model=<glb url>&manifest=<manifest.json url>&view=dollhouse|exterior
+// Usage: index.html?model=<glb url>&manifest=<manifest.json url>&view=dollhouse|exterior[&upto=L00]
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -73,10 +74,27 @@ gltf.scene.traverse(o => {
     transparent: o.material.transparent,
   });
 });
+// Multi-storey: show the levels up to the chosen one (mesh names start with the level id)
+const levelOf = o => o.name.split('_')[0];
+const levels = [...new Set(meshes.map(m => m.name.split('_')[0]))].sort();
+const shown = [];
+gltf.scene.traverse(o => o.isMesh && shown.push(o));
+const setUpTo = lvl => shown.forEach(o => (o.visible = levelOf(o) <= lvl &&
+                                          (!o.name.includes('_CEILING_') || document.getElementById('ceilings').checked)));
+if (levels.length > 1) {
+  const sel = document.getElementById('floor');
+  for (const l of levels) sel.add(new Option(l, l));
+  sel.value = q.get('upto') && levels.includes(q.get('upto')) ? q.get('upto') : levels.at(-1);
+  sel.onchange = () => { setUpTo(sel.value); render(); };
+  document.getElementById('floorwrap').hidden = false;
+}
 const setCeilings = on => ceilings.forEach(c => (c.visible = on));
-document.getElementById('ceilings').onchange = e => { setCeilings(e.target.checked); render(); };
+document.getElementById('ceilings').onchange = () => {
+  setUpTo(levels.length > 1 ? document.getElementById('floor').value : levels[0]); render();
+};
 setCeilings(view === 'exterior');
 document.getElementById('ceilings').checked = view === 'exterior';
+if (levels.length > 1) setUpTo(document.getElementById('floor').value);
 
 const box = new THREE.Box3().setFromObject(gltf.scene);
 const size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());

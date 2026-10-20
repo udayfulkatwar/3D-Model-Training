@@ -302,7 +302,7 @@ Carpet area 105.862 m² (1,139.5 sq ft) on a 120 m² built-up footprint.
 | FBX (Q17) | Pass, cm, `M_Stair` |
 | Single-level plans T01–T04 | GLB byte-identical to before the change |
 | Mutation tests | Level not on the one below → FAIL; flight into a wall → FAIL; landing into a wall → reported; 210 mm risers → WARN; stair removed → upper rooms unreachable (Q09 FAIL); a beam over the flight → Q22 FAIL |
-| Tests | 84 pass |
+| Tests | 85 pass |
 
 ### Dog-leg stairs (T06)
 | Check | Result |
@@ -319,7 +319,9 @@ Carpet area 105.862 m² (1,139.5 sq ft) on a 120 m² built-up footprint.
 | T06 | Rail on three sides; a line at 0.5 m across the second flight's top is clear, beside it hits `L01_GUARD_S01`. Walk tests 34/34 (4 guard lines) |
 | T05 | Walk tests 30/30 (2 guard lines) |
 | Mutation | Remove the rail → every guard line fails |
-| Not covered | No balustrade along the open side of a flight, or between dog-leg flights without a well |
+| Balustrades | A 50 mm panel 0.90 m above the treads (bottom stepped, top along the pitch) on every stair edge with a drop: not against a wall, not the foot, not the top riser; on a dog-leg without a well, also on the second flight above the first. T05: 1 panel (open west side); T06: 3 (west side and landing edge, landing far edge, between flights) |
+| Walk tests | T05 31/31, T06 37/37; a line at 0.5 m out over each drop must hit its panel; without the panels none do |
+| Viewer | New floor selector (`?upto=L00`); the browser check adds a dollhouse view per lower storey (`browser_dollhouse_L00.png`) |
 
 ### Defects found and fixed during development
 - Unioning the two dog-leg flights into one solid left 8 sliver faces and a

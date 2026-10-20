@@ -187,3 +187,22 @@ def test_stair_opening_is_guarded_except_where_people_step_off(t06):
     assert probes and all(r["ok"] for r in walktests.run(probes, parts))
     unguarded = [p for p in parts if p.role != "guard"]
     assert not any(r["ok"] for r in walktests.run(probes, unguarded))              # each probe needs the rail
+
+
+def test_stair_sides_with_a_drop_get_balustrades(t05, t06):
+    from plan3d import walktests
+    for raw, expected in ((t05, {"_1"}), (t06, {"_1", "_2", "_3"})):
+        plan = Plan(raw)
+        layouts = {lid: plan2d.build_layout(plan, lid) for lid in plan.levels}
+        sg = stairs.build(plan)["S01"]
+        panels = dict(stairs.balustrades(sg, layouts["L00"]))
+        assert set(panels) == expected                     # not on wall sides, the foot or the top riser
+        parts = build_parts(plan, layouts)
+        probes = [t for t in walktests.generate(plan, layouts) if t["name"].startswith("balustrade:")]
+        assert len(probes) == len(expected) and all(r["ok"] for r in walktests.run(probes, parts))
+        bare = [p for p in parts if "_BALUSTRADE_" not in p.name]
+        assert not any(r["ok"] for r in walktests.run(probes, bare))
+    # T06: the panel between the flights stands on the second flight, 0.9 m above its treads
+    inner = trimesh.Trimesh(*_mesh(panels["_3"]))
+    assert inner.is_watertight and np.allclose(inner.bounds[:, :2], [[7.77, 3.0], [7.82, 5.0]])
+    assert inner.bounds[1][2] == pytest.approx(0.175 * 17 + stairs.GUARD_HEIGHT)

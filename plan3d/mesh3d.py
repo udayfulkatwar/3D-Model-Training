@@ -148,6 +148,9 @@ def build_parts(plan: Plan, layouts: dict[str, LevelLayout]) -> list[Part]:
             if sg.level == level_id:
                 for suffix, lane in stairs.solids(sg):
                     parts.append(Part(f"{level_id}_STAIR_{sg.id}{suffix}", "stair", level_id, _to_trimesh(lane), sg.id))
+                for suffix, panel in stairs.balustrades(sg, lay):
+                    parts.append(Part(f"{level_id}_BALUSTRADE_{sg.id}{suffix}", "guard", level_id,
+                                      _to_trimesh(panel), sg.id))
             if sg.to_level == level_id:
                 guard = _prism(stairs.guard_region(sg, lay), ffl, ffl + stairs.GUARD_HEIGHT)
                 if not guard.is_empty():

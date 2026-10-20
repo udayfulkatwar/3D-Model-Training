@@ -35,13 +35,17 @@ const errors = [];
 const evidence = { date: new Date().toISOString(), browser: `Chromium ${browser.version()}`,
                    renderer: 'SwiftShader (software)', views: {} };
 let seen;
-for (const view of ['dollhouse', 'exterior']) {
+// one extra dollhouse per lower storey of a multi-storey building
+const levelIds = [...new Set(manifest.meshes.map(m => m.name.split('_')[0]))].sort();
+const views = ['dollhouse', 'exterior', ...levelIds.slice(0, -1).map(l => `dollhouse_${l}`)];
+for (const view of views) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   page.on('console', m => m.type() === 'error' && errors.push(`${view}: ${m.text()}`));
   page.on('pageerror', e => errors.push(`${view}: ${e.message}`));
   const t0 = Date.now();
   await page.goto(`${base}/viewer/index.html?model=/${outRel}/model.glb` +
-                  `&manifest=/${outRel}/manifest.json&view=${view}`);
+                  `&manifest=/${outRel}/manifest.json&view=${view.split('_')[0]}` +
+                  (view.includes('_') ? `&upto=${view.split('_')[1]}` : ''));
   await page.waitForFunction(() => window.__viewer?.ready, null, { timeout: 60000 });
   evidence.views[view] = { load_ms_software: Date.now() - t0 };
   seen = await page.evaluate(() => window.__viewer);

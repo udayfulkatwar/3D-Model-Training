@@ -53,11 +53,11 @@ Visualization model only. Not for construction. Automated checks are sanity chec
 
 ### Q13 No coplanar overlapping faces between parts (z-fighting)
 
-- [INFO] 119 face pair(s) where touching solids meet back to back (hidden, expected)
+- [INFO] 157 face pair(s) where touching solids meet back to back (hidden, expected)
 
 ### Q19 Walk tests: doors and arches passable, walls and glass blocking
 
-- [INFO] 30/30 probes as expected
+- [INFO] 31/31 probes as expected
 
 ### Q20 Clear walking width through doors and arches
 

@@ -73,6 +73,11 @@ def generate(plan: Plan, layouts: dict) -> list[dict]:
                 tests.append({"name": f"guard:{sg.id}.{j + 1}", "kind": "guard",
                               "start": [*(m + n * (stairs.GUARD_THICKNESS + 0.05)), z],
                               "end": [*(m - n * 0.3), z], "expect_hit": True})
+        for j, (p, q, n) in enumerate(stairs.balustrade_edges(sg, layouts[sg.level])):
+            m = (p + q) / 2                                # from the stair out over the drop
+            z = stairs.surface_z(sg, m + n * 0.3) + GUARD_PROBE_Z
+            tests.append({"name": f"balustrade:{sg.id}.{j + 1}", "kind": "guard",
+                          "start": [*(m + n * 0.3), z], "end": [*(m - n * 0.3), z], "expect_hit": True})
         flights = sg.flights
         for i, f in enumerate(flights):                # one line per flight, chest height above the steps
             z0 = sg.ffl + sg.riser * f.first
