@@ -118,3 +118,10 @@ outlines). Fix: every wall line is extended by 10 mm at both ends before
 noding, so near-misses meet; overshoots only leave loose ends, which drop
 out when faces are built. After the fix: T01–T06 × both styles 12/12 PASS,
 and all 18 pre-registered runs still PASS.
+
+Third exploratory style, `columns`: RCC columns (closed polylines with a
+solid hatch on `S-COLS`) at every wall end and junction, with the wall
+outlines stopping at the column faces, as in framed buildings (common in
+India). Frozen reader: 0/6 (the outlines do not close without the
+columns). Fix: column layers (`COLUMN`, `COLS`) count as wall outlines.
+After: 6/6, and all other 30 runs still pass (36/36).

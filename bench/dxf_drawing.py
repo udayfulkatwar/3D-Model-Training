@@ -13,6 +13,9 @@ overall dimension on A-ANNO-DIMS.
     style "hatched": "poly" plus an ANSI31 wall hatch on A-WALL-PATT
     style "gappy":   exploratory; "lines" with each end pulled back 0-5 mm (ends miss)
     style "overshoot": exploratory; "lines" with each end pushed out 0-20 mm
+    style "columns": exploratory; RCC columns (closed polylines + solid hatch on
+                     S-COLS) at every wall corner and junction, wall outlines
+                     stopping at the column faces, as in framed buildings
 """
 
 from __future__ import annotations
@@ -24,6 +27,9 @@ from pathlib import Path
 import ezdxf
 import numpy as np
 
+from shapely.geometry import box
+from shapely.ops import unary_union
+
 from plan3d import plan2d
 from plan3d.model import load_plan
 
@@ -34,13 +40,34 @@ def _mm(p) -> tuple[float, float]:
     return (round(float(p[0]) * MM, 3), round(float(p[1]) * MM, 3))
 
 
+def _columns(lay) -> list:
+    """A column at every wall end and junction: a square as wide as the
+    thickest wall meeting there, centred on the wall centre-lines."""
+    ends: dict[tuple[float, float], float] = {}
+    for wg in lay.walls.values():
+        for p in (wg.start, wg.end):
+            k = (round(float(p[0]), 3), round(float(p[1]), 3))
+            ends[k] = max(ends.get(k, 0.0), wg.thickness)
+    for a in lay.walls.values():                          # T-junctions: an end on another wall's line
+        for b in lay.walls.values():
+            if a.id == b.id:
+                continue
+            for p in (a.start, a.end):
+                s = float(np.dot(p - b.start, b.direction))
+                if 1e-6 < s < b.length - 1e-6 and abs(float(np.dot(p - b.start, b.normal))) < 1e-6:
+                    k = (round(float(p[0]), 3), round(float(p[1]), 3))
+                    ends[k] = max(ends[k], b.thickness)
+    return [box(x - t / 2, y - t / 2, x + t / 2, y + t / 2).intersection(lay.footprint)
+            for (x, y), t in ends.items()]
+
+
 def write(plan_path: str | Path, out_dxf: str | Path, style: str = "poly", seed: int = 7) -> dict:
     plan, errors = load_plan(plan_path)
     assert plan is not None, errors
     lay = plan2d.build_layout(plan, sorted(plan.levels)[0])
     doc = ezdxf.new("R2018", setup=True)
     doc.header["$INSUNITS"] = 4                          # millimetres
-    for name, colour in (("A-WALL", 7), ("A-WALL-PATT", 8), ("A-DOOR", 2), ("A-GLAZ", 4),
+    for name, colour in (("A-WALL", 7), ("A-WALL-PATT", 8), ("S-COLS", 5), ("A-DOOR", 2), ("A-GLAZ", 4),
                          ("A-AREA-IDEN", 3), ("A-FURN", 9), ("A-FLOR-PATT", 8), ("A-ANNO-DIMS", 1)):
         doc.layers.add(name, color=colour)
     door = doc.blocks.new("DOOR")                        # unit door: closed along +X, open leaf along +Y
@@ -56,14 +83,22 @@ def write(plan_path: str | Path, out_dxf: str | Path, style: str = "poly", seed:
     walls = lay.footprint
     for og in lay.openings.values():
         walls = walls.difference(og.rect)
+    if style == "columns":
+        cols = _columns(lay)
+        walls = walls.difference(unary_union(cols))
+        for c in cols:
+            msp.add_lwpolyline([_mm(p) for p in list(c.exterior.coords)[:-1]], close=True,
+                               dxfattribs={"layer": "S-COLS"})
+            solid = msp.add_hatch(dxfattribs={"layer": "S-COLS"})
+            solid.paths.add_polyline_path([_mm(p) for p in list(c.exterior.coords)[:-1]], is_closed=True)
     rings = [r for g in getattr(walls, "geoms", [walls]) for r in [g.exterior, *g.interiors]]
-    if style in ("lines", "gappy", "overshoot"):
+    if style in ("lines", "gappy", "overshoot", "columns"):
         rnd = random.Random(seed)
         segs = [(np.asarray(a), np.asarray(b)) for r in rings for a, b in zip(list(r.coords), list(r.coords)[1:])]
         rnd.shuffle(segs)
         for a, b in segs:
             d = (b - a) / np.linalg.norm(b - a)
-            lo, hi = {"lines": (0, 0), "gappy": (-0.005, 0), "overshoot": (0, 0.02)}[style]
+            lo, hi = {"gappy": (-0.005, 0), "overshoot": (0, 0.02)}.get(style, (0, 0))
             a, b = a - d * rnd.uniform(lo, hi), b + d * rnd.uniform(lo, hi)
             msp.add_line(_mm(a), _mm(b), dxfattribs={"layer": "A-WALL"})
     else:

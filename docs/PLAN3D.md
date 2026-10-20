@@ -46,8 +46,9 @@ cd viewer && npm install && node check.mjs out/t01                    # writes o
 
 - Save the floor plan as DXF from AutoCAD (any recent version). Units come
   from the file; if it states none, add `--unit-m 0.001` for millimetres.
-- Walls are read from layers whose name contains `WALL` (hatch layers
-  ignored). If the office uses other names, add `--wall-layers "OUTLINE|WALLS"`
+- Walls are read from layers whose name contains `WALL`, plus RCC column
+  layers (`COLUMN`, `S-COLS`): in a framed building the columns close the
+  wall outlines. Hatch layers are ignored. If the office uses other names, add `--wall-layers "OUTLINE|WALLS"`
   (a regular expression). Doors come from `DOOR` layers, windows from
   `WIND`/`GLAZ` layers, room names from the text inside each room.
 - Line ends that miss by up to 10 mm, or overshoot, are fine.

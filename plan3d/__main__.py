@@ -27,7 +27,7 @@ def main(argv: list[str] | None = None) -> int:
     d.add_argument("dxf")
     d.add_argument("-o", "--out", required=True)
     d.add_argument("--unit-m", type=float, help="metres per drawing unit, if the DXF does not state its units")
-    d.add_argument("--wall-layers", help="regular expression for the wall layers (default: names containing WALL)")
+    d.add_argument("--wall-layers", help="regular expression for the wall (and column) layers (default: names with WALL, COLUMN or COLS)")
     d.add_argument("--build", action="store_true", help="also build the draft with plan3d")
     d.add_argument("--fbx", action="store_true", help="with --build, also export FBX for Unreal")
     args = ap.parse_args(argv)

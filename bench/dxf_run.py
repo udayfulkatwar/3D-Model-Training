@@ -22,7 +22,7 @@ OUT = ROOT / "out" / "bench_dxf"
 DEV = ["t01", "t02"]
 HOLDOUT = ["t03", "t04", "t05", "t06"]
 STYLES = ["poly", "lines", "hatched"]
-EXPLORE = ["gappy", "overshoot"]        # not pre-registered: real files' untidy line ends
+EXPLORE = ["gappy", "overshoot", "columns"]   # not pre-registered: untidy line ends, RCC columns
 TARGETS = {"offset_mm": 2, "rooms": 1.0, "area_err": 0.005, "recall": 1.0, "precision": 1.0, "kind": 1.0,
            "swing": 1.0, "width_mm": 5, "names": 1.0}     # pre-registered; do not edit after results are known
 

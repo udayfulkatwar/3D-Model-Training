@@ -60,3 +60,8 @@ def test_line_ends_that_miss_or_overshoot_still_close(tmp_path):
     for style in ("gappy", "overshoot"):
         _, m = _case(tmp_path / style, "t04", style)
         assert verdict(m)["pass"], (style, m["missed"], m["spurious"])
+
+
+def test_rcc_columns_close_the_wall_outlines(tmp_path):
+    _, m = _case(tmp_path, "t06", "columns")
+    assert verdict(m)["pass"], (m["missed"], m["spurious"])

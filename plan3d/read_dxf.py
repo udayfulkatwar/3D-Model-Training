@@ -4,7 +4,8 @@ Vectors are exact, but drafting habits vary, so the layers do the sorting
 and the proven image reader does the measuring:
 
   1. units from the file header ($INSUNITS) or the reviewer
-  2. wall outlines from layers named like WALL (hatch layers ignored);
+  2. wall outlines from layers named like WALL or COLUMN/COLS (columns of a
+     framed building close the walls' outlines; hatch layers ignored);
      line ends are extended by GAP_M so near-misses meet; outlines are noded
      and turned into faces (loose ends drop out); thin faces are wall, wide
      faces are rooms
@@ -37,7 +38,7 @@ from .model import Plan
 from .read_raster import HOLLOW_MAX_WALL_M, ReadResult, read_plan
 
 UNITS_M = {1: 0.0254, 2: 0.3048, 4: 0.001, 5: 0.01, 6: 1.0}    # $INSUNITS: inch, foot, mm, cm, m
-WALL_LAYER = re.compile(r"WALL", re.I)
+WALL_LAYER = re.compile(r"WALL|COLUMN|(^|[-_ ])COLS?($|[-_ ])", re.I)   # RCC columns close the wall outlines
 SKIP_LAYER = re.compile(r"PATT|HATCH|HIDN|HIDDEN", re.I)
 DOOR_LAYER = re.compile(r"DOOR", re.I)
 WINDOW_LAYER = re.compile(r"WIND|GLAZ", re.I)
