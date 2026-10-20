@@ -1,4 +1,4 @@
-"""CLI: python -m plan3d build <plan.json> -o <out_dir>"""
+"""CLI: python -m plan3d build <plan.json> -o <out_dir> | read <image> ... | read-dxf <file.dxf> ..."""
 
 from __future__ import annotations
 
@@ -23,7 +23,25 @@ def main(argv: list[str] | None = None) -> int:
     scale.add_argument("--px-per-m", type=float)
     r.add_argument("--build", action="store_true", help="also build the draft with plan3d")
     r.add_argument("--fbx", action="store_true", help="with --build, also export FBX for Unreal")
+    d = sub.add_parser("read-dxf", help="read an AutoCAD DXF floor plan into a draft plan.json for review")
+    d.add_argument("dxf")
+    d.add_argument("-o", "--out", required=True)
+    d.add_argument("--unit-m", type=float, help="metres per drawing unit, if the DXF does not state its units")
+    d.add_argument("--wall-layers", help="regular expression for the wall layers (default: names containing WALL)")
+    d.add_argument("--build", action="store_true", help="also build the draft with plan3d")
+    d.add_argument("--fbx", action="store_true", help="with --build, also export FBX for Unreal")
     args = ap.parse_args(argv)
+
+    if args.cmd == "read-dxf":
+        from .read_dxf import read_dxf
+        res = read_dxf(args.dxf, args.out, args.unit_m, args.wall_layers)
+        print(f"{res.stats['walls']} walls, {res.stats['openings']} openings, {res.stats['rooms']} rooms "
+              f"({res.stats['rooms_named']} named); units {res.stats['unit_m']} m")
+        print(f"review: {args.out}/review.md  overlay: {args.out}/overlay.png  draft: {args.out}/plan.json")
+        if not args.build:
+            return 0
+        args.plan = f"{args.out}/plan.json"
+        args.out = f"{args.out}/build"
 
     if args.cmd == "read":
         from .read_raster import read_plan

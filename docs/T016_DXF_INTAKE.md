@@ -72,3 +72,21 @@ It will show the reader handles files that follow these conventions. It
 will not show how it handles real offices' drawings, whose layer names,
 block styles and drafting habits vary. That needs real DXF files with
 permission (T-010).
+
+## Development results (T01, T02; reader frozen at the commit that adds this section)
+
+| Run | Offset mm | Rooms | Max area err | Recall / precision | Kind | Swing | Width err mm | Names | Verdict |
+|---|---|---|---|---|---|---|---|---|---|
+| t01/poly, lines, hatched | 0.00 | 100% | 0.00% | 1.00 / 1.00 | 1.00 | 1.00 | 2.3 | 100% | PASS ×3 |
+| t02/poly, lines, hatched | 0.00 | 100% | 0.00% | 1.00 / 1.00 | 1.00 | 1.00 | 2.7 | 100% | PASS ×3 |
+
+Windows read 5 mm narrow (their block's jamb lines sit at the opening ends);
+doors and arches are exact.
+
+How we got here (each from a failing development run):
+1. First run: everything 5.00 mm off. Anti-aliased polygon filling made
+   walls about half a pixel fatter on each side, and 2 px symbol lines
+   narrowed the openings. The walls are now drawn at 4× without
+   anti-aliasing and shrunk by area averaging, and symbols at 1 px.
+2. The room-name register item was set to INFERRED without a number,
+   which the schema rejects. Its value is now the number of rooms named.
