@@ -228,3 +228,34 @@ Carpet area 105.862 m² (1,139.5 sq ft) on a 120 m² built-up footprint.
   actors (two copies of everything) and no v2 assets. The v1 script has no cleanup step
   (L-027), so running v2 removes every actor in that folder before re-importing.
   T01 v2 in Unreal is still pending the founder's re-run.
+
+---
+
+## QR-007: T01 v2 in real Unreal, and walk tests (Q19)
+
+- **Date:** 2026-10-20 · **Scope:** training repo and the training-only AstraDwell Unreal project
+- **Evidence:** [docs/evidence/QR-007/](evidence/QR-007/)
+- **How:** the founder's PC Claude session ran `import_plan3d.py` (bundle v2)
+  through Unreal's Python Remote Execution, then read the level back
+  through Unreal MCP (read-only). The founder did not touch the PC.
+
+| Check | Result |
+|---|---|
+| Re-run cleanup | 58 old actors (v1 imported twice) removed; 0 duplicate labels after |
+| Meshes placed | 45/45 `SM_T01_` actors, all in Outliner folder Plan3D/T01 |
+| Level save | Saved; not dirty after the run |
+| Bounds vs plan3d (DOOR_O01, FRAME_O02, GLASS_O02, DOOR_O15) | Equal to 0.0 cm |
+| Materials and collision (FRAME_O01, DOOR_O01, WALLS) | M_Frame / M_Door / M_Wall, no overrides, CTF_UseComplexAsSimple |
+| Content folder | 51 assets incl. 6 materials, 7 door and 14 frame meshes |
+| Q19 walk tests against the built meshes | t01 26/26, t02 20/20, t03 32/32, t04 24/24 as expected |
+| Q19 mutation test | A blocked doorway and a missing wall are both caught |
+| Tests | 65 pass |
+
+### Defect found and fixed
+- Q19's first version used trimesh ray casting, which needs the
+  `rtree` package (not installed): every build crashed. Replaced with a
+  numpy segment-triangle test (no new dependency).
+
+### Not yet verified
+- `walk_test.py` in Unreal (the same 26 lines traced against Unreal's
+  collision). Sent to the PC session; result pending.

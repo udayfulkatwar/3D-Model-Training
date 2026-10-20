@@ -1,0 +1,24 @@
+{
+  "source": "PC Claude session (Remote Control), 2026-10-20 06:47-06:48 IST log times; import run via Python Remote Execution, read-back via Unreal MCP execute_tool_script (read-only)",
+  "import_log": "plan3d: imported 47 assets, removed 58 old actors, spawned 45/45 meshes into /Game/Plan3D/T01; level saved: True. Rooms DataTable source: rooms.csv (struct S_RoomData).",
+  "engine": "5.8.3-58210709+++UE5+Release-5.8",
+  "readback": {
+    "level": "/Game/T01_House", "level_dirty": false, "folder_total": 50,
+    "by_class": {"StaticMeshActor": 45, "PlayerStart": 1, "TextRenderActor": 1, "DirectionalLight": 1, "SkyLight": 1, "SkyAtmosphere": 1},
+    "dupes": {}, "level_SM_T01_count": 45, "SM_T01_outside_folder": [],
+    "bounds_cm": {
+      "SM_T01_L00_DOOR_O01": [[556, -111.0, 1.0], [559.5, -23, 203.5]],
+      "SM_T01_L00_FRAME_O02": [[385, -23.0, 90], [535, -0.0, 210]],
+      "SM_T01_L00_GLASS_O02": [[391.2, -12.0, 96.2], [528.8, -11.0, 203.8]],
+      "SM_T01_L00_DOOR_O15": [[895.75, -544.5, 1.0], [973.75, -541, 203.5]]
+    },
+    "materials": {
+      "SM_T01_L00_FRAME_O01": {"overrides": [], "materials": ["M_Frame"], "ctf": "CTF_UseComplexAsSimple"},
+      "SM_T01_L00_DOOR_O01": {"overrides": [], "materials": ["M_Door"], "ctf": "CTF_UseComplexAsSimple"},
+      "SM_T01_L00_WALLS": {"overrides": [], "materials": ["M_Wall"], "ctf": "CTF_UseComplexAsSimple"}
+    },
+    "n_assets": 51, "materials_assets": ["M_Ceiling", "M_Door", "M_Floor", "M_Frame", "M_Glass", "M_Wall"],
+    "n_door_assets": 7, "n_frame_assets": 14
+  },
+  "plan3d_expected_bounds_cm_maxdiff": 0.0
+}
