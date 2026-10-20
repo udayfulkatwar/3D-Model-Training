@@ -215,3 +215,19 @@ How we got here, in order (each step from a failing development run):
    wardrobe line along a wall face was otherwise read as glazing.
 7. Thick-pen filled drawings tripped the hollow test. Hollow mode now needs
    more wall inside than solid wall-thick ink (separation ≥ 10×).
+
+### Hollow walls: holdout results (T03, T04; run once at c4393b6)
+
+| Run | Offset mm | Rooms | Max area err | Recall / precision | Kind | Swing | Width err mm | Verdict |
+|---|---|---|---|---|---|---|---|---|
+| t03/hollow-clean-100 | 0.00 | 100% | 0.00% | 1.00 / 1.00 | 1.00 | 1.00 | 0.0 | PASS |
+| t03/hollow-scan2-150 | 3.68 | 100% | 0.63% | 1.00 / 1.00 | 1.00 | 1.00 | 4.5 | PASS |
+| t04/hollow-clean-100 | 1.60 | 100% | 0.78% | 1.00 / 1.00 | 1.00 | 1.00 | 0.0 | **MISS** (draft does not build: Q07) |
+| t04/hollow-scan2-150 | 1.45 | 100% | 0.60% | 1.00 / 1.00 | 1.00 | 1.00 | 3.0 | PASS |
+
+**3 of 4 holdout runs pass.** All geometry and opening metrics are within
+target on all four. The miss: a door leaf (a filled 35 mm rectangle) lies
+next to a parallel furniture line. The white strip between them is thin,
+long and alone, so it was filled as a 0.67 m wall. That false wall cuts
+into a real one, and the draft fails Q07. A reviewer would see it on the
+overlay; the build refuses it.
