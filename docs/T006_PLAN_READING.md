@@ -156,3 +156,27 @@ Targets: the clean and scan columns above, unchanged. T04 will include
 features not yet seen: a free-standing wing wall, a 100 mm nib at a
 corner window, back-to-back doors on one partition, a 2.4 m window and a
 1.8 m external door.
+
+## Hollow walls (T-011 part 1): registered 2026-10-20, before any code
+
+Most CAD-exported plans draw walls as **two outlines** (hollow), not
+filled. The v0.1 reader cannot read them. Plan: fill the inside of each
+wall outline before the existing pipeline runs. Thin white regions that
+are long, and that do not touch another thin region, are wall interiors.
+Window glazing strips and floor hatching come in touching groups, so they
+are left alone.
+
+**Drawing style.** The bench renderer gains a `hollow` style: each wall
+is drawn as its outline, closed across each opening's jambs, with a 1.5×
+pen. Everything else (clutter, symbols, text) is unchanged.
+
+**Development:** T01 and T02, cases `hollow-clean-100`, `hollow-clean-60`
+and `hollow-scan-100` (the same resolutions and degradation as above).
+
+**Holdout (run once, after development is frozen and committed):** T03 and
+T04, cases `hollow-clean-100` and `hollow-scan2-150` (Holdout 2's
+degradation). T03 and T04 have never been read in hollow style.
+
+**Targets:** the clean and scan columns above, unchanged. The existing
+filled-wall runs (`python -m bench.run`, `--holdout2` on T04) must not get
+worse on any metric.

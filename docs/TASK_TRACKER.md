@@ -20,7 +20,7 @@ verified without spending money.
 | 0 | T-012 | **First Unreal import of T01**: run `import_plan3d.py` and check size, north, collision and materials (PLAN3D.md checklist) | AD-11 → AD-12 | AI via the founder's PC session (Remote Control + Python Remote Execution) | VERIFIED (QR-005, QR-007): import, size, north, PlayerStart, materials/collision, v2 frames/doors exact to 0.0 cm, walk test 26/26 in Unreal |
 | 1 | T-014 | Multi-level stacking (shared slabs, straight stairs, stair openings, Q21/Q22) and roof parapet | AD-13 → AD-05 | AI (parapet needs D-091) | Stacking, straight and dog-leg stairs IMPLEMENTED (QR-008, T05/T06 G+1); not yet in Unreal. Parapet BLOCKED on D-091; guard rails and stair balustrades IMPLEMENTED |
 | 1 | T-015 | Unreal: sphere-sweep clear-width test (Q20) and T05 import | AD-11 → AD-12 | AI via PC session | BLOCKED: the PC session's safety check refuses to write scripts sent from this session; needs the founder's one-time approval |
-| 2 | T-002 | Web GLB optimization step (Draco/meshopt + KTX2, size budget) plus a headless load test | AD-18 → AD-34 | AI | PLANNED |
+| 2 | T-002 | Web GLB optimization step (Draco/meshopt + KTX2, size budget) plus a headless load test | AD-18 → AD-34 | AI | DEFERRED: training GLBs are 50–150 KB with flat colours and no textures (measured 2026-10-20), so compression gains little; revisit when textures or furniture arrive |
 | 3 | T-003 | Define target-device list and measure H01 on real phones (load time, FPS) | AD-34 → AD-33 | Human measures, AI analyses | PLANNED |
 | — | T-004 | ~~Add the website source repo to this workflow; CI for build + Playwright smoke test~~ | — | — | REJECTED (violates ADR-007: ASTRA DWELL is view-only) |
 | — | T-005 | ~~Rehearse the Unreal import with a training copy of the script~~ | — | — | SUPERSEDED by T-009 (script written) and T-012 (founder import) |
@@ -37,5 +37,7 @@ measured on real plans, its accuracy on client work is unknown. This
 needs 5–10 drawings that ASTRA DWELL owns or has written permission to
 use (L-010). Equally important: **T-012**, the founder's first Unreal
 import of the T01 FBX, which is the only way to confirm the Unreal side.
-The best AI-only task while those wait is **T-013** (door/window frames,
-roof). Training repo only (ADR-007).
+T-012 is now verified (QR-005, QR-007) and T-013/T-014 are implemented.
+The best AI-only task while T-010 waits is **hollow-wall reading** (part of
+T-011): most CAD-exported plans draw walls as two lines, which the reader
+cannot read yet. Training repo only (ADR-007).
