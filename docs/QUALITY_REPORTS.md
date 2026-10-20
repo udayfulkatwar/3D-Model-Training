@@ -341,3 +341,17 @@ Carpet area 105.862 m² (1,139.5 sq ft) on a 120 m² built-up footprint.
 - T05 and the sphere sweeps in Unreal (blocked, see above).
 - Handrails and fall protection are not modelled or checked.
 - Stair rules are training thresholds, not NBC/UDCPR checks.
+
+### QR-008 follow-up: independent code review (2026-10-20)
+
+A separate review agent read every change since e1496ac and ran its own
+inputs. It found 4 real bugs, all reproduced, none caught by the 91 tests:
+
+| # | Bug | Fix | Now |
+|---|---|---|---|
+| 1 | Rounding noise in a dog-leg's outline (flights and landing unioned in plan coordinates) left zero-width slits. Ordinary sizes (width 0.95 m) gave 3 overlapping balustrades (Q13 FAIL); width 0.9 m with a 0.2 m well crashed the build | Outline built once in the stair's own (along, across) frame, then mapped; edges split at lane boundaries; a balustrade only where a flight or landing is behind it | 8 variants (widths, wells, odd risers, left/right, N/S) build with 0 FAIL |
+| 2 | Hollow-wall reader underestimated wall length 2–3× at low resolution, dropping T04's T-shaped wall (3 doors lost at 60–80 px/m) | Width estimates corrected for the distance-transform bias and the seal; pairing ("alongside") only between regions of similar length; hollow mode needs inside ≥ 2× solid ink (filled ≤ 1.29, hollow ≥ 3.62) | T01–T06 at 60/80 px/m: doors all found; T04 at 60 px/m area 2.07% (target 2%, exploratory). All 18 hollow and 20 filled runs as before |
+| 3 | A dog-leg's well (gap > 0) was capped by a slab strip held up by nothing | The well is part of the opening; both flights get balustrades along it | A line up the well is clear |
+| 4 | Q09: a first-floor balcony door made upper rooms "reachable" with no stair | Only outside doors on the lowest level are entrances | Balcony without stair → Q09 FAIL |
+
+Regression tests added for each (103 tests).

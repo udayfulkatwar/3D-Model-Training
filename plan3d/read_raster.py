@@ -47,6 +47,8 @@ HOLLOW_MAX_WALL_M = 0.45  # a hollow wall's inside is at most this wide
 HOLLOW_ELONGATION = 4.0   # and at least this many times longer than wide
 HOLLOW_CONTACT = 0.5      # glazing strips and hatching run alongside each other; walls do not
 HOLLOW_SOLID_M = 0.05     # ink this thick is a filled wall; outlines, even blurred, are thinner
+HOLLOW_RATIO = 2.0        # hollow mode needs twice as much wall inside as solid wall ink (bench: filled
+                          # drawings <= 1.29, hollow >= 3.62)
 HOLLOW_SHORT_M = 1.0      # shorter wall insides must continue a found wall band
 
 def load_gray(path: str | Path, page: int = 0, dpi: int = 200) -> np.ndarray:
@@ -126,9 +128,13 @@ def _hollow_interiors(ink: np.ndarray, ppm: float, hair: float) -> np.ndarray:
     n, lab, box_, _ = cv2.connectedComponentsWithStats(white, connectivity=4)
     dt = cv2.distanceTransform(white, cv2.DIST_L2, 3)
     area = np.bincount(lab.ravel(), minlength=n).astype(float)
-    width = np.zeros(n)                                  # widest inscribed circle; +2 undoes the 1 px seal per side
-    np.maximum.at(width, lab.ravel(), 2 * dt.ravel() + 2)
-    length = area / np.maximum(width, 1.0)
+    # Widths in px. A pixel's distance-to-edge overstates the true distance by about half a pixel, and
+    # the region was shrunk 1 px a side by the seal: so the sealed width is ~2 * dt_max - 1 and the
+    # drawn inside ~2 * dt_max + 1. Length = sealed area / sealed width.
+    dt_max = np.zeros(n)
+    np.maximum.at(dt_max, lab.ravel(), dt.ravel())
+    width = 2 * dt_max + 1
+    length = area / np.maximum(2 * dt_max - 1, 1.0)
     thin = ((width >= MIN_WALL_M * ppm * 0.6) & (width <= HOLLOW_MAX_WALL_M * ppm)
             & (length >= HOLLOW_ELONGATION * width))
     thin[0] = False
@@ -146,14 +152,17 @@ def _hollow_interiors(ink: np.ndarray, ppm: float, hair: float) -> np.ndarray:
         for k, cnt in zip(keys.tolist(), counts.tolist()):
             pairs[divmod(k, n)] = pairs.get(divmod(k, n), 0) + cnt
     alongside = np.zeros(n, bool)
-    for (i, j), cnt in pairs.items():
-        if cnt >= HOLLOW_CONTACT * min(length[i], length[j]):
+    for (i, j), cnt in pairs.items():                   # glazing strips and hatch strips pair with their
+        short, long_ = sorted((length[i], length[j]))   # like; a wall beside a short hatch sliver does not
+        if cnt >= HOLLOW_CONTACT * short and short >= 0.5 * long_:
             alongside[i] = alongside[j] = True
     candidate = thin & ~alongside
     # length along the middle: area over the typical width (4 x mean distance to the edge, exact for a
     # straight strip); the widest point overstates the width where walls meet
-    typical = 4 * np.bincount(lab.ravel(), weights=dt.ravel(), minlength=n) / np.maximum(area, 1) + 2
-    length = area / np.maximum(typical, 1.0)
+    sealed = np.maximum(4 * (np.bincount(lab.ravel(), weights=dt.ravel(), minlength=n) / np.maximum(area, 1) - 0.5),
+                        1.0)
+    typical = sealed + 2
+    length = area / sealed
     # Long ones are walls. Short ones (pieces between openings, piers) must continue a found
     # wall band on the same rows; a strip beside a door leaf or furniture does not.
     walls = candidate & (length >= HOLLOW_SHORT_M * ppm)
@@ -200,7 +209,7 @@ def _fill_hollow(gray: np.ndarray, ink: np.ndarray, ppm: float, hair: float) -> 
     inside = _hollow_interiors(ink, ppm, hair)
     k = _odd(max(3, int(round(HOLLOW_SOLID_M * ppm))))
     solid = cv2.morphologyEx(ink.astype(np.uint8), cv2.MORPH_OPEN, np.ones((k, k), np.uint8)) > 0
-    if inside.sum() < max(solid.sum(), 0.002 * inside.size):
+    if inside.sum() < max(HOLLOW_RATIO * solid.sum(), 0.002 * inside.size):
         return None                                 # filled walls (or too little to be walls)
     grown = cv2.dilate(inside.astype(np.uint8), np.ones((5, 5), np.uint8)) > 0
     dark = float(np.percentile(gray[ink], 5)) if ink.any() else 0.0

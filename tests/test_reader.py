@@ -48,6 +48,12 @@ def test_hollow_walls_meet_targets(tmp_path, plan_id, ppm, scan, case):
     assert v["pass"], (v["missed"], m["missed"], m["spurious"], m["wrong_kind"])
 
 
+def test_hollow_t_shaped_wall_survives_low_resolution(tmp_path):
+    # wall length was once underestimated 2-3x at low resolution, dropping these doors
+    _, m = _read_case(tmp_path, "t04", 80, style="hollow")
+    assert m["recall"] == 1.0 and m["rooms"] == 1.0, (m["missed"], m["spurious"])
+
+
 def test_filled_walls_are_not_read_as_hollow(tmp_path):
     res, _ = _read_case(tmp_path, "t03", 100, {}, pen_m=0.03)    # thick pen once tripped the hollow test
     assert not res.stats["hollow_walls"]

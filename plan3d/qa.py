@@ -205,9 +205,14 @@ def check_dimensions(report: Report, plan: Plan, layouts: dict) -> None:
 def check_circulation(report: Report, plan: Plan, layouts: dict) -> None:
     c = report.new("Q09", "Circulation: every room reachable through doors and stairs")
     graph: dict[str, set[str]] = {}
-    for lay in layouts.values():
+    ground = min((plan.levels[lid]["elevation"] for lid in layouts), default=0.0)
+    for lid, lay in layouts.items():
+        # only outside doors on the lowest level are entrances; an upper level's outside door
+        # (balcony, terrace) leads to its own outside, not down to the street
+        outside = plan2d.EXTERIOR if plan.levels[lid]["elevation"] == ground else f"{plan2d.EXTERIOR}@{lid}"
         for node, nbrs in plan2d.circulation(lay).items():
-            graph.setdefault(node, set()).update(nbrs)
+            node = outside if node == plan2d.EXTERIOR else node
+            graph.setdefault(node, set()).update(outside if n == plan2d.EXTERIOR else n for n in nbrs)
     for sg in stairs.build(plan).values():
         low, up = stairs.linked_rooms(sg, layouts)
         if low and up:

@@ -16,7 +16,7 @@ from dataclasses import dataclass
 import manifold3d as m3d
 import numpy as np
 from shapely import unary_union
-from shapely.geometry import LineString, Point, Polygon
+from shapely.geometry import LineString, Point, Polygon, box
 
 from .model import Plan
 
@@ -109,11 +109,22 @@ class StairGeom:
 
     @property
     def footprint(self) -> Polygon:
-        """Plan area of the flights and landing; also the opening in the floor above."""
-        shapes = [self.flight_rect(f) for f in self.flights]
-        if self.landing_rect is not None:
-            shapes.append(self.landing_rect)
-        return unary_union(shapes) if len(shapes) > 1 else shapes[0]
+        """Plan area of the flights, the landing and a dog-leg's well; also the
+        opening in the floor above. Built in the stair's own (along, across)
+        frame, where shared edges have identical coordinates, then mapped to
+        plan: a union in plan coordinates leaves rounding slits (zero-width
+        notches) where the pieces meet."""
+        w, run1 = self.width, self.run
+        if self.kind == "straight":
+            local = box(0.0, -w / 2, run1, w / 2)
+        else:
+            top2 = run1 - self.flight_run(self.flights[1])
+            far, outer = run1 + self.landing, w * 1.5 + self.gap
+            local = unary_union([box(0.0, -w / 2, run1, w / 2),             # first flight
+                                 box(top2, w / 2, run1, outer),              # well and second flight
+                                 box(run1, -w / 2, far, outer)])             # landing
+        side = self.across * self.side
+        return Polygon([self.foot + self.u * s + side * a for s, a in local.exterior.coords[:-1]])
 
     def tread_centres(self) -> list[np.ndarray]:
         """(x, y, z) at the middle of each tread's (and the landing's) top surface."""
@@ -237,33 +248,62 @@ def surface_z(sg: StairGeom, xy) -> float | None:
     return None
 
 
+def _outline_pieces(sg: StairGeom) -> list[tuple[np.ndarray, np.ndarray]]:
+    """The stair outline cut wherever a lane, the well or the landing starts
+    or ends, so each piece has one thing behind it (a flight, the landing,
+    the well, the foot or the top riser)."""
+    side = sg.across * sg.side
+    w = sg.width
+    cuts_a = sorted({-w / 2, w / 2, w / 2 + sg.gap, w * 1.5 + sg.gap})
+    cuts_s = sorted({0.0, sg.run, sg.run - sg.flight_run(sg.flights[-1]), sg.run + sg.landing})
+    ring = [np.asarray(c) for c in sg.footprint.exterior.coords]
+    pieces = []
+    for p, q in zip(ring, ring[1:]):
+        ls = [(float(np.dot(x - sg.foot, sg.u)), float(np.dot(x - sg.foot, side))) for x in (p, q)]
+        along_s = abs(ls[0][0] - ls[1][0]) > abs(ls[0][1] - ls[1][1])
+        k = 0 if along_s else 1
+        lo, hi = sorted((ls[0][k], ls[1][k]))
+        ts = [lo] + [c for c in (cuts_s if along_s else cuts_a) if lo + 1e-9 < c < hi - 1e-9] + [hi]
+        fixed = ls[0][1 - k]
+        to_xy = (lambda t: sg.foot + sg.u * t + side * fixed) if along_s else (
+            lambda t: sg.foot + sg.u * fixed + side * t)
+        pieces += [(to_xy(a), to_xy(b)) for a, b in zip(ts, ts[1:])]
+    return pieces
+
+
 def balustrade_edges(sg: StairGeom, low_layout) -> list[tuple[np.ndarray, np.ndarray, np.ndarray]]:
     """(start, end, inward normal) of every stair edge with a drop beside it:
-    outline edges that are not against a wall, not the foot of the first
-    flight and not the top riser; and, on a dog-leg without a well, the side
-    of the second flight above the first."""
+    outline pieces with a flight or landing behind them that are not against
+    a wall, not the foot of the first flight and not the top riser; and on a
+    dog-leg, the second flight's side above the first (or the well), and the
+    first flight's side over a well."""
     edges = []
-    poly = sg.footprint.simplify(0)
-    ring = [np.asarray(c) for c in poly.exterior.coords]
+    poly = sg.footprint
     entry = LineString([sg.foot - sg.across * sg.width / 2, sg.foot + sg.across * sg.width / 2])
     a = np.array([-sg.top_u[1], sg.top_u[0]]) * sg.width / 2
     arrival = LineString([sg.top - a, sg.top + a])
-    for p, q in zip(ring, ring[1:]):
+    for p, q in _outline_pieces(sg):
         m, d = (p + q) / 2, (q - p) / np.linalg.norm(q - p)
         n = np.array([-d[1], d[0]])
         if not poly.contains(Point(m + n * 0.01)):
             n = -n                                         # n points into the stair
         if entry.distance(Point(m)) < 1e-6 or arrival.distance(Point(m)) < 1e-6:
             continue
+        if surface_z(sg, m + n * 0.01) is None:
+            continue                                       # the end of the well: nothing to fall from
         samples = [p + (q - p) * t for t in (0.1, 0.5, 0.9)]
         if all(low_layout.footprint.buffer(1e-6).contains(Point(x - n * 0.05)) for x in samples):
             continue                                       # a wall closes this side
         edges.append((p, q, n))
-    if sg.kind == "dogleg" and sg.gap == 0:
-        f2 = sg.flights[1]
-        n_in = sg.across * sg.side                     # from the first flight into the second
-        edge = f2.foot - n_in * sg.width / 2
+    if sg.kind == "dogleg":
+        f1, f2 = sg.flights
+        n_in = sg.across * sg.side                     # from the first flight towards the second
+        edge = f2.foot - n_in * sg.width / 2           # the second flight's side above the first (or the well)
         edges.append((edge, edge + f2.u * sg.flight_run(f2), n_in))
+        if sg.gap > 0:                                 # the first flight's side over the well (the rest of
+            top2 = sg.flight_run(f1) - sg.flight_run(f2)   # that side is on the outline already)
+            edge = f1.foot + n_in * sg.width / 2 + f1.u * top2
+            edges.append((edge, edge + f1.u * sg.flight_run(f2), -n_in))
     return edges
 
 

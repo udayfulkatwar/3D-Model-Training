@@ -191,18 +191,59 @@ def test_stair_opening_is_guarded_except_where_people_step_off(t06):
 
 def test_stair_sides_with_a_drop_get_balustrades(t05, t06):
     from plan3d import walktests
-    for raw, expected in ((t05, {"_1"}), (t06, {"_1", "_2", "_3"})):
+    for raw, sides in ((t05, {"x=6.77"}), (t06, {"x=6.77", "y=6.0", "x=7.77"})):
         plan = Plan(raw)
         layouts = {lid: plan2d.build_layout(plan, lid) for lid in plan.levels}
         sg = stairs.build(plan)["S01"]
-        panels = dict(stairs.balustrades(sg, layouts["L00"]))
-        assert set(panels) == expected                     # not on wall sides, the foot or the top riser
+        panels = [trimesh.Trimesh(*_mesh(m)) for _, m in stairs.balustrades(sg, layouts["L00"])]
+        # open west side (flight and landing), landing's far edge, between the flights; never the
+        # wall side (x=7.77 in T05, x=8.77 in T06), the foot or the top riser
+        found = set()
+        for p in panels:
+            (x0, y0, _), (x1, y1, _) = p.bounds
+            found.add(f"x={round(x0, 2)}" if x1 - x0 < 0.06 else f"y={round(y1, 2)}")
+        assert found == sides and all(p.is_watertight for p in panels)
         parts = build_parts(plan, layouts)
         probes = [t for t in walktests.generate(plan, layouts) if t["name"].startswith("balustrade:")]
-        assert len(probes) == len(expected) and all(r["ok"] for r in walktests.run(probes, parts))
+        assert probes and all(r["ok"] for r in walktests.run(probes, parts))
         bare = [p for p in parts if "_BALUSTRADE_" not in p.name]
         assert not any(r["ok"] for r in walktests.run(probes, bare))
     # T06: the panel between the flights stands on the second flight, 0.9 m above its treads
-    inner = trimesh.Trimesh(*_mesh(panels["_3"]))
-    assert inner.is_watertight and np.allclose(inner.bounds[:, :2], [[7.77, 3.0], [7.82, 5.0]])
+    inner = next(p for p in panels if np.allclose(p.bounds[:, 0], [7.77, 7.82]))
+    assert np.allclose(inner.bounds[:, 1], [3.0, 5.0])
     assert inner.bounds[1][2] == pytest.approx(0.175 * 17 + stairs.GUARD_HEIGHT)
+
+
+@pytest.mark.parametrize("change", [
+    {"width": 0.9, "gap": 0.2, "start": [7.17, 3.0]},          # rounding once left an empty balustrade (crash)
+    {"width": 0.95, "start": [7.2, 3.0]},                       # ... or three panels in one place (Q13)
+    {"width": 0.9, "gap": 0.15, "start": [7.17, 3.0], "risers": 19},
+])
+def test_dogleg_variants_build_clean(t06, run, change):
+    item(t06, "stairs", "S01").update(change)
+    for d in t06["dimensions"]:
+        if d["check"]["kind"] == "param" and any(t.startswith("stairs.") for t in d["check"]["targets"]):
+            d["check"] = {"kind": "none"}                       # the register describes the original stair
+    result, st = run(t06)
+    assert all(v != "FAIL" for k, v in st.items() if k != "Q08"), {k: v for k, v in st.items() if v == "FAIL"}
+
+
+def test_dogleg_well_is_open_to_the_floor_above(t06):
+    from plan3d.walktests import Scene
+    item(t06, "stairs", "S01").update({"width": 0.9, "gap": 0.15, "start": [7.17, 3.0]})
+    plan = Plan(t06)
+    layouts = {lid: plan2d.build_layout(plan, lid) for lid in plan.levels}
+    scene = Scene(build_parts(plan, layouts))
+    assert scene.first_hit_at([7.695, 4.0, 2.5], [7.695, 4.0, 6.0]) == (None, 1.0)   # up the well
+
+
+def test_balcony_door_does_not_replace_the_stair(t05, run):
+    t05["stairs"] = []
+    t05["dimensions"] = [d for d in t05["dimensions"] if d["id"] not in ("D-070", "D-071", "D-072")]
+    o = item(t05, "openings", "O13")                            # first-floor window becomes a balcony door
+    o.update(kind="door", sill=0.0, height=2.1, opens_into="R12", prov=["D-046", "D-030", "D-036", "D-055"])
+    for d in t05["dimensions"]:                                  # height and sill no longer the window's
+        if d["id"] in ("D-052", "D-053"):
+            d["check"]["targets"] = [t for t in d["check"]["targets"] if not t.startswith("openings.O13.")]
+    result, st = run(t05)
+    assert st["Q09"] == "FAIL" and "R12 (Bedroom 2) cannot be reached" in details(result, "Q09")

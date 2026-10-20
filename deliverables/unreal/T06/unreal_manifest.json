@@ -14,6 +14,8 @@
     "SM_T06_L00_BALUSTRADE_S01_1",
     "SM_T06_L00_BALUSTRADE_S01_2",
     "SM_T06_L00_BALUSTRADE_S01_3",
+    "SM_T06_L00_BALUSTRADE_S01_4",
+    "SM_T06_L00_BALUSTRADE_S01_5",
     "SM_T06_L00_FRAME_O01",
     "SM_T06_L00_DOOR_O01",
     "SM_T06_L00_FRAME_O02",
@@ -879,56 +881,30 @@
       "name": "guard:S01.1",
       "kind": "guard",
       "start": [
-        6.67,
-        4.0,
+        7.27,
+        2.9,
         3.65
       ],
       "end": [
-        7.07,
-        4.0,
+        7.27,
+        3.3,
         3.65
       ],
       "expect_hit": true,
       "start_cm": [
-        667.0,
-        -400.0,
+        727.0,
+        -290.0,
         365.0
       ],
       "end_cm": [
-        707.0,
-        -400.0,
+        727.0,
+        -330.0,
         365.0
       ],
       "expect_mesh": "SM_T06_L01_GUARD_S01"
     },
     {
-      "name": "guard:S01.2",
-      "kind": "guard",
-      "start": [
-        6.67,
-        5.5,
-        3.65
-      ],
-      "end": [
-        7.07,
-        5.5,
-        3.65
-      ],
-      "expect_hit": true,
-      "start_cm": [
-        667.0,
-        -550.0,
-        365.0
-      ],
-      "end_cm": [
-        707.0,
-        -550.0,
-        365.0
-      ],
-      "expect_mesh": "SM_T06_L01_GUARD_S01"
-    },
-    {
-      "name": "guard:S01.3",
+      "name": "guard:S01.5",
       "kind": "guard",
       "start": [
         7.77,
@@ -954,27 +930,53 @@
       "expect_mesh": "SM_T06_L01_GUARD_S01"
     },
     {
-      "name": "guard:S01.7",
+      "name": "guard:S01.6",
       "kind": "guard",
       "start": [
-        7.27,
-        2.9,
+        6.67,
+        5.5,
         3.65
       ],
       "end": [
-        7.27,
-        3.3,
+        7.07,
+        5.5,
         3.65
       ],
       "expect_hit": true,
       "start_cm": [
-        727.0,
-        -290.0,
+        667.0,
+        -550.0,
         365.0
       ],
       "end_cm": [
-        727.0,
-        -330.0,
+        707.0,
+        -550.0,
+        365.0
+      ],
+      "expect_mesh": "SM_T06_L01_GUARD_S01"
+    },
+    {
+      "name": "guard:S01.7",
+      "kind": "guard",
+      "start": [
+        6.67,
+        4.0,
+        3.65
+      ],
+      "end": [
+        7.07,
+        4.0,
+        3.65
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        667.0,
+        -400.0,
+        365.0
+      ],
+      "end_cm": [
+        707.0,
+        -400.0,
         365.0
       ],
       "expect_mesh": "SM_T06_L01_GUARD_S01"
@@ -983,25 +985,25 @@
       "name": "balustrade:S01.1",
       "kind": "guard",
       "start": [
-        7.07,
-        4.5,
-        1.725
+        7.27,
+        5.7,
+        2.075
       ],
       "end": [
-        6.47,
-        4.5,
-        1.725
+        7.27,
+        6.3,
+        2.075
       ],
       "expect_hit": true,
       "start_cm": [
-        707.0,
-        -450.0,
-        172.5
+        727.0,
+        -570.0,
+        207.5
       ],
       "end_cm": [
-        647.0,
-        -450.0,
-        172.5
+        727.0,
+        -630.0,
+        207.5
       ],
       "expect_mesh": "SM_T06_L00_BALUSTRADE_S01_1"
     },
@@ -1009,23 +1011,23 @@
       "name": "balustrade:S01.2",
       "kind": "guard",
       "start": [
-        7.77,
+        8.27,
         5.7,
         2.075
       ],
       "end": [
-        7.77,
+        8.27,
         6.3,
         2.075
       ],
       "expect_hit": true,
       "start_cm": [
-        777.0,
+        827.0,
         -570.0,
         207.5
       ],
       "end_cm": [
-        777.0,
+        827.0,
         -630.0,
         207.5
       ],
@@ -1033,6 +1035,58 @@
     },
     {
       "name": "balustrade:S01.3",
+      "kind": "guard",
+      "start": [
+        7.07,
+        5.5,
+        2.075
+      ],
+      "end": [
+        6.47,
+        5.5,
+        2.075
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        707.0,
+        -550.0,
+        207.5
+      ],
+      "end_cm": [
+        647.0,
+        -550.0,
+        207.5
+      ],
+      "expect_mesh": "SM_T06_L00_BALUSTRADE_S01_3"
+    },
+    {
+      "name": "balustrade:S01.4",
+      "kind": "guard",
+      "start": [
+        7.07,
+        4.0,
+        1.375
+      ],
+      "end": [
+        6.47,
+        4.0,
+        1.375
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        707.0,
+        -400.0,
+        137.5
+      ],
+      "end_cm": [
+        647.0,
+        -400.0,
+        137.5
+      ],
+      "expect_mesh": "SM_T06_L00_BALUSTRADE_S01_4"
+    },
+    {
+      "name": "balustrade:S01.5",
       "kind": "guard",
       "start": [
         8.07,
@@ -1055,7 +1109,7 @@
         -400.0,
         295.0
       ],
-      "expect_mesh": "SM_T06_L00_BALUSTRADE_S01_3"
+      "expect_mesh": "SM_T06_L00_BALUSTRADE_S01_5"
     },
     {
       "name": "stair:S01.1",
