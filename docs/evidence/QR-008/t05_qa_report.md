@@ -53,11 +53,11 @@ Visualization model only. Not for construction. Automated checks are sanity chec
 
 ### Q13 No coplanar overlapping faces between parts (z-fighting)
 
-- [INFO] 117 face pair(s) where touching solids meet back to back (hidden, expected)
+- [INFO] 119 face pair(s) where touching solids meet back to back (hidden, expected)
 
 ### Q19 Walk tests: doors and arches passable, walls and glass blocking
 
-- [INFO] 28/28 probes as expected
+- [INFO] 30/30 probes as expected
 
 ### Q20 Clear walking width through doors and arches
 
@@ -65,7 +65,7 @@ Visualization model only. Not for construction. Automated checks are sanity chec
 
 ### Q22 Stair headroom (2.0 m above every tread)
 
-- [INFO] S01: 17 treads checked
+- [INFO] S01: 17 treads and landings checked
 
 ### Q17 FBX re-import matches what was built
 

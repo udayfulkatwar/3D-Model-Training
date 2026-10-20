@@ -27,7 +27,8 @@ from .units import sqm_to_sqft
 UNREAL_DIR = Path(__file__).resolve().parents[1] / "unreal"
 UNREAL_SCRIPTS = ("import_plan3d.py", "walk_test.py")
 MATERIAL_NAMES = {"wall": "M_Wall", "floor": "M_Floor", "ceiling": "M_Ceiling", "glass": "M_Glass",
-                  "frame": "M_Frame", "door": "M_Door", "stair": "M_Stair"}
+                  "frame": "M_Frame", "door": "M_Door", "stair": "M_Stair",
+                  "guard": "M_Guard"}
 
 
 def bpy_available() -> bool:

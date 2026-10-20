@@ -169,3 +169,21 @@ def test_dogleg_needs_a_turn(t06):
     from plan3d.model import schema_errors
     del item(t06, "stairs", "S01")["turn"]
     assert any("turn" in e for e in schema_errors(t06))
+
+
+def test_stair_opening_is_guarded_except_where_people_step_off(t06):
+    from plan3d import walktests
+    plan = Plan(t06)
+    layouts = {lid: plan2d.build_layout(plan, lid) for lid in plan.levels}
+    parts = build_parts(plan, layouts)
+    guard = next(p for p in parts if p.name == "L01_GUARD_S01")
+    assert guard.solid.is_watertight
+    assert guard.solid.bounds[:, 2] == pytest.approx([3.15, 3.15 + stairs.GUARD_HEIGHT])
+    scene = walktests.Scene(parts)
+    z = 3.15 + 0.5
+    assert scene.first_hit_at([8.27, 2.7, z], [8.27, 3.3, z])[0] is None          # top of the second flight: open
+    assert scene.first_hit_at([7.27, 2.7, z], [7.27, 3.3, z])[0] == "L01_GUARD_S01"  # beside it: guarded
+    probes = [t for t in walktests.generate(plan, layouts) if t["kind"] == "guard"]
+    assert probes and all(r["ok"] for r in walktests.run(probes, parts))
+    unguarded = [p for p in parts if p.role != "guard"]
+    assert not any(r["ok"] for r in walktests.run(probes, unguarded))              # each probe needs the rail

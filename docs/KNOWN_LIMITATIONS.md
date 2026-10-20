@@ -35,7 +35,7 @@ in this repo until the founder adopts it themselves.
 |---|---|
 | Stacked levels need matching outlines in the plan file | Each level is typed separately; levels must stack exactly (Q21). Tested on two fictional G+1 plans (T05, T06) only |
 | Straight and dog-leg stairs only, solid to the floor | No quarter-turn/L, winders, spiral stairs, open risers or nosings; space under the stair is filled; a dog-leg's whole footprint is opened in the floor above |
-| No handrails, balustrades or guard rails | Open edges of stair openings and the open side of a flight are unprotected in the model. Q21 does not check fall protection |
+| Guard rails only around stair openings (0.90 m, training value) | No handrail or balustrade along the open side of a flight or between dog-leg flights; no terrace or balcony parapets |
 | Stair thresholds (riser ≤ 190 mm, going ≥ 250 mm, 2R+G 550–700 mm) are training values | Not checked against NBC/UDCPR; WARN only |
 | Straight walls only | No curved walls or columns |
 | Plan input typed by hand | No PDF/DWG/image reading yet (T-006). Typing errors are caught only where the register checks them |

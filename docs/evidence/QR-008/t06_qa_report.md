@@ -53,15 +53,16 @@ Visualization model only. Not for construction. Automated checks are sanity chec
 
 ### Q13 No coplanar overlapping faces between parts (z-fighting)
 
-- [INFO] 123 face pair(s) where touching solids meet back to back (hidden, expected)
+- [INFO] 125 face pair(s) where touching solids meet back to back (hidden, expected)
 
 ### Q19 Walk tests: doors and arches passable, walls and glass blocking
 
-- [INFO] 30/30 probes as expected
+- [INFO] 34/34 probes as expected
 
 ### Q20 Clear walking width through doors and arches
 
-- [INFO] Clear widths: door:O01 0.845 m, door:O04 0.745 m, door:O05 0.745 m, door:O21 0.745 m, door:O22 0.745 m
+- [INFO] Clear widths: door:O01 0.845 m, door:O04 0.745 m, door:O05 0.745 m, door:O21 0.745 m, door:O22 0.575 m
+- [INFO] Unreal's DefaultPawn (0.70 m) cannot pass door:O22; use a walkthrough pawn of at most 0.57 m
 
 ### Q22 Stair headroom (2.0 m above every tread)
 

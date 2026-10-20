@@ -11,6 +11,7 @@ points at the import, not at the tests.
 from __future__ import annotations
 
 import numpy as np
+from shapely.geometry import Point
 
 from . import stairs
 from .mesh3d import Part
@@ -19,6 +20,7 @@ from .model import Plan
 PROBE_M = 0.4            # how far into each room a probe starts and ends
 DOOR_PROBE_Z = 1.0       # chest height above finished floor
 WALL_PROBE_Z = 1.5
+GUARD_PROBE_Z = 0.5      # a person walking into the rail around a stair opening
 WALL_END_CLEAR = 0.3     # stay away from junctions
 OPENING_CLEAR = 0.15     # and from opening reveals
 CLEAR_HEIGHTS = (0.75, 1.0, 1.25)   # above floor, where shoulders and hips pass
@@ -58,6 +60,19 @@ def generate(plan: Plan, layouts: dict) -> list[dict]:
     for sg in sorted(stairs.build(plan).values(), key=lambda s: s.id):
         if sg.level not in layouts or sg.to_level not in layouts:
             continue
+        guard = stairs.guard_region(sg, layouts[sg.to_level])
+        ring = list(sg.footprint.exterior.coords)
+        for j, (p, q) in enumerate(zip(ring, ring[1:])):          # one line across each guarded edge
+            p, q = np.asarray(p), np.asarray(q)
+            m, d = (p + q) / 2, (q - p) / np.linalg.norm(q - p)
+            n = np.array([d[1], -d[0]])
+            if sg.footprint.contains(Point(m + n * 0.01)):
+                n = -n                                     # n points out of the opening
+            if guard.contains(Point(m + n * stairs.GUARD_THICKNESS / 2)):
+                z = sg.ffl_top + GUARD_PROBE_Z
+                tests.append({"name": f"guard:{sg.id}.{j + 1}", "kind": "guard",
+                              "start": [*(m + n * (stairs.GUARD_THICKNESS + 0.05)), z],
+                              "end": [*(m - n * 0.3), z], "expect_hit": True})
         flights = sg.flights
         for i, f in enumerate(flights):                # one line per flight, chest height above the steps
             z0 = sg.ffl + sg.riser * f.first

@@ -99,7 +99,9 @@ by `risers`; its footprint is cut out of the upper floor and the lower
 ceiling, and the top riser is the slab edge. Rooms on upper levels are
 reached through the stair (Q09). A dog-leg climbs half its risers (rounded
 up), crosses the half landing and climbs back beside the first flight; its
-whole footprint is opened in the floor above. See `projects/t05` (G+1,
+whole footprint is opened in the floor above. A 0.90 m guard rail
+(`GUARD`, `M_Guard`) closes every open edge of a stair opening except the
+top riser; walk tests check each guarded edge. See `projects/t05` (G+1,
 straight) and `projects/t06` (G+1, dog-leg).
 
 **Dimension check kinds:** `param` (a typed value must equal the register),
@@ -151,6 +153,7 @@ Builds are deterministic: the same plan gives a byte-identical GLB.
 ## Known limits (v0.1)
 
 See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md#plan3d-v01). In short:
-straight walls; straight and dog-leg stairs only, without handrails; no roof
+straight walls; straight and dog-leg stairs only; guard rails around stair openings but no
+flight balustrades; no roof
 parapet or furniture; one material per element type; plan input is typed
 by hand (no PDF/CAD reading yet).

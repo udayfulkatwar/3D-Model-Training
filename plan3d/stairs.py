@@ -25,6 +25,8 @@ APPROACH = 0.3           # where a person stands before the first riser / after 
 HEADROOM = 2.0           # clear height above every tread (Q22)
 MAX_RISER, MIN_GOING = 0.19, 0.25                 # training thresholds, not a code check
 BLONDEL = (0.55, 0.70)   # comfortable 2 x riser + going, metres
+GUARD_HEIGHT = 0.9       # guard rail around stair openings (training value, not a code check)
+GUARD_THICKNESS = 0.05
 
 
 @dataclass
@@ -206,3 +208,16 @@ def landing_depth(sg: StairGeom, region) -> float:
     parts = [g for g in getattr(inside, "geoms", [inside]) if g.length > 0]
     first = min(parts, key=lambda g: Point(sg.top).distance(g), default=None)
     return first.length if first is not None and Point(sg.top).distance(first) < 1e-6 else 0.0
+
+
+def guard_region(sg: StairGeom, up_layout) -> Polygon:
+    """Plan area of the guard rail around the stair's opening in the upper
+    floor: a GUARD_THICKNESS band just outside every edge of the opening,
+    except where a wall already closes it and across the top riser, where
+    people step on and off."""
+    band = sg.footprint.buffer(GUARD_THICKNESS, join_style="mitre").difference(sg.footprint)
+    a = np.array([-sg.top_u[1], sg.top_u[0]]) * sg.width / 2
+    t, out = sg.top, sg.top_u * (GUARD_THICKNESS * 2)
+    arrival = Polygon([t - a, t + a, t + a + out, t - a + out])
+    floor = unary_union(list(up_layout.room_regions.values()))
+    return band.difference(arrival).difference(up_layout.footprint).intersection(floor)

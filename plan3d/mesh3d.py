@@ -49,6 +49,7 @@ MATERIALS = {
     "glass":   {"baseColorFactor": [0.70, 0.82, 0.90, 0.30], "roughnessFactor": 0.05,
                 "alphaMode": "BLEND"},
     "stair":   {"baseColorFactor": [0.62, 0.60, 0.57, 1.0], "roughnessFactor": 0.7},
+    "guard":   {"baseColorFactor": [0.20, 0.20, 0.22, 1.0], "roughnessFactor": 0.4},
 }
 
 
@@ -147,6 +148,10 @@ def build_parts(plan: Plan, layouts: dict[str, LevelLayout]) -> list[Part]:
             if sg.level == level_id:
                 for suffix, lane in stairs.solids(sg):
                     parts.append(Part(f"{level_id}_STAIR_{sg.id}{suffix}", "stair", level_id, _to_trimesh(lane), sg.id))
+            if sg.to_level == level_id:
+                guard = _prism(stairs.guard_region(sg, lay), ffl, ffl + stairs.GUARD_HEIGHT)
+                if not guard.is_empty():
+                    parts.append(Part(f"{level_id}_GUARD_{sg.id}", "guard", level_id, _to_trimesh(guard), sg.id))
 
         details = next(iter(plan.details.values()), None)
         fw = details["frame_width"] if details else 0.0
