@@ -161,3 +161,14 @@ the stair), Q21 and Q22.
 **Honest limit:** with one development plan and one holdout plan by the
 same author, a pass shows the method works on these conventions, not that
 it generalises.
+
+### Part 2 development result (T05; reader frozen at the commit that adds this)
+
+| Run | Result |
+|---|---|
+| t05 ground floor | offset 0.00 mm, rooms 100%, area 0.00%, openings 100% / 100%, width 3.1 mm, names 100%: PASS |
+| t05 first floor | offset 0.00 mm, rooms 100%, area 0.00%, openings 100% / 100%, width 3.6 mm, names 100%: PASS |
+| t05 stair | straight, N, 18 risers, width 1.000, going 0.250, start (7.27, 0.60): exact. PASS |
+| draft build | 0 FAIL (Q09 reaches the upper rooms by the stair; Q21, Q22 pass) |
+
+First run, no changes needed. Part 1 runs unchanged (18/18).

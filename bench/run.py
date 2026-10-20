@@ -72,10 +72,12 @@ def _layout(plan_path):
     return plan, plan2d.build_layout(plan, "L00")
 
 
-def score(truth_path: Path, draft_path: Path) -> dict:
-    tplan, tl = _layout(truth_path)
+def score(truth_path: Path, draft_path: Path, truth_level: str = "L00", draft_level: str = "L00") -> dict:
+    tplan, err = load_plan(truth_path)
+    assert tplan is not None, err
+    tl = plan2d.build_layout(tplan, truth_level)
     dplan = Plan(json.loads(draft_path.read_text()))
-    dl = plan2d.build_layout(dplan, "L00")
+    dl = plan2d.build_layout(dplan, draft_level)
 
     offset_mm = 1000 * tl.footprint.symmetric_difference(dl.footprint).area / tl.footprint.boundary.length
 

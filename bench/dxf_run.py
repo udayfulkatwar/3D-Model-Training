@@ -4,6 +4,7 @@ docs/T016_DXF_INTAKE.md.
 
     python -m bench.dxf_run                 # development plans (T01, T02)
     python -m bench.dxf_run --holdout       # T03-T06, run once after the reader is frozen
+    python -m bench.dxf_run --sheet [--holdout]   # part 2: multi-storey sheets with stairs (T05; T06)
 """
 
 from __future__ import annotations
@@ -11,7 +12,10 @@ from __future__ import annotations
 import json
 import sys
 
+import numpy as np
+
 from plan3d import plan2d
+from plan3d.build import build
 from plan3d.model import Plan, load_plan
 from plan3d.read_dxf import read_dxf
 
@@ -56,6 +60,8 @@ def verdict(m: dict) -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
+    if "--sheet" in argv:
+        return sheet_main(argv)
     plans, out_name = (HOLDOUT, "holdout.json") if "--holdout" in argv else (DEV, "results.json")
     styles = EXPLORE if "--explore" in argv else STYLES
     if "--explore" in argv:
@@ -83,6 +89,75 @@ def main(argv: list[str] | None = None) -> int:
               f"{m['width_err_mm']:6.1f} {m['names']:5.2f}  "
               f"{'PASS' if m['verdict']['pass'] else 'MISS ' + ','.join(m['verdict']['missed'])}")
     return 0 if all(m["verdict"]["pass"] for m in results.values()) else 1
+
+
+# ---------------------------------------------------------------- part 2: sheets with stairs
+
+SHEET_DEV, SHEET_HOLDOUT = ["t05"], ["t06"]
+
+
+def stair_match(truth: dict, draft: dict | None) -> dict:
+    """Pre-registered stair targets: type, direction, risers exact; width and
+    going within 5 mm; start within 10 mm."""
+    if draft is None:
+        return {"found": False, "pass": False}
+    ok = {"type": truth.get("type", "straight") == draft.get("type", "straight"),
+          "direction": truth["direction"] == draft["direction"], "risers": truth["risers"] == draft["risers"],
+          "width": abs(truth["width"] - draft["width"]) <= 0.005, "going": abs(truth["going"] - draft["going"]) <= 0.005,
+          "start": float(np.hypot(truth["start"][0] - draft["start"][0], truth["start"][1] - draft["start"][1])) <= 0.01}
+    if truth.get("type") == "dogleg":
+        ok["turn"] = truth.get("turn") == draft.get("turn")
+    return {"found": True, **ok, "pass": all(ok.values())}
+
+
+def sheet_main(argv: list[str]) -> int:
+    plans = SHEET_HOLDOUT if "--holdout" in argv else SHEET_DEV
+    OUT.mkdir(parents=True, exist_ok=True)
+    rows, ok_all = [], True
+    for p in plans:
+        truth = ROOT / "projects" / p / "plan.json"
+        tplan, _ = load_plan(truth)
+        dxf = OUT / f"{p}_sheet.dxf"
+        write(truth, dxf, "sheet")
+        draft_dir = OUT / f"{p}_sheet"
+        read_dxf(dxf, draft_dir)
+        draft = json.loads((draft_dir / "plan.json").read_text())
+        tlevels = sorted(tplan.levels, key=lambda lid: tplan.levels[lid]["elevation"])
+        dlevels = [lv["id"] for lv in sorted(draft["levels"], key=lambda lv: lv["elevation"])]
+        level_ok = len(tlevels) == len(dlevels)
+        qa = build(draft_dir / "plan.json", draft_dir / "build").report
+        builds = not qa.failed
+        for tl, dl in zip(tlevels, dlevels):
+            m = score(truth, draft_dir / "plan.json", tl, dl)
+            m["builds_without_fail"] = builds
+            m["names"] = _names_level(tplan, draft, tl, dl)
+            v = verdict(m)
+            ok_all &= v["pass"]
+            rows.append((f"{p}/{tl}", m, v))
+        st = stair_match(next(iter(tplan.stairs.values())), (draft.get("stairs") or [None])[0])
+        ok_all &= level_ok and st["pass"]
+        rows.append((f"{p}/stair", st, {"pass": st["pass"] and level_ok,
+                                        "missed": [k for k, v in st.items() if v is False] + ([] if level_ok else ["levels"])}))
+    for name, m, v in rows:
+        detail = ("" if "offset_mm" not in m else
+                  f"offset {m['offset_mm']:.2f} rooms {m['rooms']:.2f} area {100 * (m['area_err_max'] or 0):.2f}% "
+                  f"rec {m['recall']:.2f} prec {m['precision']:.2f} width {m['width_err_mm']:.1f} names {m['names']:.2f}")
+        print(f"{name:12} {detail:80} {'PASS' if v['pass'] else 'MISS ' + ','.join(v['missed'])}")
+    (OUT / ("sheet_holdout.json" if "--holdout" in argv else "sheet_results.json")).write_text(
+        json.dumps({n: m for n, m, _ in rows}, indent=2, default=float))
+    return 0 if ok_all else 1
+
+
+def _names_level(tplan, draft: dict, tl: str, dl: str) -> float:
+    t = plan2d.build_layout(tplan, tl)
+    dplan = Plan(draft)
+    d = plan2d.build_layout(dplan, dl)
+    ok = 0
+    for rid, reg in t.room_regions.items():
+        best = max(d.room_regions.items(), key=lambda kv: reg.intersection(kv[1]).area, default=(None, None))
+        if best[0] and dplan.rooms[best[0]]["name"].lower() == tplan.rooms[rid]["name"].lower():
+            ok += 1
+    return ok / len(t.room_regions)
 
 
 if __name__ == "__main__":

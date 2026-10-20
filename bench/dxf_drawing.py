@@ -16,6 +16,8 @@ overall dimension on A-ANNO-DIMS.
     style "columns": exploratory; RCC columns (closed polylines + solid hatch on
                      S-COLS) at every wall corner and junction, wall outlines
                      stopping at the column faces, as in framed buildings
+    style "sheet":   every level side by side (3 m apart) as "poly", titled
+                     ("GROUND FLOOR PLAN"), stairs on A-FLOR-STRS (T-016 part 2)
 """
 
 from __future__ import annotations
@@ -26,14 +28,14 @@ from pathlib import Path
 
 import ezdxf
 import numpy as np
-
 from shapely.geometry import box
 from shapely.ops import unary_union
 
-from plan3d import plan2d
+from plan3d import plan2d, stairs
 from plan3d.model import load_plan
 
 MM = 1000.0
+SHEET_GAP_M = 3.0
 
 
 def _mm(p) -> tuple[float, float]:
@@ -64,11 +66,11 @@ def _columns(lay) -> list:
 def write(plan_path: str | Path, out_dxf: str | Path, style: str = "poly", seed: int = 7) -> dict:
     plan, errors = load_plan(plan_path)
     assert plan is not None, errors
-    lay = plan2d.build_layout(plan, sorted(plan.levels)[0])
     doc = ezdxf.new("R2018", setup=True)
     doc.header["$INSUNITS"] = 4                          # millimetres
     for name, colour in (("A-WALL", 7), ("A-WALL-PATT", 8), ("S-COLS", 5), ("A-DOOR", 2), ("A-GLAZ", 4),
-                         ("A-AREA-IDEN", 3), ("A-FURN", 9), ("A-FLOR-PATT", 8), ("A-ANNO-DIMS", 1)):
+                         ("A-AREA-IDEN", 3), ("A-FURN", 9), ("A-FLOR-PATT", 8), ("A-ANNO-DIMS", 1),
+                         ("A-FLOR-STRS", 6), ("A-ANNO-TTLB", 7)):
         doc.layers.add(name, color=colour)
     door = doc.blocks.new("DOOR")                        # unit door: closed along +X, open leaf along +Y
     door.add_line((0, 0), (0, 1), dxfattribs={"layer": "0"})
@@ -79,7 +81,66 @@ def write(plan_path: str | Path, out_dxf: str | Path, style: str = "poly", seed:
     for x in (0, 1):
         window.add_line((x, -0.5), (x, 0.5), dxfattribs={"layer": "0"})
     msp = doc.modelspace()
+    levels = sorted(plan.levels, key=lambda lid: plan.levels[lid]["elevation"])
+    if style != "sheet":
+        overall = _draw_level(msp, plan, levels[0], style, seed)
+    else:                                                # every level side by side, titled, with its stairs
+        x = 0.0
+        for lid in levels:
+            n0 = len(msp)
+            overall = _draw_level(msp, plan, lid, "poly", seed)
+            _draw_stairs(msp, plan, lid)
+            lay = plan2d.build_layout(plan, lid)
+            minx, miny, maxx, _ = lay.footprint.bounds
+            msp.add_text(f"{plan.levels[lid]['name'].upper()} PLAN", height=250,
+                         dxfattribs={"layer": "A-ANNO-TTLB"}).set_placement(
+                _mm(((minx + maxx) / 2, miny - 1.6)), align=ezdxf.enums.TextEntityAlignment.MIDDLE_CENTER)
+            for e in list(msp)[n0:]:
+                e.translate(x * MM, 0, 0)
+            x += (maxx - minx) + SHEET_GAP_M
+    out_dxf = Path(out_dxf)
+    out_dxf.parent.mkdir(parents=True, exist_ok=True)
+    doc.saveas(out_dxf)
+    return {"overall_x_m": overall, "style": style}
 
+
+def _draw_stairs(msp, plan, lid: str) -> None:
+    """Stairs as drawn on plans: on the lower level the flight outline, a line
+    per riser, a walking line ending in an arrow and UP at the foot; on the
+    upper level the opening as a dashed outline."""
+    attrs = {"layer": "A-FLOR-STRS"}
+    for sg in stairs.build(plan).values():
+        if sg.level == lid:
+            flights = sg.flights
+            path = []
+            for i, f in enumerate(flights):
+                half = np.array([-f.u[1], f.u[0]]) * sg.width / 2
+                for k in range(f.risers):                # first riser .. the riser onto the landing / floor
+                    p = f.foot + f.u * sg.going * k
+                    msp.add_line(_mm(p - half), _mm(p + half), dxfattribs=attrs)
+                top = sg.flight_top(f)
+                for side in (-half, half):
+                    msp.add_line(_mm(f.foot + side), _mm(top + side), dxfattribs=attrs)
+                path += [f.foot + f.u * (0.15 if i == 0 else -sg.landing / 2),
+                         top + f.u * (-0.15 if i == len(flights) - 1 else sg.landing / 2)]
+            if sg.landing_rect is not None:
+                msp.add_lwpolyline([_mm(p) for p in list(sg.landing_rect.exterior.coords)[:-1]], close=True,
+                                   dxfattribs=attrs)
+            msp.add_lwpolyline([_mm(p) for p in path], dxfattribs=attrs)
+            tip, back = path[-1], path[-1] - sg.top_u * 0.2
+            side = np.array([-sg.top_u[1], sg.top_u[0]]) * 0.08
+            msp.add_line(_mm(tip), _mm(back + side), dxfattribs=attrs)
+            msp.add_line(_mm(tip), _mm(back - side), dxfattribs=attrs)
+            msp.add_text("UP", height=120, dxfattribs=attrs).set_placement(
+                _mm(sg.foot - sg.u * 0.15), align=ezdxf.enums.TextEntityAlignment.TOP_CENTER)
+        elif sg.to_level == lid:
+            msp.add_lwpolyline([_mm(p) for p in list(sg.footprint.exterior.coords)[:-1]], close=True,
+                               dxfattribs={**attrs, "linetype": "DASHED"})
+
+
+def _draw_level(msp, plan, lid: str, style: str, seed: int) -> float:
+    """One floor plan at the plan's own coordinates; returns its overall east-west length."""
+    lay = plan2d.build_layout(plan, lid)
     walls = lay.footprint
     for og in lay.openings.values():
         walls = walls.difference(og.rect)
@@ -157,10 +218,7 @@ def write(plan_path: str | Path, out_dxf: str | Path, style: str = "poly", seed:
     dim = msp.add_linear_dim(base=_mm((minx, miny - 0.8)), p1=_mm((minx, miny)), p2=_mm((maxx, miny)),
                              dxfattribs={"layer": "A-ANNO-DIMS"})
     dim.render()
-    out_dxf = Path(out_dxf)
-    out_dxf.parent.mkdir(parents=True, exist_ok=True)
-    doc.saveas(out_dxf)
-    return {"overall_x_m": maxx - minx, "style": style}
+    return maxx - minx
 
 
 if __name__ == "__main__":                                # python -m bench.dxf_drawing plan.json out.dxf [style]
