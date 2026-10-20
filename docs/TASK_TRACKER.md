@@ -26,7 +26,7 @@ verified without spending money.
 | — | T-005 | ~~Rehearse the Unreal import with a training copy of the script~~ | — | — | SUPERSEDED by T-009 (script written) and T-012 (founder import) |
 | 0 | T-010 | **Real-drawing evaluation of the reader**: 5–10 real plans the company owns or has written permission to use; truth measured by hand; same metrics | AD-28 → AD-05 | Founder supplies drawings and permission; AI runs and reports | BLOCKED (needs drawings) |
 | 6 | T-011 | Reader v0.2: OCR for room names and dimension strings (cross-check scale), hollow-wall support | AD-28 → AD-05 | AI | Hollow walls IMPLEMENTED, not verified (holdouts 3/4, then 0/4 before the last fix; see T006_PLAN_READING.md). OCR PLANNED |
-| 5 | T-016 | DXF intake (AutoCAD vectors → draft plan.json): walls, openings, room names; pre-registered in [T016_DXF_INTAKE.md](T016_DXF_INTAKE.md) | AD-28 → AD-05 | AI | IMPLEMENTED: dev 6/6, holdout 12/12 (T03–T06), exact geometry and names. Test files are our own; real DXF files needed (T-010) |
+| 5 | T-016 | DXF intake (AutoCAD vectors → draft plan.json): walls, openings, room names; pre-registered in [T016_DXF_INTAKE.md](T016_DXF_INTAKE.md) | AD-28 → AD-05 | AI | IMPLEMENTED: single floors dev 6/6, holdout 12/12, exploratory 18/18 (untidy ends, RCC columns); multi-storey sheets with stairs dev T05 and holdout T06 PASS. Test files are our own; real DXF files needed (T-010) |
 | 7 | T-007 | IFC intake prototype (IfcOpenShell → plan.json/GLB) on a public sample | AD-06 → AD-13 | AI | PLANNED (IfcOpenShell 0.9.0 is LGPL-3.0, free; DXF first, as local architects mostly use AutoCAD) |
 | 8 | T-008 | Write failure case studies (Mars Climate Orbiter, Ariane 5) as unit-safety controls | AD-33 → AD-01 | AI | PLANNED |
 

@@ -172,3 +172,18 @@ it generalises.
 | draft build | 0 FAIL (Q09 reaches the upper rooms by the stair; Q21, Q22 pass) |
 
 First run, no changes needed. Part 1 runs unchanged (18/18).
+
+### Part 2 holdout (T06, dog-leg; run once at 6f545ca)
+
+| Run | Result |
+|---|---|
+| t06 ground floor | offset 0.00 mm, rooms 100%, area 0.00%, openings 100% / 100%, width 3.3 mm, names 100%: PASS |
+| t06 first floor | offset 0.00 mm, rooms 100%, area 0.00%, openings 100% / 100%, width 3.6 mm, names 100%: PASS |
+| t06 stair | dog-leg, N, turn right, 18 risers (9 + 9), width 1.000, going 0.250, start (7.27, 3.00): exact. PASS |
+| draft build | 0 FAIL |
+
+**Holdout passed on the first and only run.** Same caveat as before: one
+development and one holdout plan, written by our own writer with its
+conventions (titles, a stair layer, UP text). Real sheets also hold
+elevations, sections, site plans and title blocks, and draw stairs in many
+ways. That needs real files (T-010).

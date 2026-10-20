@@ -55,7 +55,13 @@ cd viewer && npm install && node check.mjs out/t01                    # writes o
 - Output as for `read`, plus `walls_and_openings.png` (what the reader saw).
 - On our own test files: exact walls, openings and room names on all 30
   runs ([T016_DXF_INTAKE.md](T016_DXF_INTAKE.md)). Not yet tested on real
-  files. Orthogonal walls only; one floor per file.
+  files. Orthogonal walls only.
+- **Several floors on one sheet** (titled GROUND / FIRST ... FLOOR PLAN)
+  become stacked levels with default heights (3.00 m + 0.15 m slab). Stairs
+  on a `STAIR`/`STRS` layer are read from their riser lines (one line per
+  riser, UP at the foot): straight or dog-leg, direction, width, going,
+  risers. Elevations, sections and title blocks on the sheet are not yet
+  separated out; keep floor plans only.
 
 ## FBX for Unreal Engine / Twinmotion (T-009)
 
