@@ -67,6 +67,17 @@ deleted. "Revisit if" states what evidence would change the decision.
   traceable and nothing is reusable. This is roadmap item "code-based
   building generator".
 
+### ADR-011: Training stays private, free and separate from business data
+- **Date:** 2026-10-20 · **Status:** Accepted (founder instruction)
+- **Decision:** (1) no money is spent on this work, and spending is not
+  proposed; (2) everything stays private (the GitHub repository is
+  private) and nothing is published; (3) training output never enters
+  ASTRA DWELL business data: no business folders, documents, repositories,
+  skills or connectors, and no messages to other Claude sessions. The PC
+  Claude session that runs Unreal works only in `C:\Work\` and the Unreal
+  training content.
+- **Why:** the founder keeps training fully separate from the company.
+
 ### ADR-010 — FBX via an isolated Blender worker, stored in centimetres
 - **Date:** 2026-10-19 · **Status:** Accepted
 - **Decision:** plan3d writes exact meshes to files, and a separate

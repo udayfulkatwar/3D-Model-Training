@@ -41,6 +41,13 @@ Founder rules in force:
   reference is allowed (founder instruction, 2026-10-19).
 - Train and rehearse first; no client model, no paid service and no public
   deployment until the founder authorizes it.
+- **No money, ever:** no paid services, purchases or subscriptions for this
+  training work. Spending is not even proposed (founder, 2026-10-20).
+- **Private:** the repository stays private (verified 2026-10-20); nothing
+  is published, shared publicly or uploaded anywhere public.
+- **Separate from ASTRA DWELL business data:** training work is never
+  written to ASTRA DWELL business folders, documents, repositories, skills,
+  connectors or other Claude sessions (ADR-011).
 
 ## Project records
 
