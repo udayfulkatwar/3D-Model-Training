@@ -163,6 +163,9 @@ def _write_manifest(plan, parts, layouts, udir, check) -> Path:
         "fbx_header": check["header"],
         "rooms": rooms,
         "walk_tests": _walk_tests(plan, parts, layouts),
+        "clearances": [{**c, "start_cm": to_unreal_cm(*c["start"]), "end_cm": to_unreal_cm(*c["end"]),
+                        "clear_cm": round(c["clear_m"] * 100, 2)}
+                       for c in walktests.clearances(plan, layouts, parts)],
         "status": "Imported and read back in UE 5.8 (QR-005, QR-006); see QUALITY_REPORTS.md",
     }
     path = udir / "unreal_manifest.json"

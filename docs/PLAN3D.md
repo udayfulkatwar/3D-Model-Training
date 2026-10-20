@@ -113,6 +113,8 @@ box), `room_area`, `none`.
 | Q16 | GLB round trip | Names, triangle counts, bounds or UVs lost on export |
 | Q17 | FBX round trip (`--fbx`) | FBX not in cm, or names, triangles, sizes, UVs or materials changed |
 | Q18 | Door swing clearance | A door leaf that would hit a wall when opened 90°, or two door swings that overlap |
+| Q19 | Walk tests | A probe line through a door or arch that is blocked, or one at a wall or window that passes (also run in Unreal by `walk_test.py`) |
+| Q20 | Clear walking width | WARN when the gap left by frames and the open leaf is under 0.50 m; lists doors Unreal's 0.70 m DefaultPawn cannot pass (checked in Unreal with sphere sweeps) |
 
 If Q04–Q07 fail, no model is exported.
 

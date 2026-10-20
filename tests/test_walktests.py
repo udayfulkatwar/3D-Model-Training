@@ -1,9 +1,10 @@
 """Walk tests (Q19): the probes must notice a blocked door or a missing wall."""
 
 import numpy as np
+import pytest
 import trimesh
 
-from conftest import T01_PATH
+from conftest import T01_PATH, details, item
 from plan3d import plan2d, walktests
 from plan3d.mesh3d import Part, build_parts
 from plan3d.model import load_plan
@@ -42,3 +43,20 @@ def test_blocked_doorway_and_missing_wall_are_caught():
     damaged = [p for p in parts if p.name != hit_wall] + [Part("SM_Plug", "wall", "L00", plug)]
     bad = {r["name"] for r in walktests.run([door, wall], damaged) if not r["ok"]}
     assert bad == {door["name"], wall["name"]}
+
+
+def test_clear_widths_equal_hand_arithmetic():
+    plan, layouts, parts = _t01()
+    clear = {c["name"]: c["clear_m"] for c in walktests.clearances(plan, layouts, parts)}
+    # door width - two 60 mm frames - one 35 mm leaf standing open in the gap
+    assert clear["door:O09"] == pytest.approx(0.9 - 2 * 0.06 - 0.035, abs=1e-4)
+    assert clear["door:O13"] == pytest.approx(0.75 - 2 * 0.06 - 0.035, abs=1e-4)
+    assert clear["arch:O12"] == pytest.approx(1.6, abs=1e-4)      # arches have no frame
+
+
+def test_too_narrow_door_warns(t01, run):
+    item(t01, "dimensions", "D-033")["value"] = 0.65             # toilet doors: 0.495 m clear
+    for oid in ("O13", "O14"):
+        item(t01, "openings", oid)["width"] = 0.65
+    result, st = run(t01)
+    assert st["Q20"] == "WARN" and "door:O13" in details(result, "Q20")

@@ -270,6 +270,23 @@ def check_walk_tests(report: Report, plan: Plan, layouts: dict, parts: list[Part
     c.add("INFO", f"{sum(r['ok'] for r in results)}/{len(results)} probes as expected")
     return results
 
+def check_clearance(report: Report, plan: Plan, layouts: dict, parts: list[Part]) -> list[dict]:
+    """Q20: clear walking width of doors and arches after frames and open leaves."""
+    from . import walktests
+    c = report.new("Q20", "Clear walking width through doors and arches")
+    results = walktests.clearances(plan, layouts, parts)
+    for r in results:
+        if r["clear_m"] < walktests.WALKER_WIDTH:
+            c.add("WARN", f"{r['name']}: clear width {r['clear_m']:.3f} m is below a "
+                          f"{walktests.WALKER_WIDTH:.2f} m walkthrough body")
+    c.add("INFO", "Clear widths: " + ", ".join(f"{r['name']} {r['clear_m']:.3f} m" for r in results))
+    tight = [r["name"] for r in results if r["clear_m"] < walktests.DEFAULT_PAWN_WIDTH]
+    if tight:
+        c.add("INFO", f"Unreal's DefaultPawn ({walktests.DEFAULT_PAWN_WIDTH:.2f} m) cannot pass "
+                      f"{', '.join(tight)}; use a walkthrough pawn of at most {min(r['clear_m'] for r in results):.2f} m")
+    return results
+
+
 def check_solids(report: Report, parts: list[Part]) -> None:
     c = report.new("Q11", "Solids are closed, finite and positive-volume")
     for p in parts:
