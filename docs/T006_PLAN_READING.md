@@ -251,3 +251,26 @@ T- and L-shaped wall networks look short. With the fix: development 6/6,
 T03/T04 hollow 4/4 (no longer unseen), all 20 filled-wall runs unchanged.
 Reader frozen at the commit that adds this paragraph; holdout 3 runs next,
 once.
+
+### Holdout 3 results (T05, T06 ground floors; run once at ba93a7d)
+
+| Run | Offset mm | Rooms | Max area err | Recall / precision | Width err mm | Verdict |
+|---|---|---|---|---|---|---|
+| t05/clean-100 | 0.61 | 100% | 0.13% | 1.00 / 1.00 | 12.5 | PASS |
+| t05/scan2-150 | 2.50 | 100% | 0.27% | 1.00 / 1.00 | 12.5 | PASS |
+| t06/clean-100 | 0.61 | 100% | 0.11% | 1.00 / 1.00 | 13.3 | PASS |
+| t06/scan2-150 | 2.50 | 100% | 0.22% | 1.00 / 1.00 | 13.3 | PASS |
+| t05/hollow-clean-100 | 13.90 | 67% | 0.13% | 0.62 / 1.00 | 0.0 | **MISS** |
+| t05/hollow-scan2-150 | 1.87 | 100% | 0.23% | 0.75 / 0.86 | 3.3 | **MISS** |
+| t06/hollow-clean-100 | 0.61 | 100% | 0.11% | 0.78 / 0.88 | 0.0 | **MISS** |
+| t06/hollow-scan2-150 | 1.86 | 100% | 0.24% | 0.78 / 0.88 | 2.9 | **MISS** |
+
+**Filled walls: 4/4 pass on unseen plans. Hollow walls: 0/4.** The same
+fault every time: the south wall has a 0.7 m piece between the main door
+and a window. Its inside is too stubby to count as long (3.5 times longer
+than wide, rule ≥ 4) and too long to count as a pier (box over 0.45 m).
+No rule covers it, so the door and window merge into one opening. In T05
+a second short piece is missed the same way, and a room merges. The
+development and first holdout plans only had piers ≤ 0.15 m and pieces of
+1 m or more, so the gap went unseen. **Hollow-wall reading is not ready:
+it has passed on plans it was tuned on, and failed on new ones.**
