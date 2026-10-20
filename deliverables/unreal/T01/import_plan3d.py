@@ -3,12 +3,15 @@
 STATUS: verified in UE 5.8 on 2026-10-20. First run (QR-005): import,
 size, north, PlayerStart, materials and collision. Re-run with frames and
 doors (QR-006): 45/45 meshes, 58 old actors removed, no duplicates, level
-saved, bounds equal to plan3d's to 0.0 cm.
+saved, bounds equal to plan3d's to 0.0 cm. Opening or creating the
+project's own level (open_level) was added afterwards; not yet run in Unreal.
 
 Usage (Unreal Editor, Python plugin enabled):
   1. Copy this whole folder (FBX, unreal_manifest.json, rooms.csv, this script)
      to the Windows machine.
   2. Output Log -> Python:  py "C:/path/to/unreal/import_plan3d.py"
+     It works in the level /Game/<project>_House (e.g. /Game/T06_House), opening
+     or creating it first; it stops if the open level has unsaved changes.
   3. Check: the house is 12.0 m wide for T01 (1200 uu); NorthMarker sits on
      the north side of the building; you can walk through doors in PIE.
 """
@@ -21,6 +24,7 @@ import unreal
 HERE = os.path.dirname(os.path.abspath(__file__))
 MANIFEST = json.load(open(os.path.join(HERE, "unreal_manifest.json")))
 DEST = f"/Game/Plan3D/{MANIFEST['project']}"
+LEVEL = f"/Game/{MANIFEST['project']}_House"
 ADD_BASIC_LIGHTING = True       # sun, sky light, atmosphere for a first look
 
 
@@ -81,7 +85,25 @@ def remove_previous(actors):
     return len(old)
 
 
+def open_level() -> str | None:
+    """Work in the project's own level, so two houses never share one.
+    Returns what was done, or None if unsaved changes would need a dialog."""
+    world = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world()
+    if world.get_path_name().split(".")[0] == LEVEL:
+        return "already open"
+    if unreal.EditorLoadingAndSavingUtils.get_dirty_map_packages():
+        return None                                  # switching would ask to save: stop instead of hanging
+    levels = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
+    if unreal.EditorAssetLibrary.does_asset_exist(LEVEL):
+        return "loaded" if levels.load_level(LEVEL) else None
+    return "created" if levels.new_level(LEVEL) else None
+
+
 def main():
+    level = open_level()
+    if level is None:
+        unreal.log_error(f"plan3d: could not open {LEVEL} (unsaved changes in the open level?); nothing imported")
+        return
     imported = import_fbx()
     actors = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
     removed = remove_previous(actors)
@@ -106,7 +128,7 @@ def main():
         spawn(actors, unreal.SkyLight, (0, 0, 1000), "SkyLight")
         spawn(actors, unreal.SkyAtmosphere, (0, 0, 0), "SkyAtmosphere")
     saved = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem).save_current_level()
-    unreal.log(f"plan3d: imported {len(imported)} assets, removed {removed} old actors, spawned "
+    unreal.log(f"plan3d: level {LEVEL} ({level}); imported {len(imported)} assets, removed {removed} old actors, spawned "
                f"{found}/{len(MANIFEST['meshes'])} meshes into {DEST}; level saved: {saved}. "
                f"Rooms DataTable source: rooms.csv (struct S_RoomData).")
 

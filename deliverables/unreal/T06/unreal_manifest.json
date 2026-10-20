@@ -1,0 +1,1246 @@
+{
+  "project": "T06",
+  "fbx": "T06.fbx",
+  "meshes": [
+    "SM_T06_L00_WALLS",
+    "SM_T06_L00_FLOOR_R01",
+    "SM_T06_L00_CEILING_R01",
+    "SM_T06_L00_FLOOR_R02",
+    "SM_T06_L00_CEILING_R02",
+    "SM_T06_L00_FLOOR_R03",
+    "SM_T06_L00_CEILING_R03",
+    "SM_T06_L00_STAIR_S01",
+    "SM_T06_L00_STAIR_S01_F2",
+    "SM_T06_L00_BALUSTRADE_S01_1",
+    "SM_T06_L00_BALUSTRADE_S01_2",
+    "SM_T06_L00_BALUSTRADE_S01_3",
+    "SM_T06_L00_FRAME_O01",
+    "SM_T06_L00_DOOR_O01",
+    "SM_T06_L00_FRAME_O02",
+    "SM_T06_L00_GLASS_O02",
+    "SM_T06_L00_FRAME_O03",
+    "SM_T06_L00_GLASS_O03",
+    "SM_T06_L00_FRAME_O04",
+    "SM_T06_L00_DOOR_O04",
+    "SM_T06_L00_FRAME_O05",
+    "SM_T06_L00_DOOR_O05",
+    "SM_T06_L00_FRAME_O06",
+    "SM_T06_L00_GLASS_O06",
+    "SM_T06_L00_FRAME_O07",
+    "SM_T06_L00_GLASS_O07",
+    "SM_T06_L00_FRAME_O08",
+    "SM_T06_L00_GLASS_O08",
+    "SM_T06_L00_FRAME_O09",
+    "SM_T06_L00_GLASS_O09",
+    "SM_T06_L01_WALLS",
+    "SM_T06_L01_FLOOR_R11",
+    "SM_T06_L01_CEILING_R11",
+    "SM_T06_L01_FLOOR_R12",
+    "SM_T06_L01_CEILING_R12",
+    "SM_T06_L01_FLOOR_R13",
+    "SM_T06_L01_CEILING_R13",
+    "SM_T06_L01_GUARD_S01",
+    "SM_T06_L01_FRAME_O21",
+    "SM_T06_L01_DOOR_O21",
+    "SM_T06_L01_FRAME_O22",
+    "SM_T06_L01_DOOR_O22",
+    "SM_T06_L01_FRAME_O23",
+    "SM_T06_L01_GLASS_O23",
+    "SM_T06_L01_FRAME_O24",
+    "SM_T06_L01_GLASS_O24",
+    "SM_T06_L01_FRAME_O25",
+    "SM_T06_L01_GLASS_O25",
+    "SM_T06_L01_FRAME_O26",
+    "SM_T06_L01_GLASS_O26",
+    "SM_T06_L01_FRAME_O27",
+    "SM_T06_L01_GLASS_O27"
+  ],
+  "units": "FBX stores centimetres (UnitScaleFactor 1.0, verified by Q17); 1 m = 100 Unreal units",
+  "axes": "Plan +X (east) -> Unreal +X; plan +Y (north) -> Unreal -Y (expected; verify with NorthMarker)",
+  "pivot": "All meshes share the plan origin (outer south-west corner); spawn every actor at 0,0,0",
+  "player_start_cm": [
+    450.0,
+    -358.62,
+    100.0
+  ],
+  "north_marker_cm": [
+    0.0,
+    -100.0,
+    0.0
+  ],
+  "fbx_header": {
+    "UpAxis": 1,
+    "UpAxisSign": 1,
+    "FrontAxis": 2,
+    "FrontAxisSign": 1,
+    "CoordAxis": 0,
+    "CoordAxisSign": 1,
+    "UnitScaleFactor": 0.9999999776482582,
+    "OriginalUnitScaleFactor": 0.9999999776482582
+  },
+  "rooms": [
+    {
+      "RoomID": "R01",
+      "Name": "Living / dining",
+      "Use": "living",
+      "Level": "L00",
+      "SeedUnrealCm": [
+        450.0,
+        -358.62,
+        0.0
+      ]
+    },
+    {
+      "RoomID": "R02",
+      "Name": "Kitchen",
+      "Use": "kitchen",
+      "Level": "L00",
+      "SeedUnrealCm": [
+        233.63,
+        -941.38,
+        0.0
+      ]
+    },
+    {
+      "RoomID": "R03",
+      "Name": "Bedroom 1",
+      "Use": "bedroom",
+      "Level": "L00",
+      "SeedUnrealCm": [
+        666.38,
+        -941.38,
+        0.0
+      ]
+    },
+    {
+      "RoomID": "R11",
+      "Name": "Stair lobby",
+      "Use": "circulation",
+      "Level": "L01",
+      "SeedUnrealCm": [
+        736.38,
+        -358.62,
+        315.0
+      ]
+    },
+    {
+      "RoomID": "R12",
+      "Name": "Bedroom 2",
+      "Use": "bedroom",
+      "Level": "L01",
+      "SeedUnrealCm": [
+        303.62,
+        -358.62,
+        315.0
+      ]
+    },
+    {
+      "RoomID": "R13",
+      "Name": "Bedroom 3",
+      "Use": "bedroom",
+      "Level": "L01",
+      "SeedUnrealCm": [
+        450.0,
+        -941.38,
+        315.0
+      ]
+    }
+  ],
+  "walk_tests": [
+    {
+      "name": "door:O01",
+      "kind": "door",
+      "start": [
+        3.0,
+        0.63,
+        1.0
+      ],
+      "end": [
+        3.0,
+        -0.4,
+        1.0
+      ],
+      "expect_hit": false,
+      "start_cm": [
+        300.0,
+        -63.0,
+        100.0
+      ],
+      "end_cm": [
+        300.0,
+        40.0,
+        100.0
+      ],
+      "expect_mesh": null
+    },
+    {
+      "name": "window:O02",
+      "kind": "window",
+      "start": [
+        1.2,
+        0.63,
+        1.5
+      ],
+      "end": [
+        1.2,
+        -0.4,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        120.0,
+        -63.0,
+        150.0
+      ],
+      "end_cm": [
+        120.0,
+        40.0,
+        150.0
+      ],
+      "expect_mesh": "SM_T06_L00_GLASS_O02"
+    },
+    {
+      "name": "window:O03",
+      "kind": "window",
+      "start": [
+        5.3,
+        0.63,
+        1.5
+      ],
+      "end": [
+        5.3,
+        -0.4,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        530.0,
+        -63.0,
+        150.0
+      ],
+      "end_cm": [
+        530.0,
+        40.0,
+        150.0
+      ],
+      "expect_mesh": "SM_T06_L00_GLASS_O03"
+    },
+    {
+      "name": "door:O04",
+      "kind": "door",
+      "start": [
+        2.2,
+        7.4575,
+        1.0
+      ],
+      "end": [
+        2.2,
+        6.5425,
+        1.0
+      ],
+      "expect_hit": false,
+      "start_cm": [
+        220.0,
+        -745.75,
+        100.0
+      ],
+      "end_cm": [
+        220.0,
+        -654.25,
+        100.0
+      ],
+      "expect_mesh": null
+    },
+    {
+      "name": "door:O05",
+      "kind": "door",
+      "start": [
+        5.3,
+        7.4575,
+        1.0
+      ],
+      "end": [
+        5.3,
+        6.5425,
+        1.0
+      ],
+      "expect_hit": false,
+      "start_cm": [
+        530.0,
+        -745.75,
+        100.0
+      ],
+      "end_cm": [
+        530.0,
+        -654.25,
+        100.0
+      ],
+      "expect_mesh": null
+    },
+    {
+      "name": "window:O06",
+      "kind": "window",
+      "start": [
+        -0.4,
+        9.5,
+        1.575
+      ],
+      "end": [
+        0.63,
+        9.5,
+        1.575
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        -40.0,
+        -950.0,
+        157.5
+      ],
+      "end_cm": [
+        63.0,
+        -950.0,
+        157.5
+      ],
+      "expect_mesh": "SM_T06_L00_GLASS_O06"
+    },
+    {
+      "name": "window:O07",
+      "kind": "window",
+      "start": [
+        2.2,
+        12.4,
+        1.575
+      ],
+      "end": [
+        2.2,
+        11.37,
+        1.575
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        220.0,
+        -1240.0,
+        157.5
+      ],
+      "end_cm": [
+        220.0,
+        -1137.0,
+        157.5
+      ],
+      "expect_mesh": "SM_T06_L00_GLASS_O07"
+    },
+    {
+      "name": "window:O08",
+      "kind": "window",
+      "start": [
+        6.75,
+        12.4,
+        1.5
+      ],
+      "end": [
+        6.75,
+        11.37,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        675.0,
+        -1240.0,
+        150.0
+      ],
+      "end_cm": [
+        675.0,
+        -1137.0,
+        150.0
+      ],
+      "expect_mesh": "SM_T06_L00_GLASS_O08"
+    },
+    {
+      "name": "window:O09",
+      "kind": "window",
+      "start": [
+        8.37,
+        9.5,
+        1.5
+      ],
+      "end": [
+        9.4,
+        9.5,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        837.0,
+        -950.0,
+        150.0
+      ],
+      "end_cm": [
+        940.0,
+        -950.0,
+        150.0
+      ],
+      "expect_mesh": "SM_T06_L00_GLASS_O09"
+    },
+    {
+      "name": "wall:W01",
+      "kind": "wall",
+      "start": [
+        7.3925,
+        0.63,
+        1.5
+      ],
+      "end": [
+        7.3925,
+        -0.4,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        739.25,
+        -63.0,
+        150.0
+      ],
+      "end_cm": [
+        739.25,
+        40.0,
+        150.0
+      ],
+      "expect_mesh": "SM_T06_L00_WALLS"
+    },
+    {
+      "name": "wall:W02",
+      "kind": "wall",
+      "start": [
+        8.37,
+        4.5825,
+        1.5
+      ],
+      "end": [
+        9.4,
+        4.5825,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        837.0,
+        -458.25,
+        150.0
+      ],
+      "end_cm": [
+        940.0,
+        -458.25,
+        150.0
+      ],
+      "expect_mesh": "SM_T06_L00_STAIR_S01_F2"
+    },
+    {
+      "name": "wall:W03",
+      "kind": "wall",
+      "start": [
+        4.4,
+        12.4,
+        1.5
+      ],
+      "end": [
+        4.4,
+        11.37,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        440.0,
+        -1240.0,
+        150.0
+      ],
+      "end_cm": [
+        440.0,
+        -1137.0,
+        150.0
+      ],
+      "expect_mesh": "SM_T06_L00_WALLS"
+    },
+    {
+      "name": "wall:W04",
+      "kind": "wall",
+      "start": [
+        -0.4,
+        4.5825,
+        1.5
+      ],
+      "end": [
+        0.63,
+        4.5825,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        -40.0,
+        -458.25,
+        150.0
+      ],
+      "end_cm": [
+        63.0,
+        -458.25,
+        150.0
+      ],
+      "expect_mesh": "SM_T06_L00_WALLS"
+    },
+    {
+      "name": "wall:W05",
+      "kind": "wall",
+      "start": [
+        7.2425,
+        7.4575,
+        1.5
+      ],
+      "end": [
+        7.2425,
+        6.5425,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        724.25,
+        -745.75,
+        150.0
+      ],
+      "end_cm": [
+        724.25,
+        -654.25,
+        150.0
+      ],
+      "expect_mesh": "SM_T06_L00_WALLS"
+    },
+    {
+      "name": "wall:W06",
+      "kind": "wall",
+      "start": [
+        4.0425,
+        9.4425,
+        1.5
+      ],
+      "end": [
+        4.9575,
+        9.4425,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        404.25,
+        -944.25,
+        150.0
+      ],
+      "end_cm": [
+        495.75,
+        -944.25,
+        150.0
+      ],
+      "expect_mesh": "SM_T06_L00_WALLS"
+    },
+    {
+      "name": "door:O21",
+      "kind": "door",
+      "start": [
+        5.4425,
+        1.5,
+        4.15
+      ],
+      "end": [
+        6.3575,
+        1.5,
+        4.15
+      ],
+      "expect_hit": false,
+      "start_cm": [
+        544.25,
+        -150.0,
+        415.0
+      ],
+      "end_cm": [
+        635.75,
+        -150.0,
+        415.0
+      ],
+      "expect_mesh": null
+    },
+    {
+      "name": "door:O22",
+      "kind": "door",
+      "start": [
+        6.5,
+        7.4575,
+        4.15
+      ],
+      "end": [
+        6.5,
+        6.5425,
+        4.15
+      ],
+      "expect_hit": false,
+      "start_cm": [
+        650.0,
+        -745.75,
+        415.0
+      ],
+      "end_cm": [
+        650.0,
+        -654.25,
+        415.0
+      ],
+      "expect_mesh": null
+    },
+    {
+      "name": "window:O23",
+      "kind": "window",
+      "start": [
+        3.0,
+        0.63,
+        4.65
+      ],
+      "end": [
+        3.0,
+        -0.4,
+        4.65
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        300.0,
+        -63.0,
+        465.0
+      ],
+      "end_cm": [
+        300.0,
+        40.0,
+        465.0
+      ],
+      "expect_mesh": "SM_T06_L01_GLASS_O23"
+    },
+    {
+      "name": "window:O24",
+      "kind": "window",
+      "start": [
+        -0.4,
+        3.5,
+        4.65
+      ],
+      "end": [
+        0.63,
+        3.5,
+        4.65
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        -40.0,
+        -350.0,
+        465.0
+      ],
+      "end_cm": [
+        63.0,
+        -350.0,
+        465.0
+      ],
+      "expect_mesh": "SM_T06_L01_GLASS_O24"
+    },
+    {
+      "name": "window:O25",
+      "kind": "window",
+      "start": [
+        2.5,
+        12.4,
+        4.65
+      ],
+      "end": [
+        2.5,
+        11.37,
+        4.65
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        250.0,
+        -1240.0,
+        465.0
+      ],
+      "end_cm": [
+        250.0,
+        -1137.0,
+        465.0
+      ],
+      "expect_mesh": "SM_T06_L01_GLASS_O25"
+    },
+    {
+      "name": "window:O26",
+      "kind": "window",
+      "start": [
+        6.5,
+        12.4,
+        4.65
+      ],
+      "end": [
+        6.5,
+        11.37,
+        4.65
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        650.0,
+        -1240.0,
+        465.0
+      ],
+      "end_cm": [
+        650.0,
+        -1137.0,
+        465.0
+      ],
+      "expect_mesh": "SM_T06_L01_GLASS_O26"
+    },
+    {
+      "name": "window:O27",
+      "kind": "window",
+      "start": [
+        8.37,
+        1.5,
+        4.65
+      ],
+      "end": [
+        9.4,
+        1.5,
+        4.65
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        837.0,
+        -150.0,
+        465.0
+      ],
+      "end_cm": [
+        940.0,
+        -150.0,
+        465.0
+      ],
+      "expect_mesh": "SM_T06_L01_GLASS_O27"
+    },
+    {
+      "name": "wall:W11",
+      "kind": "wall",
+      "start": [
+        6.2425,
+        0.63,
+        4.65
+      ],
+      "end": [
+        6.2425,
+        -0.4,
+        4.65
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        624.25,
+        -63.0,
+        465.0
+      ],
+      "end_cm": [
+        624.25,
+        40.0,
+        465.0
+      ],
+      "expect_mesh": "SM_T06_L01_WALLS"
+    },
+    {
+      "name": "wall:W12",
+      "kind": "wall",
+      "start": [
+        8.37,
+        6.8425,
+        4.65
+      ],
+      "end": [
+        9.4,
+        6.8425,
+        4.65
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        837.0,
+        -684.25,
+        465.0
+      ],
+      "end_cm": [
+        940.0,
+        -684.25,
+        465.0
+      ],
+      "expect_mesh": "SM_T06_L01_WALLS"
+    },
+    {
+      "name": "wall:W13",
+      "kind": "wall",
+      "start": [
+        4.5,
+        12.4,
+        4.65
+      ],
+      "end": [
+        4.5,
+        11.37,
+        4.65
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        450.0,
+        -1240.0,
+        465.0
+      ],
+      "end_cm": [
+        450.0,
+        -1137.0,
+        465.0
+      ],
+      "expect_mesh": "SM_T06_L01_WALLS"
+    },
+    {
+      "name": "wall:W14",
+      "kind": "wall",
+      "start": [
+        -0.4,
+        7.9175,
+        4.65
+      ],
+      "end": [
+        0.63,
+        7.9175,
+        4.65
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        -40.0,
+        -791.75,
+        465.0
+      ],
+      "end_cm": [
+        63.0,
+        -791.75,
+        465.0
+      ],
+      "expect_mesh": "SM_T06_L01_WALLS"
+    },
+    {
+      "name": "wall:W15",
+      "kind": "wall",
+      "start": [
+        5.4425,
+        4.4,
+        4.65
+      ],
+      "end": [
+        6.3575,
+        4.4,
+        4.65
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        544.25,
+        -440.0,
+        465.0
+      ],
+      "end_cm": [
+        635.75,
+        -440.0,
+        465.0
+      ],
+      "expect_mesh": "SM_T06_L01_WALLS"
+    },
+    {
+      "name": "wall:W16",
+      "kind": "wall",
+      "start": [
+        3.1575,
+        7.4575,
+        4.65
+      ],
+      "end": [
+        3.1575,
+        6.5425,
+        4.65
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        315.75,
+        -745.75,
+        465.0
+      ],
+      "end_cm": [
+        315.75,
+        -654.25,
+        465.0
+      ],
+      "expect_mesh": "SM_T06_L01_WALLS"
+    },
+    {
+      "name": "guard:S01.1",
+      "kind": "guard",
+      "start": [
+        6.67,
+        4.0,
+        3.65
+      ],
+      "end": [
+        7.07,
+        4.0,
+        3.65
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        667.0,
+        -400.0,
+        365.0
+      ],
+      "end_cm": [
+        707.0,
+        -400.0,
+        365.0
+      ],
+      "expect_mesh": "SM_T06_L01_GUARD_S01"
+    },
+    {
+      "name": "guard:S01.2",
+      "kind": "guard",
+      "start": [
+        6.67,
+        5.5,
+        3.65
+      ],
+      "end": [
+        7.07,
+        5.5,
+        3.65
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        667.0,
+        -550.0,
+        365.0
+      ],
+      "end_cm": [
+        707.0,
+        -550.0,
+        365.0
+      ],
+      "expect_mesh": "SM_T06_L01_GUARD_S01"
+    },
+    {
+      "name": "guard:S01.3",
+      "kind": "guard",
+      "start": [
+        7.77,
+        6.1,
+        3.65
+      ],
+      "end": [
+        7.77,
+        5.7,
+        3.65
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        777.0,
+        -610.0,
+        365.0
+      ],
+      "end_cm": [
+        777.0,
+        -570.0,
+        365.0
+      ],
+      "expect_mesh": "SM_T06_L01_GUARD_S01"
+    },
+    {
+      "name": "guard:S01.7",
+      "kind": "guard",
+      "start": [
+        7.27,
+        2.9,
+        3.65
+      ],
+      "end": [
+        7.27,
+        3.3,
+        3.65
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        727.0,
+        -290.0,
+        365.0
+      ],
+      "end_cm": [
+        727.0,
+        -330.0,
+        365.0
+      ],
+      "expect_mesh": "SM_T06_L01_GUARD_S01"
+    },
+    {
+      "name": "balustrade:S01.1",
+      "kind": "guard",
+      "start": [
+        7.07,
+        4.5,
+        1.725
+      ],
+      "end": [
+        6.47,
+        4.5,
+        1.725
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        707.0,
+        -450.0,
+        172.5
+      ],
+      "end_cm": [
+        647.0,
+        -450.0,
+        172.5
+      ],
+      "expect_mesh": "SM_T06_L00_BALUSTRADE_S01_1"
+    },
+    {
+      "name": "balustrade:S01.2",
+      "kind": "guard",
+      "start": [
+        7.77,
+        5.7,
+        2.075
+      ],
+      "end": [
+        7.77,
+        6.3,
+        2.075
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        777.0,
+        -570.0,
+        207.5
+      ],
+      "end_cm": [
+        777.0,
+        -630.0,
+        207.5
+      ],
+      "expect_mesh": "SM_T06_L00_BALUSTRADE_S01_2"
+    },
+    {
+      "name": "balustrade:S01.3",
+      "kind": "guard",
+      "start": [
+        8.07,
+        4.0,
+        2.95
+      ],
+      "end": [
+        7.47,
+        4.0,
+        2.95
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        807.0,
+        -400.0,
+        295.0
+      ],
+      "end_cm": [
+        747.0,
+        -400.0,
+        295.0
+      ],
+      "expect_mesh": "SM_T06_L00_BALUSTRADE_S01_3"
+    },
+    {
+      "name": "stair:S01.1",
+      "kind": "stair",
+      "start": [
+        7.27,
+        2.7,
+        1.0
+      ],
+      "end": [
+        7.27,
+        5.5,
+        2.575
+      ],
+      "expect_hit": false,
+      "start_cm": [
+        727.0,
+        -270.0,
+        100.0
+      ],
+      "end_cm": [
+        727.0,
+        -550.0,
+        257.5
+      ],
+      "expect_mesh": null
+    },
+    {
+      "name": "stair:S01.2",
+      "kind": "stair",
+      "start": [
+        8.27,
+        5.3,
+        2.575
+      ],
+      "end": [
+        8.27,
+        2.6,
+        4.15
+      ],
+      "expect_hit": false,
+      "start_cm": [
+        827.0,
+        -530.0,
+        257.5
+      ],
+      "end_cm": [
+        827.0,
+        -260.0,
+        415.0
+      ],
+      "expect_mesh": null
+    }
+  ],
+  "clearances": [
+    {
+      "name": "door:O01",
+      "kind": "door",
+      "clear_m": 0.845,
+      "start": [
+        3.0175,
+        0.63,
+        1.0
+      ],
+      "end": [
+        3.0175,
+        -0.4,
+        1.0
+      ],
+      "start_cm": [
+        301.75,
+        -63.0,
+        100.0
+      ],
+      "end_cm": [
+        301.75,
+        40.0,
+        100.0
+      ],
+      "clear_cm": 84.5
+    },
+    {
+      "name": "door:O04",
+      "kind": "door",
+      "clear_m": 0.745,
+      "start": [
+        2.2175,
+        7.4575,
+        1.0
+      ],
+      "end": [
+        2.2175,
+        6.5425,
+        1.0
+      ],
+      "start_cm": [
+        221.75,
+        -745.75,
+        100.0
+      ],
+      "end_cm": [
+        221.75,
+        -654.25,
+        100.0
+      ],
+      "clear_cm": 74.5
+    },
+    {
+      "name": "door:O05",
+      "kind": "door",
+      "clear_m": 0.745,
+      "start": [
+        5.3175,
+        7.4575,
+        1.0
+      ],
+      "end": [
+        5.3175,
+        6.5425,
+        1.0
+      ],
+      "start_cm": [
+        531.75,
+        -745.75,
+        100.0
+      ],
+      "end_cm": [
+        531.75,
+        -654.25,
+        100.0
+      ],
+      "clear_cm": 74.5
+    },
+    {
+      "name": "door:O21",
+      "kind": "door",
+      "clear_m": 0.745,
+      "start": [
+        5.4425,
+        1.5175,
+        4.15
+      ],
+      "end": [
+        6.3575,
+        1.5175,
+        4.15
+      ],
+      "start_cm": [
+        544.25,
+        -151.75,
+        415.0
+      ],
+      "end_cm": [
+        635.75,
+        -151.75,
+        415.0
+      ],
+      "clear_cm": 74.5
+    },
+    {
+      "name": "door:O22",
+      "kind": "door",
+      "clear_m": 0.575,
+      "start": [
+        6.4325,
+        7.4575,
+        4.15
+      ],
+      "end": [
+        6.4325,
+        6.5425,
+        4.15
+      ],
+      "start_cm": [
+        643.25,
+        -745.75,
+        415.0
+      ],
+      "end_cm": [
+        643.25,
+        -654.25,
+        415.0
+      ],
+      "clear_cm": 57.5
+    }
+  ],
+  "status": "Imported and read back in UE 5.8 (QR-005, QR-006); see QUALITY_REPORTS.md"
+}

@@ -1,0 +1,7 @@
+---,RoomID,Name,Use,Level,AreaM2,AreaSqft
+R01,R01,Living / dining,living,L00,57.325,617.0
+R02,R02,Kitchen,kitchen,L00,19.851,213.7
+R03,R03,Bedroom 1,bedroom,L00,19.851,213.7
+R11,R11,Stair lobby,circulation,L01,18.879,203.2
+R12,R12,Bedroom 2,bedroom,L01,37.674,405.5
+R13,R13,Bedroom 3,bedroom,L01,40.245,433.2
