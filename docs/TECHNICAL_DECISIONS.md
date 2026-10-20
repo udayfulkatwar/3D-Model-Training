@@ -75,7 +75,9 @@ deleted. "Revisit if" states what evidence would change the decision.
   ASTRA DWELL business data: no business folders, documents, repositories,
   skills or connectors, and no messages to other Claude sessions. The PC
   Claude session that runs Unreal works only in `C:\Work\` and the Unreal
-  training content.
+  training content. The Unreal project named "AstraDwell" on the founder's PC was
+  created only for this training (founder confirmed 2026-10-20); it is training
+  data, not business data.
 - **Why:** the founder keeps training fully separate from the company.
 
 ### ADR-010 — FBX via an isolated Blender worker, stored in centimetres
