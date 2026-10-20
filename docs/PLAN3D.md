@@ -51,7 +51,8 @@ Writes `out/t01/unreal/`:
 | `T01.fbx` | One static mesh per part (`SM_T01_L00_WALLS`, `…_FLOOR_R01`, …), materials `M_Wall`, `M_Floor`, `M_Ceiling`, `M_Glass`, UVs on every face, flat shading. Stored in **centimetres** (UnitScaleFactor 1), so 1 m = 100 Unreal units without any import conversion. All pivots at the plan origin |
 | `unreal_manifest.json` | Asset names, units, axis mapping, PlayerStart and room positions in Unreal cm |
 | `rooms.csv` | DataTable-ready room schedule (make struct `S_RoomData`: RoomID, Name, Use, Level, AreaM2, AreaSqft) |
-| `import_plan3d.py` | Unreal Editor Python script: imports the FBX, sets walk-through collision, spawns every mesh at 0,0,0, a PlayerStart in the living room, a north marker and basic sun/sky. **Not yet run in Unreal** |
+| `import_plan3d.py` | Unreal Editor Python script: imports the FBX, sets walk-through collision, spawns every mesh at 0,0,0, a PlayerStart in the living room, a north marker and basic sun/sky, in the level `/Game/<project>_House`. Verified in UE 5.8 for T01 (QR-005, QR-007); opening the project's own level is not yet run |
+| `walk_test.py` | Traces the walk-test lines and clear-width sphere sweeps against Unreal's collision; writes `walk_test_results.json`. Line traces verified for T01 (26/26); sphere sweeps not yet run |
 
 **First import in Unreal (founder, Windows + RTX):**
 1. Enable the *Python Editor Script Plugin*, open an empty level.

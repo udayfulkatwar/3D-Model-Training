@@ -66,7 +66,7 @@ in this repo until the founder adopts it themselves.
 
 | Limit | Effect / workaround |
 |---|---|
-| Unreal: T01 imported and walk-tested by line traces (UE 5.8, QR-005, QR-007); Twinmotion never | Sphere-sweep clear-width test and T05 (two storeys) not yet run in Unreal; Twinmotion import pending |
+| Unreal: T01 imported and walk-tested by line traces (UE 5.8, QR-005, QR-007); Twinmotion never | Sphere-sweep clear-width test and T06 (two storeys) not yet run in Unreal (T-015); Twinmotion import pending |
 | Unreal's DefaultPawn (0.70 m sphere) cannot pass 0.75 m toilet doors with frames (0.595 m clear, Q20) | Use a walkthrough pawn ≤ 0.55 m wide, or wider doors |
 | Needs Blender's Python module (~400 MB, GPL-3.0) | Optional install; runs as a separate process (ADR-010) |
 | Flat colour materials only | No textures; replace with Unreal/Fab materials by name (`M_Wall` etc.) |
