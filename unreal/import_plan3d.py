@@ -1,9 +1,9 @@
 """Import a plan3d FBX into the open Unreal Engine level.
 
-STATUS: first run verified in UE 5.8 on 2026-10-20 (QR-005): import,
-size, north, PlayerStart, materials and collision. The re-run cleanup
-(remove_previous) and level save were added afterwards and are not yet
-verified in Unreal.
+STATUS: verified in UE 5.8 on 2026-10-20. First run (QR-005): import,
+size, north, PlayerStart, materials and collision. Re-run with frames and
+doors (QR-006): 45/45 meshes, 58 old actors removed, no duplicates, level
+saved, bounds equal to plan3d's to 0.0 cm.
 
 Usage (Unreal Editor, Python plugin enabled):
   1. Copy this whole folder (FBX, unreal_manifest.json, rooms.csv, this script)

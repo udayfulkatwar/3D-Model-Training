@@ -52,6 +52,7 @@ def build(plan_path: str | Path, out_dir: str | Path, fbx: bool = False) -> Buil
     qa.check_degenerate(report, parts)
     qa.check_coplanar(report, parts)
     qa.check_floor_areas(report, plan, parts, layouts)
+    qa.check_walk_tests(report, plan, layouts, parts)
     scene = export_scene(parts)
     qa.check_uvs(report, scene)
 

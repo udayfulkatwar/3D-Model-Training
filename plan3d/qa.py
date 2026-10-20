@@ -258,6 +258,18 @@ def check_door_swing(report: Report, plan: Plan, layouts: dict) -> None:
 
 # ---------------------------------------------------------------- mesh checks
 
+def check_walk_tests(report: Report, plan: Plan, layouts: dict, parts: list[Part]) -> list[dict]:
+    """Q19: probe lines through doors pass, at walls and windows are blocked."""
+    from . import walktests
+    c = report.new("Q19", "Walk tests: doors and arches passable, walls and glass blocking")
+    results = walktests.run(walktests.generate(plan, layouts), parts)
+    for r in results:
+        if not r["ok"]:
+            what = f"hit {r['hit']}" if r["hit"] else "nothing hit"
+            c.add("FAIL", f"{r['name']}: expected {'blocked' if r['expect_hit'] else 'clear'}, {what}")
+    c.add("INFO", f"{sum(r['ok'] for r in results)}/{len(results)} probes as expected")
+    return results
+
 def check_solids(report: Report, parts: list[Part]) -> None:
     c = report.new("Q11", "Solids are closed, finite and positive-volume")
     for p in parts:

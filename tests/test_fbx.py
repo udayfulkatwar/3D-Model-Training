@@ -25,7 +25,8 @@ def test_t01_exports_unreal_bundle(tmp_path):
     st = {c.id: c.status for c in result.report.checks}
     assert st["Q17"] in ("PASS", "INFO")
     u = tmp_path / "unreal"
-    assert {p.name for p in u.iterdir()} == {"T01.fbx", "unreal_manifest.json", "rooms.csv", "import_plan3d.py"}
+    assert {p.name for p in u.iterdir()} == {"T01.fbx", "unreal_manifest.json", "rooms.csv", "import_plan3d.py",
+                                         "walk_test.py"}
     m = json.loads((u / "unreal_manifest.json").read_text())
     assert len(m["meshes"]) == 45 and all(n.startswith("SM_T01_L00_") for n in m["meshes"])
     assert abs(float(m["fbx_header"]["UnitScaleFactor"]) - 1.0) < 1e-6          # centimetres

@@ -161,5 +161,683 @@
       ]
     }
   ],
-  "status": "UNTESTED in Unreal Engine: checked by Blender re-import only"
+  "walk_tests": [
+    {
+      "name": "door:O01",
+      "kind": "door",
+      "start": [
+        6.0,
+        0.63,
+        1.0
+      ],
+      "end": [
+        6.0,
+        -0.4,
+        1.0
+      ],
+      "expect_hit": false,
+      "start_cm": [
+        600.0,
+        -63.0,
+        100.0
+      ],
+      "end_cm": [
+        600.0,
+        40.0,
+        100.0
+      ],
+      "expect_mesh": null
+    },
+    {
+      "name": "window:O02",
+      "kind": "window",
+      "start": [
+        4.6,
+        0.63,
+        1.5
+      ],
+      "end": [
+        4.6,
+        -0.4,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        460.0,
+        -63.0,
+        150.0
+      ],
+      "end_cm": [
+        460.0,
+        40.0,
+        150.0
+      ],
+      "expect_mesh": "SM_T01_L00_GLASS_O02"
+    },
+    {
+      "name": "window:O03",
+      "kind": "window",
+      "start": [
+        1.75,
+        0.63,
+        1.5
+      ],
+      "end": [
+        1.75,
+        -0.4,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        175.0,
+        -63.0,
+        150.0
+      ],
+      "end_cm": [
+        175.0,
+        40.0,
+        150.0
+      ],
+      "expect_mesh": "SM_T01_L00_GLASS_O03"
+    },
+    {
+      "name": "window:O04",
+      "kind": "window",
+      "start": [
+        10.15,
+        0.63,
+        1.575
+      ],
+      "end": [
+        10.15,
+        -0.4,
+        1.575
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        1015.0,
+        -63.0,
+        157.5
+      ],
+      "end_cm": [
+        1015.0,
+        40.0,
+        157.5
+      ],
+      "expect_mesh": "SM_T01_L00_GLASS_O04"
+    },
+    {
+      "name": "window:O05",
+      "kind": "window",
+      "start": [
+        2.35,
+        10.4,
+        1.5
+      ],
+      "end": [
+        2.35,
+        9.37,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        235.0,
+        -1040.0,
+        150.0
+      ],
+      "end_cm": [
+        235.0,
+        -937.0,
+        150.0
+      ],
+      "expect_mesh": "SM_T01_L00_GLASS_O05"
+    },
+    {
+      "name": "window:O06",
+      "kind": "window",
+      "start": [
+        5.5,
+        10.4,
+        1.8
+      ],
+      "end": [
+        5.5,
+        9.37,
+        1.8
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        550.0,
+        -1040.0,
+        180.0
+      ],
+      "end_cm": [
+        550.0,
+        -937.0,
+        180.0
+      ],
+      "expect_mesh": "SM_T01_L00_GLASS_O06"
+    },
+    {
+      "name": "window:O07",
+      "kind": "window",
+      "start": [
+        7.65,
+        10.4,
+        1.5
+      ],
+      "end": [
+        7.65,
+        9.37,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        765.0,
+        -1040.0,
+        150.0
+      ],
+      "end_cm": [
+        765.0,
+        -937.0,
+        150.0
+      ],
+      "expect_mesh": "SM_T01_L00_GLASS_O07"
+    },
+    {
+      "name": "window:O08",
+      "kind": "window",
+      "start": [
+        11.37,
+        7.45,
+        1.5
+      ],
+      "end": [
+        12.4,
+        7.45,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        1137.0,
+        -745.0,
+        150.0
+      ],
+      "end_cm": [
+        1240.0,
+        -745.0,
+        150.0
+      ],
+      "expect_mesh": "SM_T01_L00_GLASS_O08"
+    },
+    {
+      "name": "door:O09",
+      "kind": "door",
+      "start": [
+        2.9425,
+        4.3,
+        1.0
+      ],
+      "end": [
+        3.8575,
+        4.3,
+        1.0
+      ],
+      "expect_hit": false,
+      "start_cm": [
+        294.25,
+        -430.0,
+        100.0
+      ],
+      "end_cm": [
+        385.75,
+        -430.0,
+        100.0
+      ],
+      "expect_mesh": null
+    },
+    {
+      "name": "door:O10",
+      "kind": "door",
+      "start": [
+        7.9425,
+        4.0,
+        1.0
+      ],
+      "end": [
+        8.8575,
+        4.0,
+        1.0
+      ],
+      "expect_hit": false,
+      "start_cm": [
+        794.25,
+        -400.0,
+        100.0
+      ],
+      "end_cm": [
+        885.75,
+        -400.0,
+        100.0
+      ],
+      "expect_mesh": null
+    },
+    {
+      "name": "door:O11",
+      "kind": "door",
+      "start": [
+        4.0,
+        5.4575,
+        1.0
+      ],
+      "end": [
+        4.0,
+        4.5425,
+        1.0
+      ],
+      "expect_hit": false,
+      "start_cm": [
+        400.0,
+        -545.75,
+        100.0
+      ],
+      "end_cm": [
+        400.0,
+        -454.25,
+        100.0
+      ],
+      "expect_mesh": null
+    },
+    {
+      "name": "arch:O12",
+      "kind": "arch",
+      "start": [
+        7.4,
+        5.4575,
+        1.0
+      ],
+      "end": [
+        7.4,
+        4.5425,
+        1.0
+      ],
+      "expect_hit": false,
+      "start_cm": [
+        740.0,
+        -545.75,
+        100.0
+      ],
+      "end_cm": [
+        740.0,
+        -454.25,
+        100.0
+      ],
+      "expect_mesh": null
+    },
+    {
+      "name": "door:O13",
+      "kind": "door",
+      "start": [
+        5.9425,
+        6.2,
+        1.0
+      ],
+      "end": [
+        6.8575,
+        6.2,
+        1.0
+      ],
+      "expect_hit": false,
+      "start_cm": [
+        594.25,
+        -620.0,
+        100.0
+      ],
+      "end_cm": [
+        685.75,
+        -620.0,
+        100.0
+      ],
+      "expect_mesh": null
+    },
+    {
+      "name": "door:O14",
+      "kind": "door",
+      "start": [
+        4.1425,
+        8.6,
+        1.0
+      ],
+      "end": [
+        5.0575,
+        8.6,
+        1.0
+      ],
+      "expect_hit": false,
+      "start_cm": [
+        414.25,
+        -860.0,
+        100.0
+      ],
+      "end_cm": [
+        505.75,
+        -860.0,
+        100.0
+      ],
+      "expect_mesh": null
+    },
+    {
+      "name": "door:O15",
+      "kind": "door",
+      "start": [
+        8.4425,
+        5.8,
+        1.0
+      ],
+      "end": [
+        9.3575,
+        5.8,
+        1.0
+      ],
+      "expect_hit": false,
+      "start_cm": [
+        844.25,
+        -580.0,
+        100.0
+      ],
+      "end_cm": [
+        935.75,
+        -580.0,
+        100.0
+      ],
+      "expect_mesh": null
+    },
+    {
+      "name": "wall:W01",
+      "kind": "wall",
+      "start": [
+        8.025,
+        0.63,
+        1.5
+      ],
+      "end": [
+        8.025,
+        -0.4,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        802.5,
+        -63.0,
+        150.0
+      ],
+      "end_cm": [
+        802.5,
+        40.0,
+        150.0
+      ],
+      "expect_mesh": "SM_T01_L00_WALLS"
+    },
+    {
+      "name": "wall:W02",
+      "kind": "wall",
+      "start": [
+        11.37,
+        3.4825,
+        1.5
+      ],
+      "end": [
+        12.4,
+        3.4825,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        1137.0,
+        -348.25,
+        150.0
+      ],
+      "end_cm": [
+        1240.0,
+        -348.25,
+        150.0
+      ],
+      "expect_mesh": "SM_T01_L00_WALLS"
+    },
+    {
+      "name": "wall:W03",
+      "kind": "wall",
+      "start": [
+        10.0675,
+        10.4,
+        1.5
+      ],
+      "end": [
+        10.0675,
+        9.37,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        1006.75,
+        -1040.0,
+        150.0
+      ],
+      "end_cm": [
+        1006.75,
+        -937.0,
+        150.0
+      ],
+      "expect_mesh": "SM_T01_L00_WALLS"
+    },
+    {
+      "name": "wall:W04",
+      "kind": "wall",
+      "start": [
+        -0.4,
+        5.0,
+        1.5
+      ],
+      "end": [
+        0.63,
+        5.0,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        -40.0,
+        -500.0,
+        150.0
+      ],
+      "end_cm": [
+        63.0,
+        -500.0,
+        150.0
+      ],
+      "expect_mesh": "SM_T01_L00_WALLS"
+    },
+    {
+      "name": "wall:W05",
+      "kind": "wall",
+      "start": [
+        9.9675,
+        5.4575,
+        1.5
+      ],
+      "end": [
+        9.9675,
+        4.5425,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        996.75,
+        -545.75,
+        150.0
+      ],
+      "end_cm": [
+        996.75,
+        -454.25,
+        150.0
+      ],
+      "expect_mesh": "SM_T01_L00_WALLS"
+    },
+    {
+      "name": "wall:W06",
+      "kind": "wall",
+      "start": [
+        2.9425,
+        2.0575,
+        1.5
+      ],
+      "end": [
+        3.8575,
+        2.0575,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        294.25,
+        -205.75,
+        150.0
+      ],
+      "end_cm": [
+        385.75,
+        -205.75,
+        150.0
+      ],
+      "expect_mesh": "SM_T01_L00_WALLS"
+    },
+    {
+      "name": "wall:W07",
+      "kind": "wall",
+      "start": [
+        7.9425,
+        1.9075,
+        1.5
+      ],
+      "end": [
+        8.8575,
+        1.9075,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        794.25,
+        -190.75,
+        150.0
+      ],
+      "end_cm": [
+        885.75,
+        -190.75,
+        150.0
+      ],
+      "expect_mesh": "SM_T01_L00_WALLS"
+    },
+    {
+      "name": "wall:W08",
+      "kind": "wall",
+      "start": [
+        4.1425,
+        6.6875,
+        1.5
+      ],
+      "end": [
+        5.0575,
+        6.6875,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        414.25,
+        -668.75,
+        150.0
+      ],
+      "end_cm": [
+        505.75,
+        -668.75,
+        150.0
+      ],
+      "expect_mesh": "SM_T01_L00_WALLS"
+    },
+    {
+      "name": "wall:W09",
+      "kind": "wall",
+      "start": [
+        5.9425,
+        8.155,
+        1.5
+      ],
+      "end": [
+        6.8575,
+        8.155,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        594.25,
+        -815.5,
+        150.0
+      ],
+      "end_cm": [
+        685.75,
+        -815.5,
+        150.0
+      ],
+      "expect_mesh": "SM_T01_L00_WALLS"
+    },
+    {
+      "name": "wall:W10",
+      "kind": "wall",
+      "start": [
+        5.5,
+        7.8575,
+        1.5
+      ],
+      "end": [
+        5.5,
+        6.9425,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        550.0,
+        -785.75,
+        150.0
+      ],
+      "end_cm": [
+        550.0,
+        -694.25,
+        150.0
+      ],
+      "expect_mesh": "SM_T01_L00_WALLS"
+    },
+    {
+      "name": "wall:W11",
+      "kind": "wall",
+      "start": [
+        8.4425,
+        7.9925,
+        1.5
+      ],
+      "end": [
+        9.3575,
+        7.9925,
+        1.5
+      ],
+      "expect_hit": true,
+      "start_cm": [
+        844.25,
+        -799.25,
+        150.0
+      ],
+      "end_cm": [
+        935.75,
+        -799.25,
+        150.0
+      ],
+      "expect_mesh": "SM_T01_L00_WALLS"
+    }
+  ],
+  "status": "Imported and read back in UE 5.8 (QR-005, QR-006); see QUALITY_REPORTS.md"
 }

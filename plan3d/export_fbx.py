@@ -4,7 +4,8 @@ Writes <out>/unreal/:
   <PROJECT>.fbx            one static mesh per part, pivots at the plan origin
   unreal_manifest.json     asset names, units, axes, room seeds in Unreal cm
   rooms.csv                DataTable-ready room schedule (struct S_RoomData)
-  import_plan3d.py         Unreal Editor Python import script (UNTESTED in Unreal)
+  import_plan3d.py         Unreal Editor Python import script (verified in UE 5.8, QR-005/QR-006)
+  walk_test.py             traces the Q19 walk-test lines against Unreal's collision
 """
 
 from __future__ import annotations
@@ -18,12 +19,13 @@ from pathlib import Path
 
 import numpy as np
 
-from . import qa
+from . import qa, walktests
 from .mesh3d import MATERIALS, Part
 from .model import Plan
 from .units import sqm_to_sqft
 
-UNREAL_SCRIPT = Path(__file__).resolve().parents[1] / "unreal" / "import_plan3d.py"
+UNREAL_DIR = Path(__file__).resolve().parents[1] / "unreal"
+UNREAL_SCRIPTS = ("import_plan3d.py", "walk_test.py")
 MATERIAL_NAMES = {"wall": "M_Wall", "floor": "M_Floor", "ceiling": "M_Ceiling", "glass": "M_Glass",
                   "frame": "M_Frame", "door": "M_Door"}
 
@@ -88,9 +90,10 @@ def export(plan: Plan, parts: list[Part], layouts: dict, out_dir: Path, report: 
     shutil.rmtree(work)
 
     paths = [fbx, _write_manifest(plan, parts, layouts, udir, check), _write_rooms(plan, layouts, udir)]
-    if UNREAL_SCRIPT.exists():
-        shutil.copy(UNREAL_SCRIPT, udir / UNREAL_SCRIPT.name)
-        paths.append(udir / UNREAL_SCRIPT.name)
+    for script in UNREAL_SCRIPTS:
+        if (UNREAL_DIR / script).exists():
+            shutil.copy(UNREAL_DIR / script, udir / script)
+            paths.append(udir / script)
     return paths
 
 
@@ -126,6 +129,19 @@ def _check_fbx(c: qa.Check, plan: Plan, parts: list[Part], check: dict) -> None:
                   f"FrontAxis={h.get('FrontAxis')}; coordinates stored at {stored:.0f}x metres")
 
 
+def _walk_tests(plan, parts, layouts) -> list[dict]:
+    """Q19 probes in Unreal cm, with the mesh each one should hit first
+    (None = must pass freely), for unreal/walk_test.py."""
+    names = {p.name: asset_name(plan, p) for p in parts}
+    out = []
+    for t in walktests.run(walktests.generate(plan, layouts), parts):
+        hit = t.pop("hit")
+        t.pop("ok")
+        out.append({**t, "start_cm": to_unreal_cm(*t["start"]), "end_cm": to_unreal_cm(*t["end"]),
+                    "expect_mesh": names.get(hit)})
+    return out
+
+
 def _write_manifest(plan, parts, layouts, udir, check) -> Path:
     rooms = []
     for lid, lay in layouts.items():
@@ -146,7 +162,8 @@ def _write_manifest(plan, parts, layouts, udir, check) -> Path:
         "north_marker_cm": to_unreal_cm(0.0, 1.0, 0.0),
         "fbx_header": check["header"],
         "rooms": rooms,
-        "status": "UNTESTED in Unreal Engine: checked by Blender re-import only",
+        "walk_tests": _walk_tests(plan, parts, layouts),
+        "status": "Imported and read back in UE 5.8 (QR-005, QR-006); see QUALITY_REPORTS.md",
     }
     path = udir / "unreal_manifest.json"
     path.write_text(json.dumps(manifest, indent=2, default=float))
