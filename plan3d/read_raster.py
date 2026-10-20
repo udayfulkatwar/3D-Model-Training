@@ -47,6 +47,7 @@ HOLLOW_MAX_WALL_M = 0.45  # a hollow wall's inside is at most this wide
 HOLLOW_ELONGATION = 4.0   # and at least this many times longer than wide
 HOLLOW_CONTACT = 0.5      # glazing strips and hatching run alongside each other; walls do not
 HOLLOW_SOLID_M = 0.05     # ink this thick is a filled wall; outlines, even blurred, are thinner
+HOLLOW_SHORT_M = 1.0      # shorter wall insides must continue a found wall band
 
 def load_gray(path: str | Path, page: int = 0, dpi: int = 200) -> np.ndarray:
     path = Path(path)
@@ -148,17 +149,27 @@ def _hollow_interiors(ink: np.ndarray, ppm: float, hair: float) -> np.ndarray:
     for (i, j), cnt in pairs.items():
         if cnt >= HOLLOW_CONTACT * min(length[i], length[j]):
             alongside[i] = alongside[j] = True
-    walls = thin & ~alongside
-    inside = walls[lab] & (lab > 0)
-    # piers: short wall pieces between two openings are not long, but they continue a wall's band
+    candidate = thin & ~alongside
+    # length along the middle: area over the typical width (4 x mean distance to the edge, exact for a
+    # straight strip); the widest point overstates the width where walls meet
+    typical = 4 * np.bincount(lab.ravel(), weights=dt.ravel(), minlength=n) / np.maximum(area, 1) + 2
+    length = area / np.maximum(typical, 1.0)
+    # Long ones are walls. Short ones (pieces between openings, piers) must continue a found
+    # wall band on the same rows; a strip beside a door leaf or furniture does not.
+    walls = candidate & (length >= HOLLOW_SHORT_M * ppm)
     cap, reach = HOLLOW_MAX_WALL_M * ppm, int(MAX_OPENING_M * ppm)
-    small = (~thin & (width >= MIN_WALL_M * ppm * 0.6) & (box_[:, cv2.CC_STAT_WIDTH] <= cap)
-             & (box_[:, cv2.CC_STAT_HEIGHT] <= cap))
-    small[0] = False
-    for i in np.flatnonzero(small):
-        x, y, w, h = box_[i, :4]
-        if _continues_band(inside, x, y, w, h, reach) or _continues_band(inside.T, y, x, h, w, reach):
-            walls[i] = True
+    pier = (~thin & (width >= MIN_WALL_M * ppm * 0.6) & (box_[:, cv2.CC_STAT_WIDTH] <= cap)
+            & (box_[:, cv2.CC_STAT_HEIGHT] <= cap))
+    pending = set(np.flatnonzero((candidate & ~walls) | pier).tolist()) - {0}
+    while pending:                                      # a chain of short pieces grows from the long walls
+        inside = walls[lab] & (lab > 0)
+        found = {i for i in pending
+                 if _continues_band(inside, *box_[i, :4], reach)
+                 or _continues_band(inside.T, box_[i, 1], box_[i, 0], box_[i, 3], box_[i, 2], reach)}
+        if not found:
+            break
+        walls[list(found)] = True
+        pending -= found
     return walls[lab] & (lab > 0)
 
 

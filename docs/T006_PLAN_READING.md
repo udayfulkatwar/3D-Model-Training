@@ -242,3 +242,12 @@ the reader has never read: the **ground floors of T05 and T06** (authored
 for the stair work, T-014). Cases: `hollow-clean-100`, `hollow-scan2-150`,
 and the same two in filled style (`clean-100`, `scan2-150`). Targets:
 unchanged. The stair is not drawn, a known gap in the renderer.
+
+**Fix (after holdout, before holdout 3):** short wall insides (under
+1.0 m) must continue a found wall band, growing outward from the long
+walls. Wall length is now area ÷ typical width (4 × mean distance to the
+edge); the widest point overstated width where walls meet and made small
+T- and L-shaped wall networks look short. With the fix: development 6/6,
+T03/T04 hollow 4/4 (no longer unseen), all 20 filled-wall runs unchanged.
+Reader frozen at the commit that adds this paragraph; holdout 3 runs next,
+once.

@@ -51,6 +51,13 @@ HOLLOW_HOLDOUT = {
     "hollow-scan2-150": {"ppm": 150, "style": "hollow",
                          "degrade": {"rotate_deg": -2.5, "blur": 1.2, "noise": 18.0, "jpeg": 50, "seed": 11}},
 }
+# Holdout 3 (registered 2026-10-20): T05/T06 ground floors, never read before, both wall styles.
+HOLDOUT3 = {
+    "clean-100": {"ppm": 100, "degrade": False},
+    "scan2-150": {"ppm": 150, "degrade": HOLDOUT2["scan2-150"]["degrade"]},
+    "hollow-clean-100": HOLLOW_HOLDOUT["hollow-clean-100"],
+    "hollow-scan2-150": HOLLOW_HOLDOUT["hollow-scan2-150"],
+}
 TARGETS = {   # pre-registered; do not edit after results are known
     "clean": {"offset_mm": 15, "rooms": 1.0, "area_err": 0.02, "recall": 1.0, "precision": 1.0,
               "kind": 1.0, "swing": 0.9, "width_mm": 30},
@@ -159,6 +166,9 @@ def main(argv: list[str] | None = None) -> int:
     if "--hollow" in argv:
         argv = [a for a in argv if a != "--hollow"]
         cases = HOLLOW
+    if "--holdout3" in argv:
+        argv = [a for a in argv if a != "--holdout3"]
+        cases = HOLDOUT3
     if "--hollow-holdout" in argv:
         argv = [a for a in argv if a != "--hollow-holdout"]
         cases = HOLLOW_HOLDOUT
