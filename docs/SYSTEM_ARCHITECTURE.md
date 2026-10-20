@@ -38,7 +38,8 @@ from reading the public site only.
 ## 2b. Training pipeline in this repo: plan3d v0.1 — IMPLEMENTED
 
 ```
- drawing.png / .jpg / .pdf ─► plan3d.read_raster (T-006) ─► draft plan.json + review.md + overlay.png
+ drawing.png / .jpg / .pdf ─► plan3d.read_raster (T-006; filled walls, hollow walls not verified)
+                              ─► draft plan.json + review.md + overlay.png
                                                                 │  person confirms / corrects
                                                                 ▼
 ```
@@ -50,16 +51,24 @@ from reading the public site only.
  plan2d: wall strips + mitred joints ─► footprint ─► enclosed regions ─► rooms by seed
           │      openings placed on walls, circulation graph       (Q04–Q10)
           ▼
- mesh3d: manifold3d prisms; walls minus opening voids; per-room floor/ceiling; glazing
-          │                                                         (Q11–Q14)
+ mesh3d: manifold3d prisms; walls minus opening voids; per-room floor/ceiling; glazing;
+          │ frames, open leaves (details); stacked levels share one split slab;
+          │ straight/dog-leg stairs, stair openings, guard rails, balustrades
+          │                                     (Q11–Q14, Q18 swing, Q21 stacking/stairs)
+          ▼
+ walk tests: probe lines (doors pass, walls/glass/rails block), clear widths, headroom
+          │                                                         (Q19, Q20, Q22)
           ▼
  export: box UVs, Z-up → glTF Y-up ─► model.glb ─► re-import check   (Q15–Q16)
-          │
-          └─► plan PNG, rooms.csv, uncertainty.md, qa_report, manifest.json
+          │   --fbx: isolated Blender worker ─► <id>.fbx (cm) ─► re-import check (Q17)
+          │          + unreal_manifest.json (walk tests in Unreal cm) + import/walk-test scripts
+          └─► plan PNGs per level, rooms.csv, uncertainty.md, qa_report, manifest.json
  viewer/check.mjs: three.js r186 in headless Chromium loads the GLB and compares to manifest
+ Unreal 5.8 (founder's PC, training project): import_plan3d.py + walk_test.py via Python
+   Remote Execution, read back over Unreal MCP. T01 VERIFIED (QR-005, QR-007)
 ```
 
-Details: [PLAN3D.md](PLAN3D.md). Evidence: QR-002.
+Details: [PLAN3D.md](PLAN3D.md). Evidence: QR-002, QR-004–QR-008.
 
 ## 3. Target architecture (PLANNED)
 

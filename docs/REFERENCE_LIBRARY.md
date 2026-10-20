@@ -55,6 +55,6 @@ reports, peer-reviewed analyses), each with a confidence level.
 | G-01 | Website source not readable here | Training can only study the public site, not its code | Founder may share it read-only; it is never modified (ADR-007) |
 | G-02 | No real client drawings to calibrate plan reading | Accuracy claims untested | Use owned/fictional drawings first; then one consented client plan |
 | G-03 | No measured phone performance data | Can't promise device support | Define target device list; measure H01 on real phones |
-| G-04 | Unreal scripts untested | Pipeline unproven end-to-end | Founder runs import on an RTX machine |
+| G-04 | ~~Unreal scripts untested~~ | Closed for T01 (QR-005, QR-007): import, size, north, materials, collision and walk lines verified in UE 5.8 | Remaining: T06 (two storeys) and the clear-width sweeps in Unreal (T-015) |
 | G-05 | UDCPR / NBC applicability not reviewed by a professional | Risk of implying compliance | Never claim it; engage architect per real project |
 | G-06 | IFC/BIM intake not explored | Product #9 unavailable | Prototype with IfcOpenShell on a public sample IFC |

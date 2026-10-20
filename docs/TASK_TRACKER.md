@@ -32,12 +32,11 @@ verified without spending money.
 ## Highest-value next task
 
 **T-010 (real-drawing evaluation).** The reader works on synthetic
-drawings, but every test drawing comes from one renderer. Until it is
-measured on real plans, its accuracy on client work is unknown. This
-needs 5–10 drawings that ASTRA DWELL owns or has written permission to
-use (L-010). Equally important: **T-012**, the founder's first Unreal
-import of the T01 FBX, which is the only way to confirm the Unreal side.
-T-012 is now verified (QR-005, QR-007) and T-013/T-014 are implemented.
-The best AI-only task while T-010 waits is **hollow-wall reading** (part of
-T-011): most CAD-exported plans draw walls as two lines, which the reader
-cannot read yet. Training repo only (ADR-007).
+drawings, and every test drawing comes from one renderer. Hollow-wall
+reading (T-011 part 1) failed a fresh holdout before its last fix, and
+all synthetic plans are now seen. Until the reader is measured on real
+plans, its accuracy on client work is unknown. This needs 5–10 drawings
+that the founder owns or has written permission to use for training
+(L-010), kept separate from business data (ADR-011). Next is **T-015**: the
+clear-width sweeps and the two-storey T06 in Unreal. It needs only the
+founder's one-time approval on the PC. Training repo only (ADR-007).

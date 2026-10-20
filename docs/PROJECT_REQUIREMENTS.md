@@ -9,13 +9,13 @@ Status of each capability: `DEMONSTRATED` (exists in a showcase build),
 
 | # | Product | Status | Evidence / gap |
 |---|---|---|---|
-| 1 | Accurate 2D-to-3D conversion | PROTOTYPE | Training: `plan3d` v0.1 (schema, generator, 16 QA checks; QR-002). Gaps: plan input is hand-typed, single level, no FBX. Production showcases are still built per project |
+| 1 | Accurate 2D-to-3D conversion | PROTOTYPE | Training: `plan3d` v0.1 (schema, generator, 22 QA checks incl. walk tests; QR-002–QR-008); multi-storey with stairs; FBX for Unreal. Gaps: plans typed by hand or read as an unverified draft (no real drawings yet, T-010). Production showcases are still built per project |
 | 2 | Interactive real-time walkthroughs (web) | DEMONSTRATED | H01 / Maquette 01 on website (R3F, three.js r186) |
 | 3 | Realistic exterior & interior visualization | PROTOTYPE | Cycles CPU stills from Blender; Twinmotion/Unreal pipeline not yet run |
 | 4 | Furniture, materials, colour customization | DEMONSTRATED | H01 material/finish switching `[reported]` |
 | 5 | Lighting & day/night simulation | DEMONSTRATED (illustrative) | Morning-to-night presets. Not a daylight/solar study; must not be sold as one |
 | 6 | Browser-based property experiences | DEMONSTRATED | Website; shareable links |
-| 7 | Unreal Engine immersive environments | PLANNED | Import scripts written but untested; needs founder on Windows + RTX |
+| 7 | Unreal Engine immersive environments | PROTOTYPE | Training: T01 imported and walk-tested in UE 5.8 on the founder's PC by the PC Claude session (QR-005, QR-007). No lighting/material work, no packaged walkthrough yet |
 | 8 | Interactive property marketing apps (flat picker) | PROTOTYPE | three.js picker artifact for Township 01; Unreal version planned |
 | 9 | BIM-connected visualization | PLANNED | No IFC/Revit intake yet. Candidate: IfcOpenShell → plan.json/GLB |
 | 10 | Data-connected digital twins | OUT OF SCOPE (NOW) | No live data sources. Never market as a twin without a live data link |
