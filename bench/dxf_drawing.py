@@ -11,6 +11,8 @@ overall dimension on A-ANNO-DIMS.
     style "poly":    as above
     style "lines":   walls exploded into LINE entities, shuffled
     style "hatched": "poly" plus an ANSI31 wall hatch on A-WALL-PATT
+    style "gappy":   exploratory; "lines" with each end pulled back 0-5 mm (ends miss)
+    style "overshoot": exploratory; "lines" with each end pushed out 0-20 mm
 """
 
 from __future__ import annotations
@@ -20,6 +22,7 @@ import random
 from pathlib import Path
 
 import ezdxf
+import numpy as np
 
 from plan3d import plan2d
 from plan3d.model import load_plan
@@ -54,10 +57,14 @@ def write(plan_path: str | Path, out_dxf: str | Path, style: str = "poly", seed:
     for og in lay.openings.values():
         walls = walls.difference(og.rect)
     rings = [r for g in getattr(walls, "geoms", [walls]) for r in [g.exterior, *g.interiors]]
-    if style == "lines":
-        segs = [(a, b) for r in rings for a, b in zip(list(r.coords), list(r.coords)[1:])]
-        random.Random(seed).shuffle(segs)
+    if style in ("lines", "gappy", "overshoot"):
+        rnd = random.Random(seed)
+        segs = [(np.asarray(a), np.asarray(b)) for r in rings for a, b in zip(list(r.coords), list(r.coords)[1:])]
+        rnd.shuffle(segs)
         for a, b in segs:
+            d = (b - a) / np.linalg.norm(b - a)
+            lo, hi = {"lines": (0, 0), "gappy": (-0.005, 0), "overshoot": (0, 0.02)}[style]
+            a, b = a - d * rnd.uniform(lo, hi), b + d * rnd.uniform(lo, hi)
             msp.add_line(_mm(a), _mm(b), dxfattribs={"layer": "A-WALL"})
     else:
         for r in rings:

@@ -108,3 +108,13 @@ clean outlines that meet exactly. Real files will differ in layer names
 (`--wall-layers` covers that), block styles, gaps and overlaps in outlines,
 curved walls and text placement. Status: IMPLEMENTED, VERIFIED on
 convention-following files only; real DXF files are needed (T-010).
+
+## Exploratory: untidy line ends (not pre-registered)
+
+Real files rarely have ends that meet exactly. Two extra styles: `gappy`
+(each wall line's ends pulled back 0–5 mm) and `overshoot` (pushed out
+0–20 mm). The frozen reader failed `gappy` completely (no closed
+outlines). Fix: every wall line is extended by 10 mm at both ends before
+noding, so near-misses meet; overshoots only leave loose ends, which drop
+out when faces are built. After the fix: T01–T06 × both styles 12/12 PASS,
+and all 18 pre-registered runs still PASS.

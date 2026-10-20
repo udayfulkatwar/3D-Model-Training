@@ -54,3 +54,9 @@ def test_missing_units_must_be_given(tmp_path):
     with pytest.raises(ValueError, match="units"):
         read_dxf(tmp_path / "nounits.dxf", tmp_path / "d1")
     assert read_dxf(tmp_path / "nounits.dxf", tmp_path / "d2", unit_m=0.001).stats["rooms"] == 5
+
+
+def test_line_ends_that_miss_or_overshoot_still_close(tmp_path):
+    for style in ("gappy", "overshoot"):
+        _, m = _case(tmp_path / style, "t04", style)
+        assert verdict(m)["pass"], (style, m["missed"], m["spurious"])

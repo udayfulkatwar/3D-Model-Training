@@ -5,7 +5,8 @@ and the proven image reader does the measuring:
 
   1. units from the file header ($INSUNITS) or the reviewer
   2. wall outlines from layers named like WALL (hatch layers ignored);
-     outlines are noded and turned into faces; thin faces are wall, wide
+     line ends are extended by GAP_M so near-misses meet; outlines are noded
+     and turned into faces (loose ends drop out); thin faces are wall, wide
      faces are rooms
   3. a clean drawing is rendered from the walls (filled) and the door and
      window layers only, so furniture, hatching, text and dimensions can
@@ -44,6 +45,7 @@ PX_PER_M = 200.0
 SUPERSAMPLE = 4
 MARGIN_M = 1.0
 NODE_M = 0.001            # outlines are snapped to 1 mm so touching ends meet exactly
+GAP_M = 0.01              # line ends are extended this far, so ends that just miss still meet
 ORTHO_DEG = 0.5
 USES = [(r"BED|MASTER|GUEST", "bedroom"), (r"KITCHEN|KIT\b", "kitchen"), (r"TOILET|BATH|W\.?C\b|WASH", "toilet"),
         (r"DINING", "dining"), (r"LIVING|HALL|DRAWING|LOUNGE|FAMILY", "living"),
@@ -102,7 +104,8 @@ def wall_area(msp, unit: float, layers: re.Pattern = WALL_LAYER) -> shapely.Geom
                     continue
                 ang = abs(np.degrees(np.arctan2(d[1], d[0]))) % 90
                 if min(ang, 90 - ang) <= ORTHO_DEG:
-                    segs.append(LineString([a, b]))
+                    u = d / np.hypot(*d)                # close small gaps: overshoots only leave loose ends
+                    segs.append(LineString([a - u * GAP_M, b + u * GAP_M]))
     noded = unary_union(shapely.set_precision(shapely.MultiLineString(segs), NODE_M))
     faces = list(polygonize(noded))
     walls = [f for f in faces

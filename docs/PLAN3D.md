@@ -32,10 +32,29 @@ cd viewer && npm install && node check.mjs out/t01                    # writes o
   (detected walls, openings and rooms over the drawing) and, with
   `--build`, the full plan3d build in `build/`.
 - Works on filled-wall drawings (PNG/JPG; PDF page 1 via pypdfium2) with
-  up to ±5° skew. Room names, heights and sills are not read; they appear
-  as defaults or open questions in the review sheet.
+  up to ±5° skew. Hollow (outline) walls are read too, but that is not yet
+  verified. Room names, heights and sills are not read; they appear as
+  defaults or open questions in the review sheet.
 - Accuracy on synthetic test drawings: [T006_PLAN_READING.md](T006_PLAN_READING.md#results).
   Not yet tested on real drawings.
+
+## Reading an AutoCAD DXF into a draft (T-016)
+
+```bash
+.venv/bin/python -m plan3d read-dxf plan.dxf -o drafts/house --build
+```
+
+- Save the floor plan as DXF from AutoCAD (any recent version). Units come
+  from the file; if it states none, add `--unit-m 0.001` for millimetres.
+- Walls are read from layers whose name contains `WALL` (hatch layers
+  ignored). If the office uses other names, add `--wall-layers "OUTLINE|WALLS"`
+  (a regular expression). Doors come from `DOOR` layers, windows from
+  `WIND`/`GLAZ` layers, room names from the text inside each room.
+- Line ends that miss by up to 10 mm, or overshoot, are fine.
+- Output as for `read`, plus `walls_and_openings.png` (what the reader saw).
+- On our own test files: exact walls, openings and room names on all 30
+  runs ([T016_DXF_INTAKE.md](T016_DXF_INTAKE.md)). Not yet tested on real
+  files. Orthogonal walls only; one floor per file.
 
 ## FBX for Unreal Engine / Twinmotion (T-009)
 
