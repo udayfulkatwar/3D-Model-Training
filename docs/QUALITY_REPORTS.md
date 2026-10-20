@@ -287,7 +287,7 @@ Carpet area 105.862 m² (1,139.5 sq ft) on a 120 m² built-up footprint.
 | T01 clear widths (lines along the wall, 21 depths × 3 heights) | 0.9 m doors 0.745 m; 0.75 m toilet doors 0.595 m; main door 0.845 m; arch 1.600 m. Equal to hand arithmetic (width − 2 × 60 mm frame − 35 mm leaf) |
 | Finding | Unreal's DefaultPawn (0.70 m sphere) cannot pass T01's toilet doors O13/O14. Use a walkthrough pawn ≤ 0.55 m wide |
 | Mutation | 0.65 m doors (0.495 m clear) → WARN |
-| In Unreal | **Not run.** The PC session's safety check refused to write the new `walk_test.py` sent from this session ("Code from External"). It ran the old script in the new folder instead (26/26 again, no sphere sweeps). Needs the founder's approval; not worked around |
+| In Unreal | **Not run.** The PC session's safety check refused to write the new `walk_test.py` sent from this session ("Code from External"), at 07:12 and again at 08:39 after the founder said he had given the OK (it had not reached the PC's permission settings). Not worked around. Unblock: the founder saves `deliverables/unreal/T01/walk_test.py` into `C:\Work\AstraTraining\T01_walk_test_v2\`, or adds a `/permissions` allow rule for writes under `C:\Work\AstraTraining\` |
 
 ### Stacked levels and stairs (T-014)
 | Check | Result |
