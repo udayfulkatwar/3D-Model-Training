@@ -231,3 +231,14 @@ next to a parallel furniture line. The white strip between them is thin,
 long and alone, so it was filled as a 0.67 m wall. That false wall cuts
 into a real one, and the draft fails Q07. A reviewer would see it on the
 overlay; the build refuses it.
+
+### Holdout 3 (registered 2026-10-20 before the fix below is written)
+
+Planned fix for the miss: a short isolated thin region (under 1.0 m) is a
+wall only if it continues a found wall band, like the pier rule. Real
+wall pieces between openings do; a strip beside a door leaf does not.
+Since T03/T04 are now seen, the fixed reader is checked once on two plans
+the reader has never read: the **ground floors of T05 and T06** (authored
+for the stair work, T-014). Cases: `hollow-clean-100`, `hollow-scan2-150`,
+and the same two in filled style (`clean-100`, `scan2-150`). Targets:
+unchanged. The stair is not drawn, a known gap in the renderer.
