@@ -1,0 +1,1114 @@
+{
+ "source": "Founder's PC, Unreal Engine 5.8 editor, read via Unreal MCP (SceneTools/ActorTools/ObjectTools) by the local Claude Code session, 2026-10-20",
+ "level": "/Game/T01_House",
+ "actors": [
+  {
+   "ref": "StaticMeshActor_0",
+   "label": "SM_T01_L00_WALLS",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     0,
+     -1000,
+     -15.0
+    ],
+    [
+     1200,
+     0.0,
+     315
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_1",
+   "label": "SM_T01_L00_FLOOR_R01",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     345.8,
+     -494.2,
+     -15.0
+    ],
+    [
+     834.2,
+     -23,
+     -0.0
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_2",
+   "label": "SM_T01_L00_CEILING_R01",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     345.8,
+     -494.2,
+     300.0
+    ],
+    [
+     834.2,
+     -23.0,
+     315
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_3",
+   "label": "SM_T01_L00_FLOOR_R02",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     23,
+     -494.2,
+     -15.0
+    ],
+    [
+     334.2,
+     -23,
+     -0.0
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_4",
+   "label": "SM_T01_L00_CEILING_R02",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     23,
+     -494.2,
+     300.0
+    ],
+    [
+     334.2,
+     -23.0,
+     315
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_5",
+   "label": "SM_T01_L00_FLOOR_R03",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     845.8,
+     -494.2,
+     -15.0
+    ],
+    [
+     1177,
+     -23,
+     -0.0
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_6",
+   "label": "SM_T01_L00_CEILING_R03",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     845.8,
+     -494.2,
+     300.0
+    ],
+    [
+     1177,
+     -23.0,
+     315
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_7",
+   "label": "SM_T01_L00_FLOOR_R04",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     23,
+     -977,
+     -15.0
+    ],
+    [
+     454.2,
+     -505.8,
+     -0.0
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_8",
+   "label": "SM_T01_L00_CEILING_R04",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     23,
+     -977,
+     300.0
+    ],
+    [
+     454.2,
+     -505.8,
+     315.0
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_9",
+   "label": "SM_T01_L00_FLOOR_R05",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     465.8,
+     -977,
+     -15.0
+    ],
+    [
+     634.2,
+     -745.8,
+     -0.0
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_10",
+   "label": "SM_T01_L00_CEILING_R05",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     465.8,
+     -977,
+     300.0
+    ],
+    [
+     634.2,
+     -745.8,
+     315.0
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_11",
+   "label": "SM_T01_L00_FLOOR_R06",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     465.8,
+     -734.2,
+     -15.0
+    ],
+    [
+     634.2,
+     -505.8,
+     -0.0
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_12",
+   "label": "SM_T01_L00_CEILING_R06",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     465.8,
+     -734.2,
+     300.0
+    ],
+    [
+     634.2,
+     -505.8,
+     315.0
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_13",
+   "label": "SM_T01_L00_FLOOR_R07",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     645.8,
+     -977,
+     -15.0
+    ],
+    [
+     884.2,
+     -505.8,
+     -0.0
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_14",
+   "label": "SM_T01_L00_CEILING_R07",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     645.8,
+     -977,
+     300.0
+    ],
+    [
+     884.2,
+     -505.8,
+     315.0
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_15",
+   "label": "SM_T01_L00_FLOOR_R08",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     895.8,
+     -977,
+     -15.0
+    ],
+    [
+     1177,
+     -505.8,
+     -0.0
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_16",
+   "label": "SM_T01_L00_CEILING_R08",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     895.8,
+     -977,
+     300.0
+    ],
+    [
+     1177,
+     -505.8,
+     315.0
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_17",
+   "label": "SM_T01_L00_GLASS_O02",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     385.2,
+     -12.0,
+     90.2
+    ],
+    [
+     534.8,
+     -11.0,
+     209.8
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_18",
+   "label": "SM_T01_L00_GLASS_O03",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     100.2,
+     -12.0,
+     90.2
+    ],
+    [
+     249.8,
+     -11.0,
+     209.8
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_19",
+   "label": "SM_T01_L00_GLASS_O04",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     955.2,
+     -12.0,
+     105.2
+    ],
+    [
+     1074.8,
+     -11.0,
+     209.8
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_20",
+   "label": "SM_T01_L00_GLASS_O05",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     160.2,
+     -989,
+     90.2
+    ],
+    [
+     309.8,
+     -988,
+     209.8
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_21",
+   "label": "SM_T01_L00_GLASS_O06",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     520.2,
+     -989,
+     150.2
+    ],
+    [
+     579.8,
+     -988,
+     209.8
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_22",
+   "label": "SM_T01_L00_GLASS_O07",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     690.2,
+     -989,
+     90.2
+    ],
+    [
+     839.8,
+     -988,
+     209.8
+    ]
+   ]
+  },
+  {
+   "ref": "StaticMeshActor_23",
+   "label": "SM_T01_L00_GLASS_O08",
+   "class": "StaticMeshActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     1188,
+     -819.8,
+     90.2
+    ],
+    [
+     1189,
+     -670.2,
+     209.8
+    ]
+   ]
+  },
+  {
+   "ref": "PlayerStart_0",
+   "label": "PlayerStart_Plan3D",
+   "class": "PlayerStart",
+   "xf": {
+    "location": {
+     "x": 590,
+     "y": -258.62,
+     "z": 100
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     462,
+     -386.6,
+     -28
+    ],
+    [
+     830,
+     -130.6,
+     228
+    ]
+   ]
+  },
+  {
+   "ref": "TextRenderActor_0",
+   "label": "NorthMarker",
+   "class": "TextRenderActor",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": -100,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     -128,
+     -228,
+     -128
+    ],
+    [
+     128,
+     28,
+     128
+    ]
+   ]
+  },
+  {
+   "ref": "DirectionalLight_0",
+   "label": "Sun",
+   "class": "DirectionalLight",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 1000
+    },
+    "rotation": {
+     "pitch": -39.99999999999998,
+     "yaw": 134.99999999999994,
+     "roll": 6.227878897953567e-15
+    },
+    "scale": {
+     "x": 2.5,
+     "y": 2.5,
+     "z": 2.5
+    }
+   },
+   "bounds": [
+    [
+     -557.3,
+     -232.3,
+     461.1
+    ],
+    [
+     232.3,
+     557.3,
+     1153.2
+    ]
+   ]
+  },
+  {
+   "ref": "SkyLight_0",
+   "label": "SkyLight",
+   "class": "SkyLight",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 1000
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     -256,
+     -256,
+     -1
+    ],
+    [
+     256,
+     256,
+     1256
+    ]
+   ]
+  },
+  {
+   "ref": "SkyAtmosphere_0",
+   "label": "SkyAtmosphere",
+   "class": "SkyAtmosphere",
+   "xf": {
+    "location": {
+     "x": 0,
+     "y": 0,
+     "z": 0
+    },
+    "rotation": {
+     "pitch": 0,
+     "yaw": 0,
+     "roll": 0
+    },
+    "scale": {
+     "x": 1,
+     "y": 1,
+     "z": 1
+    }
+   },
+   "bounds": [
+    [
+     -128,
+     -128,
+     -128
+    ],
+    [
+     240,
+     128,
+     128
+    ]
+   ]
+  }
+ ],
+ "materials_collision": {
+  "0": {
+   "comps": [
+    "PersistentLevel.StaticMeshActor_0.StaticMeshComponent0"
+   ],
+   "comp": {
+    "StaticMesh": {
+     "refPath": "/Game/Plan3D/T01/SM_T01_L00_WALLS.SM_T01_L00_WALLS"
+    },
+    "OverrideMaterials": []
+   },
+   "mesh": {
+    "StaticMaterials": [
+     {
+      "materialInterface": {
+       "refPath": "/Game/Plan3D/T01/M_Wall.M_Wall"
+      },
+      "materialSlotName": "M_Wall",
+      "importedMaterialSlotName": "M_Wall",
+      "uVChannelData": {
+       "bInitialized": true,
+       "bOverrideDensities": false,
+       "localUVDensities": [
+        100.01566314697266,
+        3403.5419921875,
+        0,
+        0
+       ]
+      },
+      "overlayMaterialInterface": "None"
+     }
+    ],
+    "BodySetup": {
+     "refPath": "/Game/Plan3D/T01/SM_T01_L00_WALLS.SM_T01_L00_WALLS:BodySetup_0"
+    }
+   },
+   "body": {
+    "CollisionTraceFlag": "CTF_UseComplexAsSimple"
+   },
+   "label": "SM_T01_L00_WALLS"
+  },
+  "1": {
+   "comps": [
+    "PersistentLevel.StaticMeshActor_1.StaticMeshComponent0"
+   ],
+   "comp": {
+    "StaticMesh": {
+     "refPath": "/Game/Plan3D/T01/SM_T01_L00_FLOOR_R01.SM_T01_L00_FLOOR_R01"
+    },
+    "OverrideMaterials": []
+   },
+   "mesh": {
+    "StaticMaterials": [
+     {
+      "materialInterface": {
+       "refPath": "/Game/Plan3D/T01/M_Floor.M_Floor"
+      },
+      "materialSlotName": "M_Floor",
+      "importedMaterialSlotName": "M_Floor",
+      "uVChannelData": {
+       "bInitialized": true,
+       "bOverrideDensities": false,
+       "localUVDensities": [
+        99.94268798828125,
+        978.689697265625,
+        0,
+        0
+       ]
+      },
+      "overlayMaterialInterface": "None"
+     }
+    ],
+    "BodySetup": {
+     "refPath": "/Game/Plan3D/T01/SM_T01_L00_FLOOR_R01.SM_T01_L00_FLOOR_R01:BodySetup_0"
+    }
+   },
+   "body": {
+    "CollisionTraceFlag": "CTF_UseComplexAsSimple"
+   },
+   "label": "SM_T01_L00_FLOOR_R01"
+  },
+  "17": {
+   "comps": [
+    "PersistentLevel.StaticMeshActor_17.StaticMeshComponent0"
+   ],
+   "comp": {
+    "StaticMesh": {
+     "refPath": "/Game/Plan3D/T01/SM_T01_L00_GLASS_O02.SM_T01_L00_GLASS_O02"
+    },
+    "OverrideMaterials": []
+   },
+   "mesh": {
+    "StaticMaterials": [
+     {
+      "materialInterface": {
+       "refPath": "/Game/Plan3D/T01/M_Glass.M_Glass"
+      },
+      "materialSlotName": "M_Glass",
+      "importedMaterialSlotName": "M_Glass",
+      "uVChannelData": {
+       "bInitialized": true,
+       "bOverrideDensities": false,
+       "localUVDensities": [
+        99.91024017333984,
+        247.90611267089844,
+        0,
+        0
+       ]
+      },
+      "overlayMaterialInterface": "None"
+     }
+    ],
+    "BodySetup": {
+     "refPath": "/Game/Plan3D/T01/SM_T01_L00_GLASS_O02.SM_T01_L00_GLASS_O02:BodySetup_0"
+    }
+   },
+   "body": {
+    "CollisionTraceFlag": "CTF_UseComplexAsSimple"
+   },
+   "label": "SM_T01_L00_GLASS_O02"
+  }
+ }
+}

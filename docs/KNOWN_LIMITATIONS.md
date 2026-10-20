@@ -63,7 +63,7 @@ in this repo until the founder adopts it themselves.
 
 | Limit | Effect / workaround |
 |---|---|
-| Never imported into Unreal or Twinmotion | First import must be checked by the founder (PLAN3D.md checklist) |
+| Unreal: imported once (UE 5.8, QR-005); Twinmotion never | Walk test and Twinmotion import still pending |
 | Needs Blender's Python module (~400 MB, GPL-3.0) | Optional install; runs as a separate process (ADR-010) |
 | Flat colour materials only | No textures; replace with Unreal/Fab materials by name (`M_Wall` etc.) |
 | Collision = complex-as-simple on every mesh | Correct for walking through doors; heavier than simple collision for big projects |

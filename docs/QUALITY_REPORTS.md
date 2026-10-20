@@ -162,3 +162,34 @@ Carpet area 105.862 m² (1,139.5 sq ft) on a 120 m² built-up footprint.
   import all need the founder's first-import check (PLAN3D.md).
 - ufbx's left-handed Z-up conversion models Unreal's axes; it is not
   Unreal's importer.
+
+---
+
+## QR-005: first import into real Unreal Engine (T-012, partial)
+
+- **Date:** 2026-10-20 · **Where:** founder's Windows PC, Unreal Engine 5.8,
+  project "AstraDwell", level `/Game/T01_House`
+- **How:** the founder ran `import_plan3d.py` (`py "…/import_plan3d.py"` in
+  the editor console). The local Claude Code session then read the scene
+  back through Epic's Unreal MCP plugin (read-only), linked to this session
+  via Remote Control.
+- **Evidence:** [docs/evidence/QR-005/](evidence/QR-005/) (raw read-back)
+
+| Check | Result |
+|---|---|
+| Import | 24 static meshes + 4 materials into `/Game/Plan3D/T01`; 29 actors spawned in Outliner folder Plan3D/T01 |
+| Size (Static Mesh Editor, founder) | WALLS Approx Size 1200 × 1000 × 330, 472 triangles: as built |
+| All 24 mesh bounds vs build | Match within 0.05 cm |
+| North | Bedroom 1 floor at X 23–454, Y −977 to −506 cm: plan north → Unreal −Y, **confirmed** (L-007) |
+| PlayerStart | (590, −258.6, 100), inside the Living floor bounds |
+| Materials / collision (walls, floor, glass) | M_Wall / M_Floor / M_Glass; CTF_UseComplexAsSimple |
+
+### Found
+- The first `py` call failed only because Windows "Extract All" adds an extra
+  folder level. Documented the real path in the guide.
+- "Video memory exhausted" warning on the founder's GPU with the open-world
+  template plus mesh editor open. Not a pipeline issue; advised Medium scalability.
+
+### Not yet verified
+- Walking test in Play mode (doors passable, walls/glass blocking).
+- NorthMarker text rendering; materials/collision on the remaining 21 meshes.

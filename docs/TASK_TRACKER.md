@@ -16,7 +16,7 @@ verified without spending money.
 
 | Pri | ID | Task | Lead → Reviewer | AI / Human | Status |
 |---|---|---|---|---|---|
-| 0 | T-012 | **First Unreal import of T01**: run `import_plan3d.py` and check size, north, collision and materials (PLAN3D.md checklist) | AD-11 → AD-12 | Founder runs (Windows + RTX); AI fixes what fails | BLOCKED (needs founder) |
+| 0 | T-012 | **First Unreal import of T01**: run `import_plan3d.py` and check size, north, collision and materials (PLAN3D.md checklist) | AD-11 → AD-12 | Founder runs; AI checks via Unreal MCP | PARTLY VERIFIED (QR-005): import, size, north, PlayerStart, materials/collision OK; walk test pending |
 | 1 | T-013 | plan3d v0.2: door leaves and frames, window frames, roof/parapet once D-091 is answered, multi-level stacking | AD-13 → AD-05 | AI | PLANNED |
 | 2 | T-002 | Web GLB optimization step (Draco/meshopt + KTX2, size budget) plus a headless load test | AD-18 → AD-34 | AI | PLANNED |
 | 3 | T-003 | Define target-device list and measure H01 on real phones (load time, FPS) | AD-34 → AD-33 | Human measures, AI analyses | PLANNED |

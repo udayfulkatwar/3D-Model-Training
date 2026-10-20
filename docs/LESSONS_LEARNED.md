@@ -12,7 +12,7 @@ reproduced here, mark it `[verified]` with a link to the evidence.
 | L-004 | 2026-10-19 | GIS | OSM polygons triangulate into collinear slivers (zero-area faces in GLB) | Triangulate ourselves; delete faces < 1e-5 m²; simplify roads 0.05 m | Reproduced in plan3d with grid-snapped walls `[verified 2026-10-19]` |
 | L-005 | 2026-10-19 | Plan fidelity | Stair windows were placed over lift shafts | Cross-check every element against the plan drawing by overlay | Township 01 v2 review `[reported]`; confirmed by L-016 |
 | L-006 | 2026-10-19 | Areas | Typed-in areas can disagree with the model | Compute areas from geometry only | plan3d derives rooms from walls; Q08/Q14 `[verified 2026-10-19]` |
-| L-007 | 2026-10-19 | Unreal | Blender +Y (north) may arrive as −Y | Check orientation on first import with a north marker | `[reported]` |
+| L-007 | 2026-10-19 | Unreal | Blender +Y (north) may arrive as −Y | Check orientation on first import with a north marker | Confirmed in UE 5.8: plan +Y → Unreal −Y `[verified 2026-10-20]` QR-005 |
 | L-008 | 2026-10-19 | Viewer | Flat pick volumes sit inside walls and are hidden | Draw as overlay (depthTest off, low opacity), dim the rest | `[reported]` |
 | L-009 | 2026-10-19 | Environment | Terrain plane too small reads as sea on the horizon | Extend land to ≈ ±2.5 km | `[reported]` |
 | L-010 | 2026-10-19 | Licensing | Practice models were built from third-party drawings without permission | Only owned designs become showpieces; log permission per drawing | `[reported]` |
