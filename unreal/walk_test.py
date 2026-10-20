@@ -6,7 +6,8 @@ be blocked, and by the same mesh plan3d expects (expect_mesh in the
 manifest). Results go to walk_test_results.json next to this script and a
 one-line summary to the Output Log.
 
-STATUS: written 2026-10-20, not yet run in Unreal.
+STATUS: verified in UE 5.8.3 on 2026-10-20 (QR-007): 26/26 probes as
+expected, 26/26 hit the same mesh as plan3d.
 
 Usage (Unreal Editor, Python plugin enabled, level with the house open):
   py "C:/path/to/unreal/walk_test.py"
@@ -26,13 +27,13 @@ def first_hit_actor(world, start, end):
     """Label of the first actor the line start->end hits (complex collision), or None."""
     hit = unreal.SystemLibrary.line_trace_single(
         world, unreal.Vector(*start), unreal.Vector(*end),
-        unreal.TraceTypeQuery.TRACE_TYPE_QUERY1,          # Visibility
+        unreal.TraceTypeQuery.TRACE_TYPE_QUERY1,          # Visibility (5.8 warns: deprecated name)
         True, [], unreal.DrawDebugTrace.NONE, True)
     if isinstance(hit, tuple) and hit and isinstance(hit[0], bool):   # older (bool, HitResult) form
         hit = hit[1] if hit[0] else None
     if hit is None:
         return None
-    fields = unreal.GameplayStatics.break_hit_result(hit)  # (blocking_hit, ..., hit_actor, hit_component, ...)
+    fields = hit.to_tuple()  # (blocking_hit, ..., hit_actor, hit_component, ...); no break_hit_result in 5.8 Python
     if not fields[0]:
         return None
     actor = next((f for f in fields if isinstance(f, unreal.Actor)), None)

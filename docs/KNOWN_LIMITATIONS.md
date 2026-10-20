@@ -21,7 +21,7 @@ in this repo until the founder adopts it themselves.
 
 | Limit | Consequence |
 |---|---|
-| Claude cannot run Unreal Engine or Twinmotion (needs Windows + NVIDIA RTX) | Editor scripts are written but untested until the founder runs them |
+| Claude cannot run Unreal Engine or Twinmotion itself (needs Windows + NVIDIA RTX) | Runs them through the founder's PC Claude session (Remote Control, Python Remote Execution); that PC has no GitHub sign-in, so files are sent in messages |
 | Claude cannot click inside 3D software GUIs | Work is scripted (bpy, Python) or reviewed from screenshots |
 | Rendering here is CPU-only (Cycles) | Stills take minutes; no real-time GPU quality judgement |
 | Headless browser uses software GL | Functional tests only; frame rates here say nothing about phones |
@@ -63,7 +63,7 @@ in this repo until the founder adopts it themselves.
 
 | Limit | Effect / workaround |
 |---|---|
-| Unreal: imported once (UE 5.8, QR-005); Twinmotion never | Walk test and Twinmotion import still pending |
+| Unreal: T01 imported and walk-tested by line traces (UE 5.8, QR-005, QR-007); Twinmotion never | No walk in Play mode with a real character capsule yet; Twinmotion import pending |
 | Needs Blender's Python module (~400 MB, GPL-3.0) | Optional install; runs as a separate process (ADR-010) |
 | Flat colour materials only | No textures; replace with Unreal/Fab materials by name (`M_Wall` etc.) |
 | Collision = complex-as-simple on every mesh | Correct for walking through doors; heavier than simple collision for big projects |

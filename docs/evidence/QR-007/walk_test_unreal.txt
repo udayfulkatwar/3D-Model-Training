@@ -1,0 +1,10 @@
+Source: PC Claude session transcript, 2026-10-20 07:00:31-07:00:33 UTC.
+Run: UE bundled python.exe -I ue_run.py "C:/Work/AstraTraining/T01_walk_test/walk_test.py"
+Node: ('AstraDwell', '5.8.3-58210709+++UE5+Release-5.8', 'C:/Users/ASUS/OneDrive/Documents/Unreal Projects/AstraDwell/')
+
+First run: success: False
+  AttributeError: type object 'GameplayStatics' has no attribute 'break_hit_result'
+Fix (PC session, local copy): fields = hit.to_tuple()
+Second run: success: True
+  Warning: DeprecationWarning: TraceTypeQuery: Enum entry 'TraceTypeQuery.TRACE_TYPE_QUERY1' is deprecated: Use 'TraceTypeQuery.ECC_VISIBILITY'
+  Info plan3d walk test: 26/26 probes as expected, 26/26 hit the same mesh as plan3d, 0 meshes missing

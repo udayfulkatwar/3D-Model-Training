@@ -256,6 +256,20 @@ Carpet area 105.862 m² (1,139.5 sq ft) on a 120 m² built-up footprint.
   `rtree` package (not installed): every build crashed. Replaced with a
   numpy segment-triangle test (no new dependency).
 
+### Walk test in Unreal (2026-10-20, 07:00)
+- `walk_test.py` traced the same 26 lines against Unreal's collision in
+  `/Game/T01_House` (UE 5.8.3), run by the PC session via Remote Execution.
+- **Result: 26/26 probes as expected; 26/26 hit the same mesh as plan3d;
+  0 meshes missing.** All 8 door/arch lines pass; all 7 windows are stopped
+  by their glass and all 11 walls by `SM_T01_L00_WALLS`.
+- **Defect found and fixed:** first run failed with `AttributeError:
+  GameplayStatics has no attribute break_hit_result` (not in UE 5.8
+  Python). The PC session replaced it with `hit.to_tuple()`; the same fix
+  is now in `unreal/walk_test.py` (L-028). Remaining warning: the name
+  `TRACE_TYPE_QUERY1` is deprecated in 5.8 (still works).
+- The PC has no GitHub sign-in, so the script and a slim manifest (project,
+  meshes, walk_tests only) were sent inside the message.
+
 ### Not yet verified
-- `walk_test.py` in Unreal (the same 26 lines traced against Unreal's
-  collision). Sent to the PC session; result pending.
+- Walking with a real character in Play mode (capsule, not lines).
+- Twinmotion import.
