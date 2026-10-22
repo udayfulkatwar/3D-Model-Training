@@ -135,6 +135,11 @@ interface PoseState {
 const tmpM = new THREE.Matrix4();
 const tmpR = new THREE.Matrix4();
 const tmpS = new THREE.Matrix4();
+const tmpK = new THREE.Matrix4();
+// matrix pool reused for every person each frame (no per-frame allocations)
+const pool: THREE.Matrix4[] = Array.from({ length: 48 }, () => new THREE.Matrix4());
+let poolIndex = 0;
+const M = () => pool[poolIndex++];
 const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
 
 /** Clickable test: maps instanced part hits back to employees. */
@@ -292,7 +297,7 @@ export function People({ farHz }: { farHz: number }) {
         break;
       case 'sitType': {
         const tap = Math.sin(t * 13 + i) * 0.05 * anim * (speedMul > 0 ? 1 : 0.2);
-        tgt = { lean: 0.12 + breathe, hipL: -1.48, hipR: -1.45, kneeL: 1.45, kneeR: 1.4, shL: -0.62 + tap, shR: -0.62 - tap, rollL: 0.18, rollR: 0.18, elL: -0.95, elR: -0.95, headYaw: Math.sin(t * 0.17 + i * 2) * 0.12 * anim, headPitch: 0.12 };
+        tgt = { lean: 0.12 + breathe, hipL: -1.48, hipR: -1.45, kneeL: 1.45, kneeR: 1.4, shL: -0.5 + tap, shR: -0.5 - tap, rollL: 0.18, rollR: 0.18, elL: -0.8, elR: -0.8, headYaw: Math.sin(t * 0.17 + i * 2) * 0.12 * anim, headPitch: 0.12 };
         break;
       }
       case 'sitTalk': {
@@ -312,12 +317,12 @@ export function People({ farHz }: { farHz: number }) {
   }
 
   function setPart(k: PartKey, idx: number, parent: THREE.Matrix4, x: number, y: number, z: number, rx: number, rz = 0, sx = 1, sy = 1, sz = 1): THREE.Matrix4 {
-    const m = new THREE.Matrix4().makeTranslation(x, y, z);
+    const m = M().makeTranslation(x, y, z);
     if (rx) m.multiply(tmpR.makeRotationX(rx));
     if (rz) m.multiply(tmpR.makeRotationZ(rz));
-    const world = parent.clone().multiply(m);
+    const world = M().copy(parent).multiply(m);
     const im = meshes.get(k);
-    if (im) im.setMatrixAt(idx, sx !== 1 || sy !== 1 || sz !== 1 ? tmpS.copy(world).multiply(new THREE.Matrix4().makeScale(sx, sy, sz)) : world);
+    if (im) im.setMatrixAt(idx, sx !== 1 || sy !== 1 || sz !== 1 ? tmpS.copy(world).multiply(tmpK.makeScale(sx, sy, sz)) : world);
     return world;
   }
 
@@ -331,12 +336,13 @@ export function People({ farHz }: { farHz: number }) {
     const floorY = Math.floor((e.y + 0.3) / 4) * 4;
     // seated: hips on the seat surface (e.y is the seat height); standing: hips above the floor
     const hipY = seatedish ? (e.phase === 'seated' ? e.y + 0.08 : floorY + standHip + (e.y + 0.08 - floorY - standHip) * sitBlend) : e.y + standHip + (e.pose === 'walk' ? Math.abs(Math.cos(p.phase)) * 0.015 : 0);
-    const root = new THREE.Matrix4().makeTranslation(e.x, hipY, e.z).multiply(tmpR.makeRotationY(e.heading)).multiply(new THREE.Matrix4().makeScale(s, s, s));
+    poolIndex = 0;
+    const root = M().makeTranslation(e.x, hipY, e.z).multiply(tmpR.makeRotationY(e.heading)).multiply(tmpK.makeScale(s, s, s));
     setPart('pelvis', i, root, 0, 0, 0, 0, 0, bw, 1, 1);
     const spine = setPart('torso', i, root, 0, 0.05, 0, p.lean, 0, bw, 1, 1);
     setPart('collar', i, spine, 0, 0, 0, 0, 0, bw, 1, 1);
     const neck = setPart('neck', i, spine, 0, 0.55, 0, 0);
-    const head = new THREE.Matrix4().copy(neck).multiply(new THREE.Matrix4().makeTranslation(0, 0.08, 0)).multiply(tmpR.makeRotationY(p.headYaw)).multiply(new THREE.Matrix4().makeRotationX(p.headPitch));
+    const head = M().copy(neck).multiply(tmpK.makeTranslation(0, 0.08, 0)).multiply(tmpR.makeRotationY(p.headYaw)).multiply(tmpK.makeRotationX(p.headPitch));
     meshes.get('head')!.setMatrixAt(i, head);
     meshes.get('eyes')!.setMatrixAt(i, head);
     meshes.get('glasses')!.setMatrixAt(i, a.glasses ? head : ZERO);
@@ -354,7 +360,7 @@ export function People({ farHz }: { farHz: number }) {
       const th = setPart('thigh', i * 2 + j, root, side * 0.09 * bw, -0.02, 0, hip);
       const sh = setPart('shin', i * 2 + j, th, 0, -0.43, 0, knee);
       // keep feet flat: counter-rotate the shoe by the accumulated leg angle
-      setPart('shoe', i * 2 + j, sh, 0, -0.44, 0, -(hip + knee));
+      setPart('shoe', i * 2 + j, sh, 0, -0.41, 0, -(hip + knee));
     };
     leg(-1, 0, p.hipL, p.kneeL);
     leg(1, 1, p.hipR, p.kneeR);

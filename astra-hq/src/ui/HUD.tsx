@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FLOOR_NAMES, FLOOR_SHORT } from '../world/building';
 import { fmtTime } from '../util/math';
 import { getSim, rebuildSim } from '../store/simInstance';
@@ -27,8 +27,17 @@ export function TopBar() {
   const sim = getSim();
   const [, force] = useState(0);
   const rerender = () => force((x) => x + 1);
+  const bar = useRef<HTMLDivElement>(null);
+  // the top bar wraps on narrow screens; keep the side docks below it
+  useEffect(() => {
+    const el = bar.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => document.documentElement.style.setProperty('--dock-top', `${Math.round(el.getBoundingClientRect().bottom + 8)}px`));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   return (
-    <div className="topbar">
+    <div className="topbar" ref={bar}>
       <div className="brand">
         <Logo />
         <div>
@@ -78,9 +87,36 @@ export function LeftDock() {
   const overviewFloor = useUI((s) => s.overviewFloor);
   const playerFloor = useUI((s) => s.playerFloor);
   const playerRoom = useUI((s) => s.playerRoom);
+  const followId = useUI((s) => s.followId);
+  const inspect = useUI((s) => s.inspect);
   const sim = getSim();
+  const followed = mode === 'follow' && followId ? sim.byId.get(followId) : undefined;
   return (
     <div className="left-dock">
+      {followed && (
+        <div className="card" data-testid="follow-card">
+          <h3>Following</h3>
+          <div style={{ fontWeight: 600 }}>{followed.cfg.name}</div>
+          <div className="small" style={{ color: ACTIVITY_COLOR[followed.activity] }}>● {ACTIVITY_LABEL[followed.activity]}</div>
+          <div className="small muted" style={{ marginTop: 4 }}>{followed.task}</div>
+          <div className="small muted">{FLOOR_NAMES[Math.max(0, Math.min(2, Math.floor((followed.y + 0.3) / 4)))]} · {sim.roomName(followed)}</div>
+          <div className="row" style={{ marginTop: 8 }}>
+            <button className="btn small" onClick={() => useUI.getState().openPanel({ kind: 'employee', id: followed.cfg.id })}>Profile</button>
+            <button className="btn small" onClick={() => { useUI.getState().follow(null); showOverview(); }}>Stop following</button>
+          </div>
+        </div>
+      )}
+      {mode === 'inspect' && inspect && (
+        <div className="card">
+          <h3>Orbit inspection</h3>
+          <div style={{ fontWeight: 600 }}>{inspect.label}</div>
+          <div className="small muted">Drag to orbit · scroll to zoom</div>
+          <div className="row" style={{ marginTop: 8 }}>
+            <button className="btn small" onClick={() => enterWalk(document.querySelector('canvas'), false)}>Back to walkthrough</button>
+            <button className="btn small" onClick={() => showOverview()}>Overview</button>
+          </div>
+        </div>
+      )}
       <div className="card">
         <h3>Location</h3>
         <div style={{ fontWeight: 600 }}>{mode === 'overview' ? (overviewFloor >= 3 ? 'Building overview' : `${FLOOR_NAMES[overviewFloor]} (cutaway)`) : playerRoom}</div>

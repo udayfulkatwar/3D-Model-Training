@@ -117,6 +117,10 @@ describe('a full simulated day', () => {
     expect(sim.finance.trades.length).toBeGreaterThan(20);
     expect(sim.tech.builds.length).toBeGreaterThan(1);
     expect(sim.tech.incident.status).toBe('resolved');
+    // the server room door is kept closed: staff open it to get in and close it behind them
+    expect(sim.log.some((l) => /opened the Server Room door/.test(l.text))).toBe(true);
+    expect(sim.log.some((l) => /closed the Server Room door/.test(l.text))).toBe(true);
+    expect(sim.dyn.doors.get('s-d-server')!.open).toBe(false);
   });
 
   it('keeps related financial views consistent', () => {

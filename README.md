@@ -32,6 +32,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 | `tests/` | 104 tests: QA checks fail on their defects; reader hard cases; FBX; stairs |
 | `unreal/` | Unreal Editor import and walk-test scripts (verified in UE 5.8) |
 | `viewer/` | three.js r186 viewer + headless-browser load check |
+| `astra-hq/` | ASTRA Headquarters: separate React/Vite/three.js 3D **Office Simulation** (fictional staff, Simulated Data). See [astra-hq/README.md](astra-hq/README.md) |
 | `docs/evidence/` | Saved QA evidence referenced by QUALITY_REPORTS.md |
 
 Founder rules in force:

@@ -59,9 +59,9 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--gold); outl
 .clock-sub { font-size: 11px; color: var(--muted); }
 
 /* side panels */
-.left-dock { position: absolute; left: 10px; top: 70px; display: flex; flex-direction: column; gap: 8px; width: 230px; pointer-events: none; }
+.left-dock { position: absolute; left: 10px; top: var(--dock-top, 70px); display: flex; flex-direction: column; gap: 8px; width: 230px; pointer-events: none; }
 .left-dock > * { pointer-events: auto; }
-.right-dock { position: absolute; right: 10px; top: 70px; display: flex; flex-direction: column; gap: 8px; width: 250px; pointer-events: none; }
+.right-dock { position: absolute; right: 10px; top: var(--dock-top, 70px); display: flex; flex-direction: column; gap: 8px; width: 250px; pointer-events: none; }
 .right-dock > * { pointer-events: auto; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px; backdrop-filter: blur(8px); }
 .card h3 { margin: 0 0 8px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
@@ -211,7 +211,7 @@ kbd { font-family: var(--mono); font-size: 11px; background: #23262c; border: 1p
 /* touch controls */
 .touch-stick { position: absolute; left: 22px; bottom: 26px; width: 120px; height: 120px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(0, 0, 0, 0.25); touch-action: none; z-index: 5; }
 .touch-knob { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px; border-radius: 50%; background: rgba(208, 171, 98, 0.55); }
-.touch-look { position: absolute; right: 0; top: 70px; bottom: 0; width: 55%; touch-action: none; z-index: 4; }
+.touch-look { position: absolute; right: 0; top: var(--dock-top, 70px); bottom: 0; width: 55%; touch-action: none; z-index: 4; }
 .touch-act { position: absolute; right: 22px; bottom: 40px; z-index: 6; width: 64px; height: 64px; border-radius: 50%; border: 1px solid var(--gold); background: rgba(208, 171, 98, 0.25); font-weight: 700; }
 
 .error-screen { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; background: var(--bg); }
@@ -221,12 +221,16 @@ kbd { font-family: var(--mono); font-size: 11px; background: #23262c; border: 1p
   .right-dock { width: 200px; }
   .feed-card { display: none; }
 }
-@media (max-width: 640px) {
-  .left-dock { top: auto; bottom: 170px; width: 170px; display: none; }
-  .right-dock { top: 112px; width: 150px; }
-  .right-dock .stats-card { display: none; }
+@media (max-width: 1180px) {
   .brand-sub { display: none; }
-  .bar-group.secondary { display: none; }
+  .bar-group .btn.small { padding: 3px 7px; }
+}
+@media (max-width: 640px) {
+  .topbar { gap: 6px; }
+  .bar-group { padding: 4px 6px; gap: 4px; }
+  .left-dock { display: none; }
+  .right-dock { width: 150px; }
+  .right-dock .stats-card { display: none; }
   .app-body.layout-grid { grid-template-columns: 1fr; }
   .bar-row { grid-template-columns: 80px 1fr 90px; }
 }

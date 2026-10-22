@@ -261,7 +261,7 @@ function AboutTab() {
       </div>
       <div className="section">
         <h3>Assets & licences</h3>
-        <p>All geometry, textures, people, screens and sounds are generated procedurally at runtime by this project's code; no third-party art, model or audio files are bundled. Open-source libraries: React (MIT), three.js (MIT), @react-three/fiber, drei and postprocessing (MIT), postprocessing (Zlib), N8AO (CC0), zustand (MIT). See ATTRIBUTION.md.</p>
+        <p>All geometry, textures, people, screens and sounds are generated procedurally at runtime by this project's code; no third-party art, model or audio files are bundled. Open-source libraries: React (MIT), three.js (MIT), @react-three/fiber, drei and @react-three/postprocessing (MIT), postprocessing (Zlib), n8ao (ISC), zustand (MIT). See ATTRIBUTION.md.</p>
       </div>
       <div className="section">
         <h3>Storage</h3>

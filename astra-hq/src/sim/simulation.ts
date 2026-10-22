@@ -1128,11 +1128,14 @@ export class Simulation {
         seen.set(e.seatId, e.cfg.id);
       }
     }
+    const held = new Map<string, number>();
     for (const [seat, who] of this.reservations) {
       if (who === 'player') continue;
       const e = this.byId.get(who);
       if (!e) errs.push(`reservation ${seat} by unknown ${who}`);
+      else if (seat !== e.ws.seatId) held.set(who, (held.get(who) ?? 0) + 1);
     }
+    for (const [who, n] of held) if (n > 1) errs.push(`${who} holds ${n} non-desk reservations`);
     return errs;
   }
 

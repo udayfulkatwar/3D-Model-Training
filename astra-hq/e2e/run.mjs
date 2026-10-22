@@ -45,6 +45,8 @@ const page = await ctx.newPage();
 page.on('pageerror', (e) => pageErrors.push(`[${current}] ${e.message}`));
 page.on('console', (m) => { if (m.type() === 'error') pageErrors.push(`[${current}] console: ${m.text()}`); });
 page.on('dialog', (d) => d.accept());
+const external = [];
+ctx.on('request', (r) => { const u = new URL(r.url()); if (!['127.0.0.1', 'localhost'].includes(u.hostname) && !u.protocol.startsWith('data') && !u.protocol.startsWith('blob')) external.push(r.url()); });
 
 const A = (fn, arg) => page.evaluate(fn, arg);
 const wait = (ms) => page.waitForTimeout(ms);
@@ -453,6 +455,9 @@ await step('performance probe (software renderer)', async () => {
   await fs.writeFile(path.join(out, 'perf-swiftshader.json'), JSON.stringify(stats, null, 2));
 });
 
+ // park the desktop page so software rendering does not starve the mobile page
+await page.goto('about:blank').catch(() => {});
+
 await step('touch controls (mobile emulation)', async () => {
   const m = await browser.newContext({ viewport: { width: 412, height: 860 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
   await m.addInitScript(() => localStorage.setItem('astra-hq:settings:v1', JSON.stringify({ graphics: 'low' })));
@@ -460,7 +465,7 @@ await step('touch controls (mobile emulation)', async () => {
   mp.on('pageerror', (e) => pageErrors.push(`[mobile] ${e.message}`));
   await mp.goto(base);
   await mp.waitForFunction(() => window.__astra?.sim, null, { timeout: 60000 });
-  await mp.tap('[data-testid=enter-office]');
+  await mp.tap('[data-testid=enter-office]', { timeout: 90000 });
   await mp.waitForSelector('.touch-stick', { timeout: 10000 });
   const p0 = await mp.evaluate(() => ({ ...window.__astra.player }));
   const box = await mp.locator('.touch-stick').boundingBox();
@@ -475,6 +480,7 @@ await step('touch controls (mobile emulation)', async () => {
 });
 
 check('No blocking runtime errors', pageErrors.length === 0, pageErrors.slice(0, 5).join(' | '));
+check('No external network requests (all assets local)', external.length === 0, external.slice(0, 3).join(' '));
 await fs.writeFile(path.join(out, 'results.json'), JSON.stringify({ date: new Date().toISOString(), browser: `Chromium ${browser.version()} headless`, renderer: 'SwiftShader (software)', results, pageErrors }, null, 2));
 const failed = results.filter((r) => !r.ok);
 console.log(`\n${results.length - failed.length}/${results.length} checks passed`);
