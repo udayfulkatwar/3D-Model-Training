@@ -225,7 +225,8 @@ export class Simulation {
       this.dyn.update(Math.min(realDt, 0.1), this.agents(), this.liftOccupied());
       return;
     }
-    this.advance(Math.min(realDt, 0.1) * this.speed);
+    // clamp long frames (tab switches, slow devices) so the office never jumps ahead
+    this.advance(Math.min(realDt, 0.25) * this.speed);
   }
 
   /** Advance by speed-scaled seconds (used directly by tests). */

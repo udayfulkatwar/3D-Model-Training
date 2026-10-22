@@ -11,9 +11,11 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('node_modules/three')) return 'three';
-          if (id.includes('node_modules/@react-three')) return 'r3f';
-          if (id.includes('node_modules/react')) return 'react';
+          // post-processing stays in its own lazily loaded chunk (High preset only)
+          if (/node_modules\/(@react-three\/postprocessing|postprocessing|n8ao)\//.test(id)) return undefined;
+          if (/node_modules\/three\//.test(id)) return 'three';
+          if (/node_modules\/(@react-three|three-stdlib|troika|camera-controls|maath|meshline|zustand)/.test(id)) return 'r3f';
+          if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) return 'react';
           return undefined;
         },
       },
