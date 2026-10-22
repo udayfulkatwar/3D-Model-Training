@@ -1,0 +1,273 @@
+{
+  "date": "2026-10-22T22:25:49.700Z",
+  "browser": "Chromium 141.0.7390.37 headless",
+  "renderer": "SwiftShader (software)",
+  "results": [
+    {
+      "name": "App loads with intro, Office Simulation and Simulated Data labels",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "30 employees exist",
+      "ok": true,
+      "detail": "30"
+    },
+    {
+      "name": "Enter Office switches to walkthrough",
+      "ok": true,
+      "detail": "pointer lock granted"
+    },
+    {
+      "name": "Spawn point is at reception, on the floor",
+      "ok": true,
+      "detail": "{\"x\":19,\"y\":0,\"z\":17.6,\"floor\":0}"
+    },
+    {
+      "name": "W moves the player forward (north)",
+      "ok": true,
+      "detail": "17.60 -> 16.80"
+    },
+    {
+      "name": "Collision stops the player at the reception desk",
+      "ok": true,
+      "detail": "stopped at z=14.76"
+    },
+    {
+      "name": "Exterior wall blocks movement",
+      "ok": true,
+      "detail": "stopped at x=0.43"
+    },
+    {
+      "name": "Player position stays valid",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Closed door blocks the player",
+      "ok": true,
+      "detail": "z=6.35"
+    },
+    {
+      "name": "Door opens with E when aimed at (prompt shown)",
+      "ok": true,
+      "detail": "[E] Open Utility & Storage door"
+    },
+    {
+      "name": "Open door lets the player through",
+      "ok": true,
+      "detail": "z=3.26"
+    },
+    {
+      "name": "Flight A climbs to the mid landing",
+      "ok": true,
+      "detail": "y=2.00 z=0.45"
+    },
+    {
+      "name": "Flight B reaches the first floor",
+      "ok": true,
+      "detail": "y=4.00 floor=1"
+    },
+    {
+      "name": "Player can walk into the elevator car",
+      "ok": true,
+      "detail": "z=4.75"
+    },
+    {
+      "name": "Elevator carries the player to the second floor",
+      "ok": true,
+      "detail": "y=8.00"
+    },
+    {
+      "name": "Player exits the elevator on the second floor",
+      "ok": true,
+      "detail": "z=7.16 y=8.00"
+    },
+    {
+      "name": "Overview cutaway selects floor 0",
+      "ok": true,
+      "detail": "{\"mode\":\"overview\",\"f\":0,\"vis\":[true,false,false]}"
+    },
+    {
+      "name": "Overview cutaway selects floor 1",
+      "ok": true,
+      "detail": "{\"mode\":\"overview\",\"f\":1,\"vis\":[true,true,false]}"
+    },
+    {
+      "name": "Overview cutaway selects floor 2",
+      "ok": true,
+      "detail": "{\"mode\":\"overview\",\"f\":2,\"vis\":[true,true,true]}"
+    },
+    {
+      "name": "Directory search filters employees",
+      "ok": true,
+      "detail": "1 result(s)"
+    },
+    {
+      "name": "Typing in menus does not move the player",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Go to Employee places the player next to them",
+      "ok": true,
+      "detail": "distance 2.77 m"
+    },
+    {
+      "name": "Profile shows task, activity, department and workstation",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Inspect Monitors opens the employee monitor panel",
+      "ok": true,
+      "detail": "ws-trade-02-m1"
+    },
+    {
+      "name": "Go to Desk moves the player to the workstation",
+      "ok": true,
+      "detail": "1.91 m from desk"
+    },
+    {
+      "name": "Follow Employee switches to follow camera",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Switching a panel tab switches the in-world monitor (same state)",
+      "ok": true,
+      "detail": "{\"sim\":0,\"drawn\":\"Positions\",\"panel\":\"Positions\"}"
+    },
+    {
+      "name": "In-world screen redraws to the selected tab",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Monitor switching within the workstation works",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Every assigned monitor runs a role application",
+      "ok": true,
+      "detail": "69 monitors"
+    },
+    {
+      "name": "Conference room display shows the live briefing and attendees",
+      "ok": true,
+      "detail": "16/16 present"
+    },
+    {
+      "name": "Simulated breach creates an alert and a review meeting with the PM",
+      "ok": true,
+      "detail": "{\"alert\":\"action\",\"review\":\"completed\",\"pm\":true,\"room\":\"f-m1b\"}"
+    },
+    {
+      "name": "Risk application lists the alert lifecycle",
+      "ok": true,
+      "detail": "Risk Monitor · LimitsLimitsAlerts14:27Simulated DataRisk alerts 13:38 RA00287 Macro drawdown 1.06% (limit 1.00%) · RESOL"
+    },
+    {
+      "name": "Pause freezes the simulation clock",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Speed buttons set 5x",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Reset restarts the simulated day",
+      "ok": true,
+      "detail": "{\"minute\":460,\"trades\":0,\"alerts\":0}"
+    },
+    {
+      "name": "Selected chairs offer a seated viewpoint",
+      "ok": true,
+      "detail": "{\"mode\":\"seated\",\"seat\":\"s-board-s1\"}"
+    },
+    {
+      "name": "Standing up returns to walkthrough",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Coffee machine gives a brief interaction",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "CEO desk opens the company overview",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Editor saves locally",
+      "ok": true,
+      "detail": "Saved locally and applied; the simulated day restarted."
+    },
+    {
+      "name": "Configuration changes survive reload (name, company, desk swap)",
+      "ok": true,
+      "detail": "{\"name\":\"ORION\",\"e01\":\"Test Receptionist\",\"e02\":\"ws-trade-02\",\"e03\":\"ws-trade-01\"}"
+    },
+    {
+      "name": "Company display name appears in the UI",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Export produces valid configuration JSON",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Malformed JSON import is rejected with a useful error and config kept",
+      "ok": true,
+      "detail": "Import rejected: the previous configuration is unchanged.Not valid JSON: Expected double-quoted property name in JSON at"
+    },
+    {
+      "name": "Schema-invalid import is rejected and previous config kept",
+      "ok": true,
+      "detail": "Import rejected: the previous configuration is unchanged.employees[1].workstationId \"ws-reception\" is already assigned to e01employees[2].roleType must be one o"
+    },
+    {
+      "name": "Valid import is applied",
+      "ok": true,
+      "detail": "{\"c\":\"ASTRA\",\"n\":\"Imported Person\"}"
+    },
+    {
+      "name": "Restore defaults works",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Every room has a valid standing spot (21 rooms)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Renderer statistics collected for each preset",
+      "ok": true,
+      "detail": "{\"low\":{\"fps\":1,\"calls\":129,\"triangles\":199464,\"textures\":141,\"geometries\":376},\"medium\":{\"fps\":1,\"calls\":146,\"triangles\":199984,\"textures\":35,\"geometries\":132},\"high\":{\"fps\":1,\"calls\":274,\"triangles\":401317,\"textures\":57,\"geometries\":156}}"
+    },
+    {
+      "name": "Touch joystick moves the player",
+      "ok": true,
+      "detail": "0.79 m"
+    },
+    {
+      "name": "No blocking runtime errors",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "No external network requests (all assets local)",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "pageErrors": []
+}

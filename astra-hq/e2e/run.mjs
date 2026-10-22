@@ -39,7 +39,9 @@ const step = async (name, fn) => {
 const ctx = await browser.newContext({ viewport: { width: Number(process.env.W ?? 960), height: Number(process.env.H ?? 570) }, acceptDownloads: true });
 // Low preset keeps software rendering responsive enough for interaction tests.
 await ctx.addInitScript(() => {
-  if (!localStorage.getItem('astra-hq:settings:v1')) localStorage.setItem('astra-hq:settings:v1', JSON.stringify({ graphics: 'low', showFps: true }));
+  try {
+    if (!localStorage.getItem('astra-hq:settings:v1')) localStorage.setItem('astra-hq:settings:v1', JSON.stringify({ graphics: 'low', showFps: true }));
+  } catch { /* about:blank has no storage */ }
 });
 const page = await ctx.newPage();
 page.on('pageerror', (e) => pageErrors.push(`[${current}] ${e.message}`));

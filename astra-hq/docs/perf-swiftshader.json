@@ -1,0 +1,23 @@
+{
+  "low": {
+    "fps": 1,
+    "calls": 129,
+    "triangles": 199464,
+    "textures": 141,
+    "geometries": 376
+  },
+  "medium": {
+    "fps": 1,
+    "calls": 146,
+    "triangles": 199984,
+    "textures": 35,
+    "geometries": 132
+  },
+  "high": {
+    "fps": 1,
+    "calls": 274,
+    "triangles": 401317,
+    "textures": 57,
+    "geometries": 156
+  }
+}
