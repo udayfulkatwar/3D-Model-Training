@@ -376,6 +376,41 @@ await step('screenshots', async () => {
   await A(() => window.__astra.ui.getState().updateSettings({ lighting: 'auto' }));
 });
 
+await step('owner tools', async () => {
+  await A(() => { const s = window.__astra.sim(); s.reset(); s.speed = 1; });
+  await teleport(0, 19, 17.6, 0);
+  await page.keyboard.press('KeyO');
+  await page.waitForSelector('[data-testid=owner-panel]');
+  await page.fill('[data-testid=meeting-topic]', 'Quarterly plan');
+  await page.click('[data-testid=call-meeting]');
+  const note = await page.textContent('[data-testid=owner-note]');
+  await page.click('[data-testid=close-panel]');
+  await A(() => { const s = window.__astra.sim(); s.speed = 5; const end = s.minute + 25; while (s.minute < end) s.advance(0.5); });
+  const pres = await A(() => { const s = window.__astra.sim(); const ev = s.ownerMeetings()[0]; return { present: s.presentAttendees(ev).length, total: ev.attendeeIds.length, ok: s.validate().length === 0 }; });
+  check('Owner calls all 30 to the Conference Room and all fit', /Called 30 people/.test(note) && pres.present === 30 && pres.ok, JSON.stringify(pres));
+  await A(() => { const s = window.__astra.sim(); s.endMeeting(s.ownerMeetings()[0].id); s.speed = 1; });
+  await A(() => window.__astra.ui.getState().openPanel({ kind: 'talk', id: 'e02' }));
+  await page.fill('[data-testid=talk-input]', 'How is your P&L today?');
+  await page.click('[data-testid=talk-send]');
+  await wait(600);
+  const chat = await page.textContent('[data-testid=chat]');
+  check('Talking to an employee gets a reply from live data', /My positions are/.test(chat), chat.slice(-90));
+  await page.click('[data-testid=talk-come]');
+  await page.click('[data-testid=close-panel]');
+  await A(() => { const s = window.__astra.sim(); s.speed = 5; const end = s.minute + 15; while (s.minute < end) s.advance(0.5); s.speed = 1; });
+  const came = await A(() => { const e = window.__astra.sim().byId.get('e02'); const p = window.__astra.player; return { d: Math.hypot(e.x - p.x, e.z - p.z), floor: e.floor, phase: e.phase }; });
+  check('"Come to me" brings the employee to the owner', came.d < 3.5 && came.floor === 0 && came.phase === 'standing', JSON.stringify(came));
+  await A(() => { const s = window.__astra.sim(); s.dismiss(['e02']); s.reset(); });
+  await teleport(2, 8.0, 10.6, Math.atan2(-(5 - 8), -(15.6 - 10.6)));
+  await page.waitForFunction(() => window.__astra.sim().employees.find((e) => e.cfg.roleType === 'ceo').greet?.stage === 'hold', null, { timeout: 60000 }).catch(() => {});
+  const greet = await A(() => { const c = window.__astra.sim().employees.find((e) => e.cfg.roleType === 'ceo'); return { stage: c.greet?.stage ?? null, phase: c.phase }; });
+  check('CEO stands to greet the owner entering the office', greet.stage === 'hold' && greet.phase === 'standing', JSON.stringify(greet));
+  await A(() => { window.__astra.sim().playerSit('ceo-guest-s1'); });
+  await page.waitForFunction(() => window.__astra.sim().employees.find((e) => e.cfg.roleType === 'ceo').phase === 'seated', null, { timeout: 60000 }).catch(() => {});
+  check('CEO sits down after the owner takes a seat', await A(() => window.__astra.sim().employees.find((e) => e.cfg.roleType === 'ceo').phase === 'seated'));
+  await A(() => window.__astra.sim().playerStand());
+});
+
 await step('configuration editor persistence', async () => {
   await A(() => window.__astra.ui.getState().openPanel({ kind: 'settings', tab: 'editor' }));
   await page.click('[data-testid=settings-tab-editor]');

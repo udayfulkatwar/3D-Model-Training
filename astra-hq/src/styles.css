@@ -233,3 +233,11 @@ kbd { font-family: var(--mono); font-size: 11px; background: #23262c; border: 1p
   .app-body.layout-grid { grid-template-columns: 1fr; }
   .bar-row { grid-template-columns: 80px 1fr 90px; }
 }
+
+/* talk window */
+.chat { display: flex; flex-direction: column; gap: 6px; max-height: 42vh; overflow: auto; padding: 4px 2px; }
+.bubble { max-width: 82%; padding: 7px 10px; border-radius: 10px; font-size: 13px; line-height: 1.4; }
+.bubble .t { font-family: var(--mono); font-size: 10px; opacity: 0.6; margin-right: 4px; }
+.bubble.owner { align-self: flex-end; background: var(--gold-soft); border: 1px solid rgba(208, 171, 98, 0.45); }
+.bubble.employee { align-self: flex-start; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line); }
+.history .t { font-family: var(--mono); color: var(--muted); margin-right: 6px; }

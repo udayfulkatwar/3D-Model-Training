@@ -320,6 +320,8 @@ addFurn('armchair', 0, 23.4, 17.0, -HALF + PI);
 addFurn('coffeeTable', 0, 24.5, 16.2, HALF, 1.0, 0.6, 0.4);
 addFurn('bench', 0, 13.6, 18.85, 0, 2.0, 0.5, 0.45);
 addFurn('rug', 0, 19.0, 17.6, 0, 3.6, 2.2, 0.01, { noCollide: true, variant: 1 });
+// all-hands standing area in front of reception (faces the logo wall)
+for (let r = 0; r < 4; r++) for (let c = 0; c < 8; c++) standSpot(`allhands-${r * 8 + c + 1}`, 0, 15.5 + c * 1.0, 15.4 + r * 0.9, PI);
 panel({ id: 'p-directory', kind: 'directory', floor: 0, x: 14.6, y: 1.25, z: 16.6, heading: 0, w: 0.5, h: 0.85, label: 'Office Directory' });
 panel({ id: 'p-logo-reception', kind: 'logo', floor: 0, x: 19.0, y: 2.2, z: 11.77, heading: 0, w: 3.2, h: 0.9, label: 'Reception logo' });
 
@@ -457,6 +459,9 @@ meetingTable('f-conf', 1, 28.7, 2.9, 7.0, 1.4, true, 8, true);
 addFurn('credenza', 1, 33.55, 2.9, -HALF, 2.4, 0.45, 0.72);
 addFurn('plant', 1, 23.95, 0.55);
 addFurn('plant', 1, 33.45, 5.5);
+// standing room along the walls so the whole company (30) fits for an owner's meeting
+for (let i = 0; i < 10; i++) standSpot(`conf-stand-n${i + 1}`, 1, 24.9 + i * 0.9, 0.72, 0);
+for (let i = 0; i < 7; i++) standSpot(`conf-stand-s${i + 1}`, 1, 27.0 + i * 0.9, 5.2, PI);
 panel({ id: 'p-disp-f-conf', kind: 'roomDisplay', floor: 1, x: 33.78, y: 1.75, z: 2.9, heading: -HALF, w: 2.4, h: 1.35, label: 'Conference Room display', roomId: 'f-conf' });
 panel({ id: 'p-wb-f-conf', kind: 'whiteboard', floor: 1, x: 23.62, y: 1.45, z: 2.9, heading: HALF, w: 2.0, h: 1.1, label: 'Conference Room whiteboard', roomId: 'f-conf' });
 

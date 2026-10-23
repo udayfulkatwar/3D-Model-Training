@@ -64,6 +64,7 @@ export function TopBar() {
         <button className="btn small" onClick={() => open({ kind: 'directory' })} title="Employee directory (F)">Directory</button>
         <button className="btn small" onClick={() => open({ kind: 'navigation' })} title="Floors and rooms (N)">Rooms</button>
         <button className="btn small" onClick={returnToReception} title="Return to reception">Reception</button>
+        <button className="btn small primary" onClick={() => open({ kind: 'owner' })} title="Owner: call meetings, call people, messages (O)" data-testid="open-owner">Owner</button>
       </div>
       <span className="spacer" />
       <div className="bar-group">
@@ -173,6 +174,17 @@ export function CenterOverlays() {
   const stats = useUI((s) => s.renderStats);
   const showFps = useUI((s) => s.settings.showFps);
   const [toastVisible, setToastVisible] = useState(false);
+  const simVersion = useUI((s) => s.simVersion);
+  const lastMsg = useRef(getSim().ownerMessages[0]?.id ?? 0);
+  useEffect(() => {
+    const m = getSim().ownerMessages[0];
+    const ui = useUI.getState();
+    if (m && m.id > lastMsg.current) {
+      // the reply is already visible in an open talk window for that person
+      if (!(ui.panel?.kind === 'talk' && ui.panel.id === m.empId)) ui.showToast(`${m.name}: ${m.text}`);
+      lastMsg.current = m.id;
+    }
+  }, [simVersion]);
   useEffect(() => {
     if (!toast) return;
     setToastVisible(true);
@@ -208,6 +220,7 @@ export function IntroOverlay() {
           <kbd>E</kbd><span>Interact: doors, monitors, chairs, coffee, elevator</span>
           <kbd>Esc</kbd><span>Release the cursor</span>
           <kbd>F</kbd><span>Employee directory · <kbd>N</kbd> rooms · <kbd>M</kbd> overview · <kbd>P</kbd> pause</span>
+          <kbd>O</kbd><span>Owner tools: call meetings, call anyone to you, talk to anyone</span>
         </div>
         <div className="row">
           <button className="btn primary" data-testid="enter-office" onClick={() => { const s = useUI.getState(); if (s.settings.sound) setSoundEnabled(true); enterWalk(document.querySelector('canvas'), true); }}>Enter Office</button>
@@ -235,6 +248,7 @@ export function useShortcuts() {
         case 'KeyN': ui.openPanel({ kind: 'navigation' }); break;
         case 'KeyM': if (ui.mode === 'overview') enterWalk(document.querySelector('canvas'), false); else showOverview(); break;
         case 'KeyL': ui.updateSettings({ labels: !ui.settings.labels }); break;
+        case 'KeyO': ui.openPanel({ kind: 'owner' }); break;
         case 'KeyH': ui.openPanel({ kind: 'help' }); break;
         case 'Digit1': if (ui.mode === 'overview') ui.setOverviewFloor(0); break;
         case 'Digit2': if (ui.mode === 'overview') ui.setOverviewFloor(1); break;

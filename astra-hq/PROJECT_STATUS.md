@@ -60,6 +60,18 @@ Status legend: **Done** = implemented and covered by an automated check (unit or
 | Pause, 1×/2×/5×, reset, day/night, sound, labels, presets, FPS, clock, occupancy & activity counts | Done | browser clock checks; others manual |
 | Audio only after user interaction; reduced-motion respected | Done (manual) | `sound.ts` creates the AudioContext on demand; reduced motion → instant camera moves, slower decorative animation |
 
+### Owner tools (added after the first delivery)
+| Feature | Status | Evidence |
+|---|---|---|
+| Call a meeting with everyone / departments / picked people in any meeting room or a lobby all-hands | Done | owner.test.ts; browser 30/30 check |
+| "Come to me", "Send to room", "Back to desks" for any group | Done | owner.test.ts; browser check |
+| Talk to every employee (in person or by phone), typed or suggested questions, replies from live simulated data | Done | owner.test.ts; browser check |
+| Assign tasks that are reported back when done; owner inbox and notifications | Done | owner.test.ts |
+| CEO stands to greet the owner and sits after the owner sits | Done | owner.test.ts; browser check; screenshot 17 |
+| Room name + department plate above every room door | Done (manual) | screenshot 15 |
+
+Limitation: replies are scripted from keywords and live data, not free conversation; anything unrecognised is acknowledged and can be assigned as a task.
+
 ### 7. Performance
 | Feature | Status | Evidence |
 |---|---|---|

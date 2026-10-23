@@ -1,23 +1,23 @@
 {
   "low": {
     "fps": 1,
-    "calls": 129,
-    "triangles": 199464,
-    "textures": 141,
-    "geometries": 376
+    "calls": 132,
+    "triangles": 199470,
+    "textures": 164,
+    "geometries": 399
   },
   "medium": {
     "fps": 1,
-    "calls": 146,
-    "triangles": 199984,
-    "textures": 35,
-    "geometries": 132
+    "calls": 132,
+    "triangles": 199830,
+    "textures": 38,
+    "geometries": 135
   },
   "high": {
-    "fps": 1,
-    "calls": 274,
-    "triangles": 401317,
-    "textures": 57,
-    "geometries": 156
+    "fps": 0,
+    "calls": 277,
+    "triangles": 401323,
+    "textures": 60,
+    "geometries": 159
   }
 }

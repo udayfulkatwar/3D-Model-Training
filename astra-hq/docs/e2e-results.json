@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-22T22:25:49.700Z",
+  "date": "2026-10-23T11:07:09.735Z",
   "browser": "Chromium 141.0.7390.37 headless",
   "renderer": "SwiftShader (software)",
   "results": [
@@ -26,17 +26,17 @@
     {
       "name": "W moves the player forward (north)",
       "ok": true,
-      "detail": "17.60 -> 16.80"
+      "detail": "17.60 -> 17.29"
     },
     {
       "name": "Collision stops the player at the reception desk",
       "ok": true,
-      "detail": "stopped at z=14.76"
+      "detail": "stopped at z=14.73"
     },
     {
       "name": "Exterior wall blocks movement",
       "ok": true,
-      "detail": "stopped at x=0.43"
+      "detail": "stopped at x=0.45"
     },
     {
       "name": "Player position stays valid",
@@ -46,7 +46,7 @@
     {
       "name": "Closed door blocks the player",
       "ok": true,
-      "detail": "z=6.35"
+      "detail": "z=6.38"
     },
     {
       "name": "Door opens with E when aimed at (prompt shown)",
@@ -56,12 +56,12 @@
     {
       "name": "Open door lets the player through",
       "ok": true,
-      "detail": "z=3.26"
+      "detail": "z=3.67"
     },
     {
       "name": "Flight A climbs to the mid landing",
       "ok": true,
-      "detail": "y=2.00 z=0.45"
+      "detail": "y=2.00 z=0.56"
     },
     {
       "name": "Flight B reaches the first floor",
@@ -71,7 +71,7 @@
     {
       "name": "Player can walk into the elevator car",
       "ok": true,
-      "detail": "z=4.75"
+      "detail": "z=4.92"
     },
     {
       "name": "Elevator carries the player to the second floor",
@@ -166,7 +166,7 @@
     {
       "name": "Risk application lists the alert lifecycle",
       "ok": true,
-      "detail": "Risk Monitor · LimitsLimitsAlerts14:27Simulated DataRisk alerts 13:38 RA00287 Macro drawdown 1.06% (limit 1.00%) · RESOL"
+      "detail": "Risk Monitor · LimitsLimitsAlerts14:26Simulated DataRisk alerts 13:38 RA00287 Macro drawdown 1.06% (limit 1.00%) · RESOL"
     },
     {
       "name": "Pause freezes the simulation clock",
@@ -200,6 +200,31 @@
     },
     {
       "name": "CEO desk opens the company overview",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Owner calls all 30 to the Conference Room and all fit",
+      "ok": true,
+      "detail": "{\"present\":30,\"total\":30,\"ok\":true}"
+    },
+    {
+      "name": "Talking to an employee gets a reply from live data",
+      "ok": true,
+      "detail": "ur P&L today?08:05 My positions are $23.2k today (simulated); the Equities book is $64.9k."
+    },
+    {
+      "name": "\"Come to me\" brings the employee to the owner",
+      "ok": true,
+      "detail": "{\"d\":1.3000000000000007,\"floor\":0,\"phase\":\"standing\"}"
+    },
+    {
+      "name": "CEO stands to greet the owner entering the office",
+      "ok": true,
+      "detail": "{\"stage\":\"hold\",\"phase\":\"standing\"}"
+    },
+    {
+      "name": "CEO sits down after the owner takes a seat",
       "ok": true,
       "detail": ""
     },
@@ -251,12 +276,12 @@
     {
       "name": "Renderer statistics collected for each preset",
       "ok": true,
-      "detail": "{\"low\":{\"fps\":1,\"calls\":129,\"triangles\":199464,\"textures\":141,\"geometries\":376},\"medium\":{\"fps\":1,\"calls\":146,\"triangles\":199984,\"textures\":35,\"geometries\":132},\"high\":{\"fps\":1,\"calls\":274,\"triangles\":401317,\"textures\":57,\"geometries\":156}}"
+      "detail": "{\"low\":{\"fps\":1,\"calls\":132,\"triangles\":199470,\"textures\":164,\"geometries\":399},\"medium\":{\"fps\":1,\"calls\":132,\"triangles\":199830,\"textures\":38,\"geometries\":135},\"high\":{\"fps\":0,\"calls\":277,\"triangles\":401323,\"textures\":60,\"geometries\":159}}"
     },
     {
       "name": "Touch joystick moves the player",
       "ok": true,
-      "detail": "0.79 m"
+      "detail": "0.37 m"
     },
     {
       "name": "No blocking runtime errors",

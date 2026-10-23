@@ -15,7 +15,9 @@ export type Panel =
   | { kind: 'elevator' }
   | { kind: 'coffee'; where: 'cafe' | 'lounge'; drink: string }
   | { kind: 'help' }
-  | { kind: 'log' };
+  | { kind: 'log' }
+  | { kind: 'owner'; tab?: 'meeting' | 'requests' | 'messages' }
+  | { kind: 'talk'; id: string };
 
 export interface InspectTarget { x: number; y: number; z: number; radius: number; label: string }
 

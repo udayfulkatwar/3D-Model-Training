@@ -118,7 +118,7 @@ export function describeHit(h: Hit): string | null {
     case 'liftPanel': return 'Elevator: choose a floor';
     case 'person': {
       const e = sim.employees[h.empIndex!];
-      return e ? `${e.cfg.name} · ${e.cfg.title} · ${e.task}` : null;
+      return e ? `Talk to ${e.cfg.name} · ${e.cfg.title} · ${e.task}` : null;
     }
   }
   return null;
@@ -188,7 +188,7 @@ export function activateHit(h: Hit) {
       break;
     case 'person': {
       const e = sim.employees[h.empIndex!];
-      if (e) ui.openPanel({ kind: 'employee', id: e.cfg.id });
+      if (e) ui.openPanel({ kind: 'talk', id: e.cfg.id });
       playSound('click');
       break;
     }

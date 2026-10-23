@@ -5,7 +5,7 @@ import type { EmployeeConfig, OfficeConfig, RoleType } from '../config/types';
 import { ROLE_LABELS } from '../config/types';
 import { FLOOR_H, roomAt, roomById, ROOMS } from '../world/building';
 import { DynamicWorld, type Agent } from '../world/dynamic';
-import { MONITORS, SEATS, SEAT_INDEX, WORKSTATIONS, WS_INDEX, type Seat, type Workstation } from '../world/furniture';
+import { MONITORS, SEATS, SEAT_INDEX, WORKSTATIONS, WS_INDEX, rotLocal, type Seat, type Workstation } from '../world/furniture';
 import { findPath, nearestWalkable, type Waypoint } from '../world/nav';
 import { fmtMoney, fmtTime } from '../util/math';
 import { hashRand } from '../util/rng';
@@ -41,7 +41,17 @@ export type Intent =
   | { kind: 'event'; eventId: string; remote: boolean }
   | { kind: 'lunch'; blockId: string }
   | { kind: 'coffee'; blockId: string; where: 'cafe' | 'lounge' }
-  | { kind: 'discuss'; blockId: string; withId: string };
+  | { kind: 'discuss'; blockId: string; withId: string }
+  | { kind: 'owner'; orderId: number };
+
+/** Instructions given by the company owner (the visitor) to an employee. */
+export type OwnerOrder =
+  | { id: number; kind: 'come'; floor: number; x: number; z: number; heading: number; until: number; place: string }
+  | { id: number; kind: 'room'; roomId: string; until: number }
+  | { id: number; kind: 'task'; text: string; until: number; started: number };
+
+export interface ChatLine { t: number; day: number; from: 'owner' | 'employee'; text: string }
+export interface OwnerMessage { id: number; t: number; day: number; empId: string; name: string; text: string }
 
 type Phase = 'seated' | 'standing' | 'walking' | 'sitting-down' | 'standing-up' | 'door-wait';
 
@@ -86,6 +96,14 @@ export interface Employee {
   lastAction: { t: number; text: string } | null;
   doorToClose: { id: string; x: number; z: number } | null;
   laneOffset: number;
+  /** Current instruction from the owner, if any. */
+  order: OwnerOrder | null;
+  /** Conversation with the owner. */
+  chat: ChatLine[];
+  /** True while the owner has this employee's talk window open. */
+  talking: boolean;
+  /** CEO courtesy: stand up when the owner enters the office, sit again afterwards. */
+  greet: { stage: 'up' | 'hold' | 'down'; t: number } | null;
 }
 
 export interface MonitorState { appId: AppId; tab: number; pinnedUntil: number; lastChange: number }
@@ -127,7 +145,11 @@ export class Simulation {
   player: { x: number; y: number; z: number; floor: number } | null = null;
   /** Bumped whenever state visible in panels changes (once per simulated minute or on interactions). */
   version = 0;
+  /** Replies, acknowledgements and greetings addressed to the owner (newest first). */
+  ownerMessages: OwnerMessage[] = [];
   private orderSeq = 100;
+  private ownerSeq = 1;
+  private ceoGreetArmed = true;
 
   constructor(config: OfficeConfig) {
     this.config = config;
@@ -148,6 +170,8 @@ export class Simulation {
     this.wsOwner.clear();
     this.cafeOrders = [];
     this.log = [];
+    this.ownerMessages = [];
+    this.ceoGreetArmed = true;
     this.market = new Market(this.seed, DAY_START);
     this.addShocks();
     const emps = this.config.employees;
@@ -181,6 +205,7 @@ export class Simulation {
       discussWith: null, coffeePhase: null, coffeeUntil: 0, startedBlocks: new Set(), history: [], schedule: [],
       work: { title: topic.title, sym: topic.sym, words: 600 + Math.floor(hashRand(this.seed, 'words', cfg.id) * 900), file: DEV_FILES[index % DEV_FILES.length], line: 40 + Math.floor(hashRand(this.seed, 'line', cfg.id) * 200) },
       lastAction: null, doorToClose: null, laneOffset: (hashRand(this.seed, 'lane', cfg.id) - 0.5) * 0.24,
+      order: null, chat: [], talking: false, greet: null,
     };
     this.reservations.set(seat.id, cfg.id);
     return e;
@@ -241,6 +266,7 @@ export class Simulation {
         this.onMinute(this.lastMinute);
       }
       for (const e of this.employees) this.updateEmployee(e, step);
+      this.updateCeoCourtesy();
       this.dyn.update(step, this.agents(), this.liftOccupied());
       if (this.minute >= DAY_END) this.nextDay();
     }
@@ -268,6 +294,8 @@ export class Simulation {
     this.cafeOrders = [];
     // overnight: everyone is back at their desk the next morning
     for (const e of this.employees) {
+      e.order = null;
+      e.greet = null;
       if (e.seatId && e.seatId !== e.ws.seatId) this.release(e.seatId, e.cfg.id);
       const seat = SEAT_INDEX.get(e.ws.seatId)!;
       this.reservations.set(seat.id, e.cfg.id);
@@ -388,6 +416,11 @@ export class Simulation {
       case 'training':
         notes.push('Module 2 of 3: information barriers');
         break;
+      case 'owner-meeting':
+        notes.push('Called by the company owner');
+        for (const a of ev.agenda) notes.push(`Topic: ${a}`);
+        notes.push(`In the room: ${this.presentAttendees(ev).length}/${ev.attendeeIds.length}`);
+        break;
     }
     ev.notes = [...notes, ...keep];
   }
@@ -437,7 +470,17 @@ export class Simulation {
   }
 
   private desiredIntent(e: Employee, m: number): Intent {
+    // 1. meetings the owner called, 2. the owner's personal instructions, 3. the regular calendar
     for (const ev of this.events) {
+      if (ev.kind !== 'owner-meeting' || ev.status === 'cancelled' || ev.status === 'completed' || m >= ev.end) continue;
+      if (!ev.attendeeIds.includes(e.cfg.id)) continue;
+      const remote = e.intent.kind === 'event' && e.intent.eventId === ev.id ? e.intent.remote : false;
+      return { kind: 'event', eventId: ev.id, remote };
+    }
+    if (e.order && m >= e.order.until) this.finishOrder(e, m);
+    if (e.order && (e.order.kind === 'come' || e.order.kind === 'room')) return { kind: 'owner', orderId: e.order.id };
+    for (const ev of this.events) {
+      if (ev.kind === 'owner-meeting') continue;
       if (ev.status === 'cancelled' || ev.status === 'completed' || !ev.attendeeIds.includes(e.cfg.id)) continue;
       if (m >= ev.end) continue;
       const committed = e.intent.kind === 'event' && e.intent.eventId === ev.id;
@@ -472,6 +515,7 @@ export class Simulation {
       case 'lunch': return `lunch:${i.blockId}`;
       case 'coffee': return `coffee:${i.blockId}`;
       case 'discuss': return `discuss:${i.blockId}`;
+      case 'owner': return `owner:${i.orderId}`;
     }
   }
 
@@ -526,6 +570,8 @@ export class Simulation {
         const room = ev.roomId;
         const pool = SEATS.filter((s) => s.roomId === room && (ev.standing ? s.kind === 'stand' : s.kind === 'meeting' || s.kind === 'lounge'));
         target = this.pickSeat(e, pool, `ev:${ev.id}`);
+        // chairs full: stand at the side of the room before falling back to joining remotely
+        if (!target && !ev.standing) target = this.pickSeat(e, SEATS.filter((s) => s.roomId === room && s.kind === 'stand' && !s.id.startsWith('cafe-q') && !s.id.startsWith('slounge-q')), `evs:${ev.id}`);
         if (!target) {
           want.remote = true;
           target = deskSeat;
@@ -559,8 +605,12 @@ export class Simulation {
         e.startedBlocks.add(want.blockId);
         break;
       }
+      case 'owner':
+        target = this.ownerTarget(e) ?? deskSeat;
+        break;
     }
     if (!target) target = deskSeat;
+    e.greet = null;
     // release previous non-desk reservation
     if (e.seatId && e.seatId !== target.id && e.seatId !== e.ws.seatId) this.release(e.seatId, e.cfg.id);
     if (e.intent.kind === 'discuss') {
@@ -665,6 +715,12 @@ export class Simulation {
       case 'lunch': return 'lunch';
       case 'coffee': return 'coffee break';
       case 'discuss': return `discuss work with ${this.name(e.intent.withId)}`;
+      case 'owner': {
+        const o = e.order;
+        if (o?.kind === 'come') return 'meet you';
+        if (o?.kind === 'room') return `wait for you in ${roomById(o.roomId)?.name ?? 'the room'}`;
+        return 'your request';
+      }
       default: return 'desk';
     }
   }
@@ -724,6 +780,14 @@ export class Simulation {
         text = e.task;
         break;
       }
+      case 'owner': {
+        const o = e.order;
+        e.activity = o?.kind === 'room' ? 'meeting' : 'discussing';
+        e.task = o?.kind === 'room' ? `Waiting for you in ${roomById(o.roomId)?.name ?? 'the room'}, as you asked` : 'Here to speak with you, as you asked';
+        text = e.task;
+        this.ownerMessage(e, o?.kind === 'room' ? `I'm in the ${roomById(o.roomId)?.name ?? 'room'} now.` : "I'm here. What can I do for you?");
+        break;
+      }
       case 'discuss': {
         const p = this.byId.get(i.withId);
         e.activity = 'discussing';
@@ -771,8 +835,14 @@ export class Simulation {
         if (e.blend >= 1) {
           if (e.phase === 'standing-up') {
             e.phase = e.path.length ? 'walking' : 'standing';
+            if (e.greet?.stage === 'up') e.greet = { stage: 'hold', t: 0 };
           } else {
             e.phase = 'seated';
+            if (e.greet?.stage === 'down') {
+              e.greet = null;
+              e.activity = e.deskMode;
+              e.task = this.deskTask(e);
+            }
           }
         }
         break;
@@ -798,6 +868,15 @@ export class Simulation {
         }
       }
     }
+    if (e.greet?.stage === 'hold') this.holdGreeting(e, dt);
+    // face the owner while they talk to you in person
+    const p = this.player;
+    if (p && (e.talking || e.greet || (e.intent.kind === 'owner' && e.order?.kind === 'come')) && e.phase === 'standing' && Math.abs(p.y - e.floor * FLOOR_H) < 1.5 && Math.hypot(p.x - e.x, p.z - e.z) < 6) {
+      const want = Math.atan2(p.x - e.x, p.z - e.z);
+      let dh = want - e.heading;
+      dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+      e.heading += dh * Math.min(1, dt * 6);
+    }
     // pose
     if (e.phase === 'walking') e.pose = 'walk';
     else if (e.phase === 'door-wait' || e.phase === 'standing-up') e.pose = 'stand';
@@ -807,6 +886,7 @@ export class Simulation {
       else if (e.activity === 'discussing' || e.activity === 'meeting' || e.activity === 'cafe') e.pose = 'sitTalk';
       else e.pose = 'sit';
     }
+    if (e.talking && (e.phase === 'seated' || e.phase === 'standing')) e.pose = e.phase === 'seated' ? 'sitTalk' : 'standTalk';
   }
 
   private walk(e: Employee, dt: number) {
@@ -959,6 +1039,7 @@ export class Simulation {
   }
 
   deskTask(e: Employee): string {
+    if (e.order?.kind === 'task') return `Working on your request: ${e.order.text}`;
     const recent = e.lastAction && this.minute - e.lastAction.t < 6 ? e.lastAction.text : null;
     const m = Math.floor(this.minute);
     switch (e.cfg.roleType) {
@@ -1103,6 +1184,304 @@ export class Simulation {
     if (last && last.text === text && last.activity === e.activity) return;
     e.history.unshift({ t: Math.floor(this.minute), day: this.day, activity: e.activity, text, room: roomAt(e.floor, e.x, e.z)?.name ?? '' });
     if (e.history.length > 60) e.history.pop();
+  }
+
+
+  // ------------------------------------------------------------------ owner (the visitor) features
+  private ownerMessage(e: Employee, text: string) {
+    this.ownerMessages.unshift({ id: this.ownerSeq++, t: Math.floor(this.minute), day: this.day, empId: e.cfg.id, name: e.cfg.name, text });
+    if (this.ownerMessages.length > 80) this.ownerMessages.pop();
+    e.chat.push({ t: Math.floor(this.minute), day: this.day, from: 'employee', text });
+    if (e.chat.length > 60) e.chat.shift();
+    this.version++;
+  }
+
+  /** Where an employee goes for a 'come' or 'room' instruction. */
+  private ownerTarget(e: Employee): Seat | null {
+    const o = e.order;
+    if (!o) return null;
+    if (o.kind === 'come') {
+      const id = `owner:${e.cfg.id}`;
+      return { id, floor: o.floor, x: o.x, z: o.z, y: o.floor * FLOOR_H, heading: o.heading, kind: 'stand', roomId: roomAt(o.floor, o.x, o.z)?.id ?? 'unknown', approach: { x: o.x, z: o.z } };
+    }
+    if (o.kind === 'room') {
+      const chairs = SEATS.filter((s) => s.roomId === o.roomId && (s.kind === 'meeting' || s.kind === 'lounge' || s.kind === 'cafe'));
+      const stands = SEATS.filter((s) => s.roomId === o.roomId && s.kind === 'stand' && !s.id.startsWith('cafe-q') && !s.id.startsWith('slounge-q'));
+      const seat = this.pickSeat(e, chairs, `own:${o.id}`) ?? this.pickSeat(e, stands, `owns:${o.id}`);
+      if (seat) return seat;
+      const r = roomById(o.roomId);
+      if (!r) return null;
+      const a = (e.index / Math.max(1, this.employees.length)) * Math.PI * 2;
+      const spot = nearestWalkable(r.floor, r.entry.x + Math.cos(a) * 0.9, r.entry.z + Math.sin(a) * 0.9, 2) ?? r.entry;
+      return { id: `owner:${e.cfg.id}`, floor: r.floor, x: spot.x, z: spot.z, y: r.floor * FLOOR_H, heading: Math.atan2(r.entry.x - spot.x, r.entry.z - spot.z), kind: 'stand', roomId: r.id, approach: spot };
+    }
+    return null;
+  }
+
+  private finishOrder(e: Employee, m: number) {
+    const o = e.order;
+    if (!o) return;
+    e.order = null;
+    if (o.kind === 'task') {
+      this.ownerMessage(e, `Done: ${o.text}. I've filed it and I'm back on my regular work.`);
+      this.pushHistory(e, `Completed the owner's request: ${o.text}`);
+      this.addLog(`${e.cfg.name} completed a task for the owner: ${o.text}`, 'office');
+    }
+    void m;
+  }
+
+  /** Spots in a fan in front of the owner, one per employee, on walkable floor. */
+  private spotsNear(at: { floor: number; x: number; z: number; yaw: number }, n: number): { x: number; z: number }[] {
+    const out: { x: number; z: number }[] = [];
+    const fwd = { x: -Math.sin(at.yaw), z: -Math.cos(at.yaw) };
+    const base = Math.atan2(fwd.x, fwd.z);
+    for (let ring = 0; out.length < n && ring < 6; ring++) {
+      const r = 1.3 + ring * 0.8;
+      const count = 5 + ring * 4;
+      for (let k = 0; k < count && out.length < n; k++) {
+        const off = (k % 2 ? 1 : -1) * Math.ceil(k / 2) * (Math.PI / (count + 1));
+        const a = base + off;
+        const w = nearestWalkable(at.floor, at.x + Math.sin(a) * r, at.z + Math.cos(a) * r, 0.5);
+        if (!w || Math.hypot(w.x - at.x, w.z - at.z) < 0.9) continue;
+        if (out.some((o) => Math.hypot(o.x - w.x, o.z - w.z) < 0.65)) continue;
+        out.push(w);
+      }
+    }
+    return out;
+  }
+
+  /** "Come to me": employees walk over and stand in front of the owner. */
+  orderCome(ids: string[], at: { floor: number; x: number; z: number; yaw: number }, minutes = 30): number {
+    const emps = ids.map((id) => this.byId.get(id)).filter((e): e is Employee => !!e);
+    const spots = this.spotsNear(at, emps.length);
+    const place = roomAt(at.floor, at.x, at.z)?.name ?? 'your location';
+    emps.forEach((e, i) => {
+      const s = spots[i] ?? nearestWalkable(at.floor, at.x, at.z, 3) ?? { x: at.x, z: at.z };
+      e.order = { id: this.ownerSeq++, kind: 'come', floor: at.floor, x: s.x, z: s.z, heading: Math.atan2(at.x - s.x, at.z - s.z), until: this.minute + minutes, place };
+      this.pushHistory(e, `The owner asked me to come to ${place}`);
+      this.ownerMessage(e, `On my way to ${place}.`);
+      this.decide(e, Math.floor(this.minute));
+    });
+    this.addLog(`Owner called ${emps.length === 1 ? emps[0].cfg.name : `${emps.length} employees`} to ${place}`, 'office');
+    return emps.length;
+  }
+
+  /** Send employees to a room and have them wait there. */
+  orderRoom(ids: string[], roomId: string, minutes = 30): number {
+    const r = roomById(roomId);
+    if (!r) return 0;
+    const emps = ids.map((id) => this.byId.get(id)).filter((e): e is Employee => !!e);
+    for (const e of emps) {
+      e.order = { id: this.ownerSeq++, kind: 'room', roomId, until: this.minute + minutes };
+      this.pushHistory(e, `The owner asked me to go to ${r.name}`);
+      this.ownerMessage(e, `Heading to ${r.name} now.`);
+      this.decide(e, Math.floor(this.minute));
+    }
+    this.addLog(`Owner sent ${emps.length === 1 ? emps[0].cfg.name : `${emps.length} employees`} to ${r.name}`, 'office');
+    return emps.length;
+  }
+
+  /** Give an employee a task; they work on it at their desk and report back when it is done. */
+  assignTask(id: string, text: string, minutes = 40) {
+    const e = this.byId.get(id);
+    const t = text.trim().slice(0, 140);
+    if (!e || !t) return;
+    e.order = { id: this.ownerSeq++, kind: 'task', text: t, until: this.minute + minutes, started: this.minute };
+    e.chat.push({ t: Math.floor(this.minute), day: this.day, from: 'owner', text: `Please: ${t}` });
+    this.pushHistory(e, `New task from the owner: ${t}`);
+    this.ownerMessage(e, `Understood. I'll work on "${t}" at my desk and report back by ${fmtTime(this.minute + minutes)}.`);
+    this.addLog(`Owner assigned ${e.cfg.name}: ${t}`, 'office');
+    this.decide(e, Math.floor(this.minute));
+  }
+
+  /** Release employees from any owner instruction; they go back to their routine. */
+  dismiss(ids: string[]) {
+    for (const id of ids) {
+      const e = this.byId.get(id);
+      if (!e || !e.order) continue;
+      const wasTask = e.order.kind === 'task';
+      e.order = null;
+      this.ownerMessage(e, wasTask ? 'OK, I will drop that task.' : 'Thank you. Heading back to my desk.');
+      this.decide(e, Math.floor(this.minute));
+    }
+    this.version++;
+  }
+
+  /** Call a meeting now with any group, in any bookable room (or an all-hands in the lobby). */
+  callMeeting(opts: { attendeeIds: string[]; roomId: string; minutes: number; topic: string }): OfficeEvent | null {
+    const room = roomById(opts.roomId);
+    const ids = [...new Set(opts.attendeeIds)].filter((id) => this.byId.has(id));
+    if (!room || !ids.length) return null;
+    const m = Math.floor(this.minute);
+    // allow time to walk there (up to ~2 floors) before the meeting clock starts
+    const walk = Math.ceil(Math.max(...ids.map((id) => this.travelMinutes(this.byId.get(id)!, room.id)))) + 2;
+    const topic = opts.topic.trim().slice(0, 80) || (ids.length === this.employees.length ? 'All-hands' : 'Meeting with the owner');
+    const ev: OfficeEvent = {
+      id: `d${this.day}-owner-${this.ownerSeq++}`, kind: 'owner-meeting', title: `Owner's meeting: ${topic}`, roomId: room.id,
+      start: m, end: m + walk + Math.max(5, opts.minutes), attendeeIds: ids, status: 'scheduled',
+      standing: room.id === 'g-lobby', agenda: [topic], notes: [],
+    };
+    this.events.push(ev);
+    this.events.sort((a, b) => a.start - b.start);
+    for (const id of ids) {
+      const e = this.byId.get(id)!;
+      this.pushHistory(e, `Called to "${topic}" in ${room.name} by the owner`);
+      this.decide(e, m);
+    }
+    this.addLog(`Owner called ${ids.length} ${ids.length === 1 ? 'person' : 'people'} to ${room.name}: ${topic}`, 'event');
+    this.version++;
+    return ev;
+  }
+
+  endMeeting(eventId: string) {
+    const ev = this.events.find((e) => e.id === eventId);
+    if (!ev || ev.status === 'completed' || ev.status === 'cancelled') return;
+    ev.status = ev.start <= this.minute ? 'completed' : 'cancelled';
+    ev.end = Math.floor(this.minute);
+    this.addLog(`Owner ended ${ev.title}`, 'event');
+    for (const id of ev.attendeeIds) {
+      const e = this.byId.get(id);
+      if (e) this.decide(e, Math.floor(this.minute));
+    }
+    this.version++;
+  }
+
+  ownerMeetings(): OfficeEvent[] {
+    return this.events.filter((e) => e.kind === 'owner-meeting');
+  }
+
+  /** The owner opened/closed a conversation with this employee. */
+  setTalking(id: string | null) {
+    for (const e of this.employees) e.talking = e.cfg.id === id;
+  }
+
+  /** In person when on the same floor within ~5 m, otherwise by phone. */
+  talkMode(id: string): 'in person' | 'by phone' {
+    const e = this.byId.get(id);
+    const p = this.player;
+    if (!e || !p) return 'by phone';
+    const ef = Math.max(0, Math.min(2, Math.floor((e.y + 0.3) / FLOOR_H)));
+    return ef === p.floor && Math.hypot(e.x - p.x, e.z - p.z) < 5 ? 'in person' : 'by phone';
+  }
+
+  /** Talk to an employee. Replies are composed locally from their live simulated work (no AI service). */
+  talk(id: string, text: string): string {
+    const e = this.byId.get(id);
+    const said = text.trim().slice(0, 300);
+    if (!e || !said) return '';
+    e.chat.push({ t: Math.floor(this.minute), day: this.day, from: 'owner', text: said });
+    const reply = this.composeReply(e, said.toLowerCase());
+    this.pushHistory(e, `Spoke with the owner (${this.talkMode(id)})`);
+    this.ownerMessage(e, reply);
+    return reply;
+  }
+
+  private composeReply(e: Employee, q: string): string {
+    const m = Math.floor(this.minute);
+    const first = e.cfg.name.split(' ')[0];
+    const greeting = m < 12 * 60 ? 'Good morning' : m < 17 * 60 ? 'Good afternoon' : 'Good evening';
+    const firm = this.finance.firm(m);
+    const book = e.cfg.bookId ? this.finance.bookMetrics(this.finance.traders.get(e.cfg.id)?.bookId ?? e.cfg.bookId, m) : null;
+    const next = this.events.find((ev) => ev.attendeeIds.includes(e.cfg.id) && ev.status === 'scheduled');
+    const has = (...w: string[]) => w.some((x) => q.includes(x));
+    if (has('thank', 'well done', 'good job', 'great work', 'appreciate')) return `Thank you, that means a lot. ${e.cfg.roleType === 'trader' ? 'The desk will be glad to hear it.' : 'I will pass it on to the team.'}`;
+    if (has('where are you', 'location', 'where r u')) return `I'm in the ${this.roomName(e)} on the ${['ground', 'first', 'second'][Math.max(0, Math.min(2, e.floor))]} floor.`;
+    if (has('p&l', 'pnl', 'profit', 'money', 'perform', 'return', 'loss')) {
+      if (e.cfg.roleType === 'trader') return `My positions are ${fmtMoney(this.finance.traderPnl(e.cfg.id))} today (simulated); the ${book?.short ?? ''} book is ${fmtMoney(book?.pnl ?? 0)}.`;
+      if (book) return `${book.name} is ${fmtMoney(book.pnl)} today (${(book.pnlPct * 100).toFixed(2)}%), gross ${fmtMoney(book.gross)}. All simulated figures.`;
+      return `I don't run a book, but the firm is ${fmtMoney(firm.pnl)} today across all books (simulated).`;
+    }
+    if (has('risk', 'limit', 'alert', 'drawdown', 'exposure')) {
+      const open = this.finance.openAlerts();
+      const worst = [...firm.books].sort((a, b) => b.util.drawdown - a.util.drawdown)[0];
+      return open.length ? `There ${open.length === 1 ? 'is one open alert' : `are ${open.length} open alerts`}: ${open.map((a) => `${BOOK_INDEX.get(a.bookId)?.short} ${a.metric} (${a.status})`).join(', ')}.` : `No open limit alerts. Highest drawdown utilisation is ${worst.short} at ${(worst.util.drawdown * 100).toFixed(0)}% of its limit.`;
+    }
+    if (has('problem', 'issue', 'blocker', 'help', 'stuck', 'wrong')) {
+      if (this.tech.incidentActive) return `The market-data feed incident (${this.tech.incident.id}) is the main issue right now; technology is ${this.tech.incident.status}. ${e.cfg.roleType === 'tech' ? 'We expect the hotfix shortly.' : 'Some screens show delayed prices.'}`;
+      const breaks = this.finance.trades.filter((t) => t.status === 'break').length;
+      if (e.cfg.roleType === 'ops' && breaks) return `${breaks} trade break${breaks === 1 ? '' : 's'} open; I'm working through them.`;
+      return `No blockers on my side. I'll come to you if anything changes.`;
+    }
+    if (has('meeting', 'schedule', 'today', 'calendar', 'next')) {
+      return next ? `My next meeting is ${next.title} at ${fmtTime(next.start)} in ${roomById(next.roomId)?.name}.` : 'No more meetings for me today; I am at my desk the rest of the day apart from breaks.';
+    }
+    if (has('status', 'update', 'working on', 'doing', 'progress', 'how is', "how's", 'how are')) {
+      const where = e.intent.kind === 'desk' ? '' : ` Right now I'm ${ACTIVITY_LABEL[e.activity].toLowerCase()}.`;
+      return `${this.statusLine(e)}${where}`;
+    }
+    if (has('hello', 'hi ', 'hey', 'good morning', 'good afternoon', 'good evening') || q === 'hi') return `${greeting}! How can I help?`;
+    if (has('coffee', 'break', 'lunch')) {
+      const b = e.schedule.find((x) => (x.kind === 'coffee' || x.kind === 'lunch') && x.start > m);
+      return b ? `My next ${b.kind === 'lunch' ? 'lunch' : 'coffee break'} is at ${fmtTime(b.start)}. Happy to grab something for you.` : 'I already had my breaks today, thanks.';
+    }
+    return `Understood, ${first} here: I've noted "${q.length > 80 ? `${q.slice(0, 80)}…` : q}". Tell me if you want me to act on it now; you can also assign it as a task.`;
+  }
+
+  private statusLine(e: Employee): string {
+    const m = Math.floor(this.minute);
+    if (e.order?.kind === 'task') return `I'm working on your request "${e.order.text}"; done by ${fmtTime(e.order.until)}.`;
+    switch (e.cfg.roleType) {
+      case 'trader': {
+        const t = this.finance.traders.get(e.cfg.id);
+        return `I cover ${t?.coverage.join(', ') ?? 'my names'}; ${t?.orders.filter((o) => o.status === 'filled').length ?? 0} fills today and my P&L is ${fmtMoney(this.finance.traderPnl(e.cfg.id))} (simulated).`;
+      }
+      case 'researcher': return `I'm drafting "${e.work.title}" — ${e.work.words.toLocaleString()} words so far.`;
+      case 'risk': return this.deskTask(e) + '.';
+      case 'pm': return this.deskTask(e) + '.';
+      case 'tech': return this.tech.incidentActive ? `We're on the feed incident (${this.tech.incident.status}).` : `I'm in ${e.work.file}; ${this.tech.builds.filter((b) => b.status === 'passed').length} builds passed today.`;
+      case 'ops': return `${this.finance.trades.filter((t) => t.status === 'matched').length} trades matched, ${this.finance.trades.filter((t) => t.status === 'pending').length} pending, ${this.finance.trades.filter((t) => t.status === 'break').length} breaks open.`;
+      case 'receptionist': {
+        const next = this.events.find((ev) => ev.status === 'scheduled');
+        return next ? `Front desk is covered. Next booking: ${next.title} at ${fmtTime(next.start)}.` : 'Front desk is covered; no more bookings today.';
+      }
+      case 'ceo': return `The firm is ${fmtMoney(this.finance.firm(m).pnl)} today (simulated) with ${this.finance.openAlerts().length} open risk alerts. Happy to walk you through it.`;
+      case 'coordinator': return `${this.cafeOrders.filter((o) => o.status !== 'collected').length} café orders in progress; rooms are set for the afternoon.`;
+    }
+  }
+
+  /** CEO stands to greet the owner entering the office, and sits again once the owner is seated (or leaves). */
+  private updateCeoCourtesy() {
+    const ceo = this.employees.find((x) => x.cfg.roleType === 'ceo');
+    const p = this.player;
+    if (!ceo) return;
+    const inRoom = !!p && roomAt(p.floor, p.x, p.z)?.id === ceo.ws.roomId;
+    if (!inRoom) {
+      this.ceoGreetArmed = true;
+      return;
+    }
+    if (this.ceoGreetArmed && this.atDesk(ceo) && !ceo.greet) {
+      this.ceoGreetArmed = false;
+      const seat = SEAT_INDEX.get(ceo.ws.seatId)!;
+      const side = rotLocal(0.55, -0.4, seat.heading);
+      ceo.greet = { stage: 'up', t: 0 };
+      ceo.phase = 'standing-up';
+      ceo.blend = 0;
+      ceo.blendFrom = { x: ceo.x, y: ceo.y, z: ceo.z, h: ceo.heading };
+      ceo.blendTo = { x: seat.x + side.x, y: seat.floor * FLOOR_H, z: seat.z + side.z, h: ceo.heading };
+      ceo.activity = 'discussing';
+      ceo.task = 'Standing to greet you';
+      const m = this.minute;
+      this.pushHistory(ceo, 'Stood up to greet the owner');
+      this.ownerMessage(ceo, `${m < 12 * 60 ? 'Good morning' : m < 17 * 60 ? 'Good afternoon' : 'Good evening'}, welcome. Please, have a seat.`);
+    }
+  }
+
+  private holdGreeting(e: Employee, dt: number) {
+    if (!e.greet) return;
+    e.greet.t += dt;
+    const p = this.player;
+    const ownerSeated = [...this.reservations.entries()].some(([seat, who]) => who === 'player' && SEAT_INDEX.get(seat)?.roomId === e.ws.roomId);
+    const ownerLeft = !p || roomAt(p.floor, p.x, p.z)?.id !== e.ws.roomId;
+    // remain standing until the owner sits (or leaves); never longer than ~25 s
+    if (!(ownerSeated && e.greet.t > 1.2) && !ownerLeft && e.greet.t < 25) return;
+    const seat = SEAT_INDEX.get(e.ws.seatId)!;
+    e.greet = { stage: 'down', t: 0 };
+    e.phase = 'sitting-down';
+    e.blend = 0;
+    e.blendFrom = { x: e.x, y: e.y, z: e.z, h: e.heading };
+    e.blendTo = { x: seat.x, y: seat.y, z: seat.z, h: seat.heading };
+    e.at = seat;
+    if (ownerSeated) this.pushHistory(e, 'Sat down after the owner took a seat');
   }
 
   // ------------------------------------------------------------------ player seat

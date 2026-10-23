@@ -22,8 +22,8 @@ real touch hardware. No frame-rate claim is made for real hardware.
 |---|---|
 | `npm install` | OK, 0 vulnerabilities reported |
 | `npm run build` | OK. Chunks (gzip): app 89 kB, react 64 kB, three + r3f 272 kB, post-processing 156 kB (lazy, High preset only), CSS 4 kB |
-| `npm test` | **32/32 passed** (3 files) |
-| `npm run e2e` | **53/53 passed** (viewport 960×570, Low preset for responsiveness under software rendering) |
+| `npm test` | **38/38 passed** (4 files) |
+| `npm run e2e` | **58/58 passed** (viewport 960×570, Low preset for responsiveness under software rendering) |
 
 ### Unit tests (`tests/`)
 
@@ -44,9 +44,16 @@ real touch hardware. No frame-rate claim is made for real hardware.
   rejected; field-level error messages (duplicate desk/id, bad role, empty name, bad colour, unknown workstation, empty
   company name); wrong top-level shapes rejected; role/desk/name edits change apps, books and seats in the simulation.
 
+- **owner.test.ts (6)** — owner calls all 30 to the Conference Room and all 30 are physically present (18 chairs + standing
+  room) with no seat conflicts, then End meeting sends them back; standing all-hands in the lobby (30/30); "Come to me" for
+  a whole department brings them in front of the owner and "Back to desks" releases them; "Send to room"; an assigned task
+  is worked on and reported back ("Done: …"); replies use live data (P&L, risk, research draft, location); the CEO stands
+  to greet the owner entering the office, stays standing until the owner sits, then sits, and does not greet again during
+  the same visit.
+
 ### Browser acceptance (`e2e/run.mjs`)
 
-All 53 checks passed, including:
+All 58 checks passed, including:
 
 - Loads with *Office Simulation* / *Simulated Data* labels; 30 employees; Enter Office → walkthrough (pointer lock was granted in headless Chromium); spawn at reception.
 - Keyboard movement; collision stops at the reception desk (z = 14.76, desk edge 14.45 + radius) and the exterior wall; position stays valid.
@@ -64,6 +71,7 @@ All 53 checks passed, including:
 - Editor: company name, rename and desk swap survive a page reload; export produces valid JSON; malformed and schema-invalid imports are rejected with messages and the previous configuration kept; a valid import applies; Restore defaults works.
 - Teleport to every one of the 21 rooms yields a valid standing spot on the right floor.
 - Mobile emulation (412×860, touch): the on-screen joystick moves the player.
+- Owner tools: `O` opens the Owner panel; calling everyone to the Conference Room gets 30/30 in the room; a typed question gets a live-data reply; "Come to me" brings the trader to within 1.3 m; the CEO stands to greet and sits once the owner sits.
 - No uncaught page errors or console errors; **no network requests to any host other than the local server**.
 
 ## Performance measurements (what could be measured)

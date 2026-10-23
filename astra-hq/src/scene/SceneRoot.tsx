@@ -12,6 +12,7 @@ import { People } from './People';
 import { PRESETS } from './quality';
 import { Labels, SimDriver, StatsProbe } from './Runtime';
 import { Screens } from './Screens';
+import { DoorSigns } from './DoorSigns';
 
 const PostFX = lazy(() => import('./PostFX'));
 
@@ -40,6 +41,7 @@ export function SceneRoot({ labelLayer }: { labelLayer: HTMLDivElement | null })
         <People farHz={quality.peopleFarHz} />
         <Screens quality={quality} companyName={companyName} />
         <HitVolumes />
+        <DoorSigns sim={sim} version={sim.config.employees.map((e) => `${e.department}@${e.workstationId}`).join('|')} />
       </Suspense>
       <CameraController />
       <Interaction />

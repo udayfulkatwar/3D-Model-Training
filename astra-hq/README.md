@@ -45,6 +45,8 @@ behaviour, not frame rate.
 | `M` | Toggle building overview; `1`-`4` pick a floor cutaway |
 | `P` | Pause / resume the simulation |
 | `L` | Toggle employee labels |
+| `O` / **Owner** button | Owner tools: call a meeting with everyone, departments or picked people in any room; call people to you; send them to a room; read replies |
+| `E` on a person | Talk to them (in person when close, by phone otherwise); ask questions, give instructions, assign tasks |
 | Touch | Left joystick moves, drag on the right half looks, ● interacts |
 
 Movement input is ignored while a panel is open or a text field has focus.
@@ -85,6 +87,25 @@ PM allocation, the risk monitor and the CEO overview at the same time; ops recon
 18 role-specific applications (unassigned flex desks show an "available" screen). In-world screens are small canvas textures refreshed on a distance budget;
 clicking one opens a readable HTML panel generated from the *same* view model, with tabs that also switch
 the physical monitor, and monitor switching within the workstation.
+
+## Owner tools
+
+You are the company owner. Everything here is local simulation logic; replies are composed from each person's live
+simulated work (no AI service).
+
+- **Call a meeting** (Owner → Call a meeting): pick everyone, whole departments or individuals, a room (Conference Room
+  fits all 30 with standing room; Reception lobby for a standing all-hands; Boardroom, Training, meeting rooms, Interview,
+  CEO Office), a topic and a duration. People leave what they are doing, walk there, and the room display, whiteboard and
+  your list show who is in the room. *End meeting* sends them back.
+- **Call / send people**: "Come to me" brings the selected people to where you stand; "Send there" sends them to a room
+  to wait for you; "Back to desks" releases them. Instructions last 30 simulated minutes unless released.
+- **Talk** (press `E` on anyone, or *Talk* in a profile): ask for a status update, P&L, risk, problems or their next
+  meeting, or type anything. **Assign a task**: they work on it at their desk and report back when done.
+- **Messages**: every acknowledgement and reply lands in Owner → Messages and pops up as a notification.
+- **CEO courtesy**: when you walk into the Founder / CEO Office while the CEO is at the desk, the CEO stands up to
+  greet you and sits down again once you take a seat (or leave).
+- **Door signs**: every room door has a name plate with the room and the department working there (it follows the
+  departments you set in the editor).
 
 ## Project layout
 

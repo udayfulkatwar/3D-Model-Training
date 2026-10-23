@@ -12,6 +12,8 @@ import { forceRedraw, lastDrawn } from '../scene/Screens';
 import { playSound } from '../audio/sound';
 import { followEmployee, goToDesk, goToEmployee, goToRoom, inspectMonitors, inspectWorkstation, returnToReception, showOverview } from './actions';
 import { SettingsPanel } from './Settings';
+import { OwnerPanel, TalkPanel } from './Owner';
+import { player } from '../store/player';
 
 function Shell({ title, sub, children, foot, narrow, testId }: { title: React.ReactNode; sub?: React.ReactNode; children: React.ReactNode; foot?: React.ReactNode; narrow?: boolean; testId?: string }) {
   const close = useUI((s) => s.closePanel);
@@ -50,6 +52,8 @@ function PanelSwitch({ panel }: { panel: Panel }) {
     case 'coffee': return <CoffeePanel where={panel.where} drink={panel.drink} />;
     case 'help': return <HelpPanel />;
     case 'log': return <LogPanel />;
+    case 'owner': return <OwnerPanel tab={panel.tab} />;
+    case 'talk': return <TalkPanel id={panel.id} />;
   }
 }
 
@@ -72,7 +76,9 @@ function EmployeePanel({ id }: { id: string }) {
       sub={<>{e.cfg.title} · {e.cfg.department} · <span className="muted">fictional placeholder (editable)</span></>}
       foot={
         <>
-          <button className="btn primary" onClick={() => followEmployee(id)} data-testid="follow">Follow Employee</button>
+          <button className="btn primary" onClick={() => useUI.getState().openPanel({ kind: 'talk', id })} data-testid="talk">Talk</button>
+          <button className="btn" onClick={() => { sim.orderCome([id], { floor: player.floor, x: player.x, z: player.z, yaw: player.yaw }); useUI.getState().showToast(`${e.cfg.name} is coming to you`); }} data-testid="call-to-me">Call to me</button>
+          <button className="btn" onClick={() => followEmployee(id)} data-testid="follow">Follow Employee</button>
           <button className="btn" onClick={() => goToDesk(id)} data-testid="go-desk">Go to Desk</button>
           <button className="btn" onClick={() => inspectMonitors(id)} data-testid="inspect-monitors">Inspect Monitors</button>
           <button className="btn" onClick={() => goToEmployee(id)} data-testid="go-employee">Go to Employee</button>
@@ -318,6 +324,8 @@ function HelpPanel() {
         <kbd>M</kbd><span>Toggle building overview · <kbd>1-4</kbd> pick floor</span>
         <kbd>P</kbd><span>Pause / resume the simulation</span>
         <kbd>L</kbd><span>Toggle employee labels</span>
+        <kbd>O</kbd><span>Owner: call meetings, call or send people, messages</span>
+        <kbd>E on a person</kbd><span>Talk to them (questions, instructions, tasks)</span>
       </div>
       <div className="section">
         <h3>Things to try</h3>
