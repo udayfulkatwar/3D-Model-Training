@@ -192,27 +192,6 @@ export function CenterOverlays() {
   );
 }
 
-export function ResumeOverlay() {
-  const mode = useUI((s) => s.mode);
-  const locked = useUI((s) => s.pointerLocked);
-  const panel = useUI((s) => s.panel);
-  const touch = useUI((s) => s.touch);
-  const [dismissed, setDismissed] = useState(false);
-  useEffect(() => { if (locked) setDismissed(false); }, [locked]);
-  if (mode !== 'walk' || locked || panel || touch || dismissed) return null;
-  return (
-    <div className="resume" data-testid="resume">
-      <div style={{ fontWeight: 600, marginBottom: 6 }}>Walkthrough paused</div>
-      <div className="small muted" style={{ marginBottom: 10 }}>Click to look around with the mouse. <kbd>Esc</kbd> releases the cursor.</div>
-      <div className="row" style={{ justifyContent: 'center' }}>
-        <button className="btn primary" onClick={() => enterWalk(document.querySelector('canvas'), false)}>Resume walkthrough</button>
-        <button className="btn" onClick={() => setDismissed(true)} title="Look around by dragging with the left mouse button">Drag to look</button>
-        <button className="btn" onClick={() => showOverview()}>Overview</button>
-      </div>
-    </div>
-  );
-}
-
 export function IntroOverlay() {
   const mode = useUI((s) => s.mode);
   const sim = getSim();

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { SceneRoot } from './scene/SceneRoot';
 import { PRESETS } from './scene/quality';
-import { CenterOverlays, IntroOverlay, LeftDock, ResumeOverlay, RightDock, TopBar, useShortcuts } from './ui/HUD';
+import { CenterOverlays, IntroOverlay, LeftDock, RightDock, TopBar, useShortcuts } from './ui/HUD';
 import { PanelHost } from './ui/Panels';
 import { TouchControls } from './ui/TouchControls';
 import { ErrorBoundary, webglSupport } from './ui/ErrorBoundary';
@@ -75,7 +75,6 @@ export function App() {
       <LeftDock />
       <RightDock />
       <CenterOverlays />
-      <ResumeOverlay />
       <TouchControls onInteract={() => {
         const ev = new KeyboardEvent('keydown', { code: 'KeyE' });
         window.dispatchEvent(ev);

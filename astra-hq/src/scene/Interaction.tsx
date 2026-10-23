@@ -230,7 +230,14 @@ export function Interaction() {
       const ui = useUI.getState();
       if (inputBlocked()) return;
       if (Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 6 || performance.now() - downAt.t > 600) return; // drag, not a click
-      if (ui.mode === 'walk' && !ui.pointerLocked && !ui.touch) return; // first click re-locks (handled by the overlay)
+      if (ui.mode === 'walk' && !ui.pointerLocked && !ui.touch) {
+        // clicking the 3D view recaptures the mouse; if pointer lock is unavailable, drag-to-look keeps working
+        try {
+          const r = el.requestPointerLock() as unknown as Promise<void> | undefined;
+          if (r && typeof r.catch === 'function') r.catch(() => {});
+        } catch { /* pointer lock unavailable */ }
+        return;
+      }
       move(e);
       const h = pick(ui.mode === 'walk' || ui.mode === 'seated' ? 'center' : 'pointer');
       if (h) activateHit(h);

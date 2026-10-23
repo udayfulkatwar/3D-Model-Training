@@ -91,7 +91,6 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--gold); outl
 .overlay-card p { color: #c9c3b8; line-height: 1.5; }
 .keys { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; margin: 12px 0; }
 kbd { font-family: var(--mono); font-size: 11px; background: #23262c; border: 1px solid #3a3e46; border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px; }
-.resume { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 10; text-align: center; background: var(--panel-solid); border: 1px solid var(--line); border-radius: 12px; padding: 18px 22px; }
 
 /* modal side panel */
 .panel-wrap { position: absolute; inset: 0; z-index: 30; display: flex; justify-content: flex-end; pointer-events: none; }
