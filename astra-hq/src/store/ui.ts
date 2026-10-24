@@ -34,6 +34,9 @@ interface UIState {
   /** Side cards (location, activity, minimap, occupancy) hidden for a clear view. */
   hudHidden: boolean;
   toggleHud: () => void;
+  /** Clean screen: only the ASTRA mark and the time, every control behind one menu button (remembered per viewer). */
+  hudCompact: boolean;
+  setHudCompact: (v: boolean) => void;
   overviewFloor: number; // 0..2, or 3 = whole building
   followId: string | null;
   inspect: InspectTarget | null;
@@ -86,6 +89,11 @@ export const useUI = create<UIState>((set, get) => ({
   setPanelMin: (panelMin) => set({ panelMin }),
   hudHidden: false,
   toggleHud: () => set({ hudHidden: !get().hudHidden }),
+  hudCompact: (() => { try { return localStorage.getItem('astra-hq:hud-compact') !== '0'; } catch { return true; } })(),
+  setHudCompact: (hudCompact) => {
+    try { localStorage.setItem('astra-hq:hud-compact', hudCompact ? '1' : '0'); } catch { /* storage unavailable */ }
+    set({ hudCompact });
+  },
   overviewFloor: 3,
   followId: null,
   inspect: null,

@@ -24,6 +24,8 @@ export function TopBar() {
   const update = useUI((s) => s.updateSettings);
   const open = useUI((s) => s.openPanel);
   const mode = useUI((s) => s.mode);
+  const compact = useUI((s) => s.hudCompact);
+  const setCompact = useUI((s) => s.setHudCompact);
   const sim = getSim();
   const bar = useRef<HTMLDivElement>(null);
   // the top bar wraps on narrow screens; keep the side docks below it
@@ -33,9 +35,19 @@ export function TopBar() {
     const ro = new ResizeObserver(() => document.documentElement.style.setProperty('--dock-top', `${Math.round(el.getBoundingClientRect().bottom + 8)}px`));
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [compact]);
+  if (compact) {
+    return (
+      <div className="topbar compact" ref={bar} data-testid="hud-compact-bar">
+        <div className="brand"><Logo /><div className="brand-name">{sim.config.companyName.toUpperCase()}</div></div>
+        <div className="bar-group" aria-label="Clock"><div className="clock" data-testid="sim-clock">{fmtTime(sim.minute)}</div></div>
+        <button className="icon-btn menu-btn" onClick={() => setCompact(false)} title="All controls (C)" aria-label="Show all controls" data-testid="hud-menu">☰</button>
+      </div>
+    );
+  }
   return (
     <div className="topbar" ref={bar}>
+      <button className="icon-btn menu-btn active" onClick={() => setCompact(true)} title="Minimise all controls: only ASTRA and the time (C)" aria-label="Minimise all controls" data-testid="hud-minimise">✕</button>
       <div className="brand">
         <Logo />
         <div>
@@ -77,7 +89,7 @@ export function TopBar() {
 }
 
 export function LeftDock() {
-  const hidden = useUI((s) => s.hudHidden);
+  const hidden = useUI((s) => s.hudHidden || s.hudCompact);
   if (hidden) return null;
   return <LeftDockInner />;
 }
@@ -143,7 +155,7 @@ function LeftDockInner() {
 }
 
 export function RightDock() {
-  const hidden = useUI((s) => s.hudHidden);
+  const hidden = useUI((s) => s.hudHidden || s.hudCompact);
   if (hidden) return null;
   return <RightDockInner />;
 }
@@ -179,6 +191,7 @@ export function CenterOverlays() {
   const fps = useUI((s) => s.fps);
   const stats = useUI((s) => s.renderStats);
   const showFps = useUI((s) => s.settings.showFps);
+  const compact = useUI((s) => s.hudCompact);
   const [toastVisible, setToastVisible] = useState(false);
   const simVersion = useUI((s) => s.simVersion);
   const lastMsg = useRef(getSim().ownerMessages[0]?.id ?? 0);
@@ -204,8 +217,8 @@ export function CenterOverlays() {
       {prompt && (walkish ? <div className="prompt" data-testid="prompt">{prompt}</div> : <div className="hover-tip">{prompt}</div>)}
       {toastVisible && toast && <div className="toast" key={toast.id} data-testid="toast">{toast.text}</div>}
       {fade > 0 && <div className="fade" style={{ opacity: fade }} />}
-      {showFps && <div className="fps" data-testid="fps">{fps} fps · {stats.calls} draw calls · {(stats.triangles / 1000).toFixed(0)}k tris · {stats.textures} textures</div>}
-      <div className="disclaimer">{getSim().realMode ? `Live office · AI staff · ${getSim().live ? 'live prices (Co-Invest), paper trading only' : 'waiting for live prices'}` : 'Office Simulation · fictional people · Simulated Data'}</div>
+      {showFps && !compact && <div className="fps" data-testid="fps">{fps} fps · {stats.calls} draw calls · {(stats.triangles / 1000).toFixed(0)}k tris · {stats.textures} textures</div>}
+      {!compact && <div className="disclaimer">{getSim().realMode ? `Live office · AI staff · ${getSim().live ? 'live prices (Co-Invest), paper trading only' : 'waiting for live prices'}` : 'Office Simulation · fictional people · Simulated Data'}</div>}
     </>
   );
 }
@@ -257,6 +270,7 @@ export function useShortcuts() {
         case 'KeyM': if (ui.mode === 'overview') enterWalk(document.querySelector('canvas'), false); else showOverview(); break;
         case 'KeyL': ui.updateSettings({ labels: !ui.settings.labels }); break;
         case 'KeyH': ui.toggleHud(); break;
+        case 'KeyC': ui.setHudCompact(!ui.hudCompact); break;
         case 'KeyO': ui.openPanel({ kind: 'owner' }); break;
         case 'KeyH': ui.openPanel({ kind: 'help' }); break;
         case 'Digit1': if (ui.mode === 'overview') ui.setOverviewFloor(0); break;

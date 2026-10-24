@@ -128,7 +128,7 @@ function namePlate(title: string, sub: string, leafW: number, face: 1 | -1): THR
   while (g.measureText(title.toUpperCase()).width > 880 && fs > 50) { fs -= 2; g.font = `700 ${fs}px Georgia, "Times New Roman", serif`; }
   g.fillText(title.toUpperCase(), 512, 160);
   g.fillRect(332, 238, 360, 5);
-  g.font = 'italic 600 64px Georgia, "Times New Roman", serif';
+  g.font = '600 58px Georgia, "Times New Roman", serif';
   g.fillText(sub, 512, 300);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -138,7 +138,7 @@ function namePlate(title: string, sub: string, leafW: number, face: 1 | -1): THR
   // centred on the leaf at eye height, clear of the handle, just proud of the leaf surface on the corridor side
   m.position.set(leafW / 2, 1.52, face * 0.026);
   if (face === -1) m.rotation.y = Math.PI;
-  m.userData = { doorPlate: title };
+  m.userData = { doorPlate: `${title} · ${sub}` };
   return m;
 }
 

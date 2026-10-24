@@ -263,3 +263,9 @@ kbd { font-family: var(--mono); font-size: 11px; background: #23262c; border: 1p
 .cctv-cams { display: flex; gap: 6px; overflow-x: auto; max-width: 100%; flex: 1 1 360px; padding-bottom: 2px; }
 .cctv-cams .btn { white-space: nowrap; }
 @media (max-width: 640px) { .cctv-people { display: none; } .cctv-top { font-size: 13px; right: 12px; flex-wrap: wrap; } }
+
+/* Clean screen: just the ASTRA mark, the time and one menu button */
+.topbar.compact { right: auto; gap: 8px; }
+.topbar.compact .brand { padding-right: 12px; }
+.topbar.compact .bar-group { padding: 6px 12px; }
+.menu-btn { font-size: 18px; width: 40px; height: 40px; }

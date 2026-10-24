@@ -36,6 +36,7 @@ behaviour, not frame rate.
 | Input | Action |
 |---|---|
 | **Enter Office** | Start the first-person walkthrough (requests pointer lock) |
+| **☰** (top left) or `C` | Clean screen by default: only ASTRA and the time. ☰ shows every control; ✕ hides them again |
 | `W A S D` / arrows, `Shift` | Move, move faster |
 | Mouse (or drag with left button if pointer lock is unavailable) | Look |
 | `E` / click | Interact with what is under the crosshair: doors, monitors, wall displays, chairs, coffee machines, elevator buttons, CEO desk, people |

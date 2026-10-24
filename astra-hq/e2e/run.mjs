@@ -44,6 +44,8 @@ const ctx = await browser.newContext({ viewport: { width: Number(process.env.W ?
 await ctx.addInitScript(() => {
   try {
     if (!localStorage.getItem('astra-hq:settings:v1')) localStorage.setItem('astra-hq:settings:v1', JSON.stringify({ graphics: 'low', showFps: true }));
+    // most checks use the full control bar; the clean screen (the default) is checked on its own
+    if (!localStorage.getItem('astra-hq:hud-compact')) localStorage.setItem('astra-hq:hud-compact', '0');
   } catch { /* about:blank has no storage */ }
 });
 const page = await ctx.newPage();
@@ -552,12 +554,32 @@ await step('room accessibility in browser', async () => {
   check(`Every room has a valid standing spot (${rooms.length} rooms)`, bad.length === 0, bad.join(' '));
 });
 
+await step('clean screen: only ASTRA and the time, all controls behind one button', async () => {
+  await teleport(2, 29.2, 9.3, Math.PI * 1.08, -0.08);
+  await A(() => document.exitPointerLock());
+  await wait(300);
+  await page.click('[data-testid="hud-minimise"]');
+  await wait(800);
+  const vis = await page.evaluate(() => {
+    const shown = (sel) => [...document.querySelectorAll(sel)].some((el) => el.getBoundingClientRect().width > 0);
+    return { bar: shown('[data-testid="hud-compact-bar"]'), menu: shown('[data-testid="hud-menu"]'), clock: shown('[data-testid="sim-clock"]'), owner: shown('[data-testid="open-owner"]'), minimap: shown('.minimap'), docks: shown('.left-dock') || shown('.right-dock'), fps: shown('[data-testid="fps"]'), disclaimer: shown('.disclaimer'), text: document.querySelector('[data-testid="hud-compact-bar"]')?.textContent ?? '' };
+  });
+  check('Clean screen shows only ASTRA, the time and one menu button', vis.bar && vis.menu && vis.clock && !vis.owner && !vis.minimap && !vis.docks && !vis.fps && !vis.disclaimer && /ASTRA/.test(vis.text), JSON.stringify(vis));
+  await shot('37-clean-screen');
+  await A(() => document.exitPointerLock());
+  await page.click('[data-testid="hud-menu"]');
+  await wait(800);
+  const full = await page.evaluate(() => !!document.querySelector('[data-testid="open-owner"]') && !!document.querySelector('[data-testid="hud-minimise"]'));
+  const stored = await A(() => localStorage.getItem('astra-hq:hud-compact'));
+  check('The menu button brings back every control (and the choice is remembered)', full && stored === '0', `full=${full} stored=${stored}`);
+});
+
 await step("chairman's office", async () => {
   await teleport(2, 29.4, 6.6, Math.PI, 0.16);
   await wait(1500);
   const plate = await A(() => { let hit = null; window.__astra.scene?.traverse((o) => { if (o.userData?.doorPlate) hit = o.userData.doorPlate; }); return hit; });
   const signAbove = await A(() => { let hit = false; window.__astra.scene?.traverse((o) => { if (o.userData?.doorSign === 's-d-chair') hit = true; }); return hit; });
-  check('Chairman door carries the Uday Fulkatwar plate on the door, no sign above it', plate === 'Uday Fulkatwar' && !signAbove, `plate=${plate} above=${signAbove}`);
+  check('Chairman door carries the ASTRA CHAIRMAN / Uday Fulkatwar plate on the door, no sign above it', plate === 'Astra Chairman · Uday Fulkatwar' && !signAbove, `plate=${plate} above=${signAbove}`);
   await shot('30-chairman-door');
   await teleport(2, 29.2, 9.3, Math.PI * 1.08, -0.08);
   await wait(1200);
@@ -633,6 +655,7 @@ await step('live prices and Claude replies (stubbed claude.ai runtime)', async (
   const c = await browser.newContext({ viewport: { width: 960, height: 570 } });
   await c.addInitScript(() => {
     localStorage.setItem('astra-hq:settings:v1', JSON.stringify({ graphics: 'low' }));
+    localStorage.setItem('astra-hq:hud-compact', '0');
     const feeds = ['xyz:NVDA', 'xyz:MU', 'xyz:AAPL', 'xyz:TSLA', 'xyz:SNDK', 'xyz:SKHX', 'xyz:SP500', 'xyz:GOLD', 'xyz:XYZ100', 'xyz:CL', 'BTC', 'ETH'];
     const calls = [];
     window.__stubCalls = calls;
@@ -736,7 +759,7 @@ await step('live prices and Claude replies (stubbed claude.ai runtime)', async (
 
 await step('touch controls (mobile emulation)', async () => {
   const m = await browser.newContext({ viewport: { width: 412, height: 860 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
-  await m.addInitScript(() => localStorage.setItem('astra-hq:settings:v1', JSON.stringify({ graphics: 'low' })));
+  await m.addInitScript(() => { localStorage.setItem('astra-hq:settings:v1', JSON.stringify({ graphics: 'low' })); localStorage.setItem('astra-hq:hud-compact', '0'); });
   const mp = await m.newPage();
   mp.on('pageerror', (e) => pageErrors.push(`[mobile] ${e.message}`));
   await mp.goto(`${base}?office=test-sim`);

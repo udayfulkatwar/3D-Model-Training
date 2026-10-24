@@ -242,7 +242,7 @@ door({ id: 's-d-lounge', floor: 2, axis: 'x', at: 6.0, center: 31.4, width: 0.9,
 door({ id: 's-d-ceo', floor: 2, axis: 'x', at: 8.4, center: 8.0, width: 0.9, label: 'CEO Office', swing: 1 });
 door({ id: 's-d-board', floor: 2, axis: 'x', at: 8.4, center: 15.5, width: 1.6, kind: 'double', glass: true, label: 'Boardroom', swing: 1 });
 door({ id: 's-d-pm', floor: 2, axis: 'x', at: 8.4, center: 25.9, width: 0.9, glass: true, label: 'Portfolio Management', swing: 1 });
-door({ id: 's-d-chair', floor: 2, axis: 'x', at: 8.4, center: 29.4, width: 1.0, label: "Chairman's Office", swing: 1, defaultOpen: false, plate: { title: 'Uday Fulkatwar', sub: 'Chairman · ASTRA' } });
+door({ id: 's-d-chair', floor: 2, axis: 'x', at: 8.4, center: 29.4, width: 1.0, label: "Chairman's Office", swing: 1, defaultOpen: false, plate: { title: 'Astra Chairman', sub: 'Uday Fulkatwar' } });
 
 // ---------------------------------------------------------------- lookups
 export function roomAt(floor: number, x: number, z: number): RoomDef | undefined {
