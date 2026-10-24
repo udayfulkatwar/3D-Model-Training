@@ -23,7 +23,7 @@ real touch hardware. No frame-rate claim is made for real hardware.
 | `npm install` | OK, 0 vulnerabilities reported |
 | `npm run build` | OK. Chunks (gzip): app 89 kB, react 64 kB, three + r3f 272 kB, post-processing 156 kB (lazy, High preset only), CSS 4 kB |
 | `npm test` | **80/80 passed** (11 files) |
-| `npm run e2e` | **72/72 passed** (viewport 960×570, Low preset for responsiveness under software rendering) |
+| `npm run e2e` | **73/73 passed** (viewport 960×570, Low preset for responsiveness under software rendering) |
 
 ### Unit tests (`tests/`)
 
@@ -75,7 +75,7 @@ real touch hardware. No frame-rate claim is made for real hardware.
 
 ### Browser acceptance (`e2e/run.mjs`)
 
-All 72 checks passed, including:
+All 73 checks passed, including:
 
 - Loads with *Office Simulation* / *Simulated Data* labels; 30 employees; Enter Office → walkthrough (pointer lock was granted in headless Chromium); spawn at reception.
 - The day starts with an empty building; the real-time clock option runs 1 simulated minute per real minute; by 07:50 staff have badged in at the entrance and reached their floors, some by lift (screenshot `19-morning-arrivals.png`).
