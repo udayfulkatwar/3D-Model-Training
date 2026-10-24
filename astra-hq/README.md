@@ -153,7 +153,8 @@ The app runs as a real office, not a simulation game:
   plus the real data behind it (candle charts, test tables, the strategy book, feed health, real jobs).
 - **Owner → Work board / Strategies** show objectives and their progress, the reporting lines with everyone's task,
   reports to seniors, meetings and decisions, every strategy test and the live strategies' paper P&L.
-- **Memory**: work, strategies, test history and the paper ledger are saved in the browser and restored on reload.
+- **Memory**: work, strategies, test results and the paper ledger are saved in the browser and restored on reload.
+  Market data is never stored: prices, candles and headlines are fetched live from Co-Invest on every visit.
 
 **What "real" cannot mean here (honest limits):**
 - The office works only while the page is open in a browser (no server: the repository's rules forbid paid services).

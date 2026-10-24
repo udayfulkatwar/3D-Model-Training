@@ -1,7 +1,7 @@
-// Real price history for the office's research and strategies: OHLCV candles from the viewer's Co-Invest
-// connector (`show_chart`, read-only, up to 200 candles per call). Candles are cached in memory and in the
-// browser so the office remembers its data between visits; the still-forming last candle is dropped so
-// decisions are made on completed bars only.
+// Real price history for the office's research and strategies: OHLCV candles fetched live from the viewer's
+// Co-Invest connector (`show_chart`, read-only, up to 200 candles per call) and kept in memory only: nothing is
+// downloaded or stored, every visit fetches fresh data. The still-forming last candle is dropped so decisions
+// are made on completed bars only.
 import { LIVE_UNIVERSE } from '../sim/market';
 import type { Candle, Interval } from '../sim/research';
 import type { DataPort } from '../sim/work';
@@ -10,7 +10,6 @@ import { SERVER, getMcp } from './feed';
 const IV_MS: Record<Interval, number> = { '1h': 3600e3, '4h': 4 * 3600e3, '1d': 86400e3 };
 /** How old a series may get before it is fetched again. */
 const STALE_MS: Record<Interval, number> = { '1h': 10 * 60e3, '4h': 30 * 60e3, '1d': 3 * 3600e3 };
-const STORE_KEY = 'astra-hq:candles:v1';
 const MAX_IN_FLIGHT = 3;
 
 interface Series { candles: Candle[]; fetchedAt: number }
@@ -34,16 +33,11 @@ export class CandleStore implements DataPort {
   private loading = new Set<string>();
   private queue: [string, Interval][] = [];
   private stats = { calls: 0, errors: 0, latencyMs: 0, lastOkAt: 0, lastError: undefined as string | undefined };
-  private saveTimer: ReturnType<typeof setTimeout> | null = null;
   onUpdate?: () => void;
 
   constructor() {
-    try {
-      const raw = localStorage.getItem(STORE_KEY);
-      if (raw) for (const [k, v] of JSON.parse(raw) as [string, Series][]) this.series.set(k, v);
-    } catch {
-      /* nothing cached */
-    }
+    // older versions kept a copy in the browser; remove it so only live fetches are used
+    try { localStorage.removeItem('astra-hq:candles:v1'); } catch { /* storage unavailable */ }
   }
 
   candles(sym: string, iv: Interval): Candle[] | null {
@@ -92,7 +86,6 @@ export class CandleStore implements DataPort {
       this.stats.lastOkAt = Date.now();
       const ms = performance.now() - t0;
       this.stats.latencyMs = this.stats.latencyMs ? this.stats.latencyMs * 0.8 + ms * 0.2 : ms;
-      this.scheduleSave();
       this.onUpdate?.();
     } catch (e) {
       this.stats.errors++;
@@ -105,17 +98,5 @@ export class CandleStore implements DataPort {
       this.loading.delete(key);
       this.pump();
     }
-  }
-
-  private scheduleSave() {
-    if (this.saveTimer) return;
-    this.saveTimer = setTimeout(() => {
-      this.saveTimer = null;
-      try {
-        localStorage.setItem(STORE_KEY, JSON.stringify([...this.series.entries()].filter(([, v]) => v.candles.length)));
-      } catch {
-        /* storage full: keep in memory only */
-      }
-    }, 5000);
   }
 }
