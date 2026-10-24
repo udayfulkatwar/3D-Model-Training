@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-24T14:05:10.907Z",
+  "date": "2026-10-24T14:20:49.812Z",
   "browser": "Chromium 141.0.7390.37 headless",
   "renderer": "SwiftShader (software)",
   "results": [
@@ -26,12 +26,12 @@
     {
       "name": "W moves the player forward (north)",
       "ok": true,
-      "detail": "17.60 -> 16.98"
+      "detail": "17.60 -> 16.82"
     },
     {
       "name": "Collision stops the player at the reception desk",
       "ok": true,
-      "detail": "stopped at z=14.77"
+      "detail": "stopped at z=14.73"
     },
     {
       "name": "Exterior wall blocks movement",
@@ -56,12 +56,12 @@
     {
       "name": "Open door lets the player through",
       "ok": true,
-      "detail": "z=3.84"
+      "detail": "z=3.77"
     },
     {
       "name": "Flight A climbs to the mid landing",
       "ok": true,
-      "detail": "y=2.00 z=0.73"
+      "detail": "y=2.00 z=0.58"
     },
     {
       "name": "Flight B reaches the first floor",
@@ -71,7 +71,7 @@
     {
       "name": "Player can walk into the elevator car",
       "ok": true,
-      "detail": "z=5.18"
+      "detail": "z=4.92"
     },
     {
       "name": "Elevator carries the player to the second floor",
@@ -81,7 +81,7 @@
     {
       "name": "Player exits the elevator on the second floor",
       "ok": true,
-      "detail": "z=7.76 y=8.00"
+      "detail": "z=7.50 y=8.00"
     },
     {
       "name": "Overview cutaway selects floor 0",
@@ -176,12 +176,12 @@
     {
       "name": "Simulated breach creates an alert and a review meeting with the PM",
       "ok": true,
-      "detail": "{\"alert\":\"action\",\"review\":\"completed\",\"pm\":true,\"room\":\"f-m1b\"}"
+      "detail": "{\"alert\":\"action\",\"review\":\"completed\",\"pm\":true,\"room\":\"f-m1a\"}"
     },
     {
       "name": "Risk application lists the alert lifecycle",
       "ok": true,
-      "detail": "Risk Monitor · LimitsLimitsAlerts14:27Simulated DataRisk alerts 13:37 RA00247 Macro drawdown 1.06% (limit 1.00%) · RESOL"
+      "detail": "Risk Monitor · LimitsLimitsAlerts14:28Simulated DataRisk alerts 13:37 RA00251 Macro drawdown 1.06% (limit 1.00%) · RESOL"
     },
     {
       "name": "No pause, speed or reset controls in the UI",
@@ -264,6 +264,21 @@
       "detail": "How work flowsResearchers publish notes → the PM of the book approves or rejects the idea → the cove"
     },
     {
+      "name": "Minimise keeps the panel open but out of the way (small bar)",
+      "ok": true,
+      "detail": "{\"bar\":true,\"panelVisible\":false,\"open\":true}"
+    },
+    {
+      "name": "Restore brings the panel back",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Hide panels clears the side cards and shows them again",
+      "ok": true,
+      "detail": ""
+    },
+    {
       "name": "Editor saves locally",
       "ok": true,
       "detail": "Saved locally and applied; the simulated day restarted."
@@ -311,17 +326,17 @@
     {
       "name": "Renderer statistics collected for each preset",
       "ok": true,
-      "detail": "{\"low\":{\"fps\":1,\"calls\":150,\"triangles\":199676,\"textures\":174,\"geometries\":409},\"medium\":{\"fps\":1,\"calls\":133,\"triangles\":199832,\"textures\":39,\"geometries\":136},\"high\":{\"fps\":0,\"calls\":278,\"triangles\":401325,\"textures\":61,\"geometries\":160}}"
+      "detail": "{\"low\":{\"fps\":1,\"calls\":133,\"triangles\":199472,\"textures\":174,\"geometries\":409},\"medium\":{\"fps\":1,\"calls\":133,\"triangles\":199832,\"textures\":39,\"geometries\":136},\"high\":{\"fps\":0,\"calls\":278,\"triangles\":401325,\"textures\":61,\"geometries\":160}}"
     },
     {
       "name": "Live mode: real instrument symbols with feed prices, LIVE chip, read-only tools only",
       "ok": true,
-      "detail": "{\"live\":true,\"syms\":12,\"nvda\":100.62507894590443,\"chip\":\"● LIVE PRICES · 0s\",\"calls\":[\"Co-Invest/analyze_markets_batch\",\"Co-Invest/get_news\"]}"
+      "detail": "{\"live\":true,\"syms\":12,\"nvda\":100.07374751469993,\"chip\":\"● LIVE PRICES · 0s\",\"calls\":[\"Co-Invest/analyze_markets_batch\",\"Co-Invest/get_news\"]}"
     },
     {
       "name": "Market wall shows live-priced instruments and headlines (paper trading tag)",
       "ok": true,
-      "detail": "Market Display WallTrading Floor · First FloorClose ✕ASTRA Markets · Live prices · Paper14:04Live prices · PaperInstrumentsSymNameLastChgNVD"
+      "detail": "Market Display WallTrading Floor · First Floor▁ MinimiseClose ✕ASTRA Markets · Live prices · Paper14:19Live prices · PaperInstrumentsSymName"
     },
     {
       "name": "Real office: wall-clock time, no speed/pause/reset, all 30 on site, everyone working on a task from their senior",
@@ -341,7 +356,7 @@
     {
       "name": "A trader monitor shows the current task, who assigned it and real candles",
       "ok": true,
-      "detail": "ASTRA Trader · ChartsPrimarySecondaryMarket14:51Live prices · PaperCurrent taskAsking for the next taskProgress-Assigned byJonathan HaleLast resultFAIL: Moving-"
+      "detail": "ASTRA Trader · ChartsPrimarySecondaryMarket15:06Live prices · PaperCurrent taskTest Moving-average trend on MU 4h (walk-forward)Progress77%Assigned byJonathan H"
     },
     {
       "name": "Claude reply is shown and its tool call acts in the office (sent to the Boardroom)",
@@ -351,12 +366,12 @@
     {
       "name": "System check runs every live connection (stubbed runtime: all pass)",
       "ok": true,
-      "detail": "CheckResultDetailsTimeConnector runtimePASSavailable in this viewLive prices (analyze_markets_batch)PASS12/12 markets priced (e.g. NVDA 100.52341156356712, MU 150.5282148353893)1 msPrice history (show"
+      "detail": "CheckResultDetailsTimeConnector runtimePASSavailable in this viewLive prices (analyze_markets_batch)PASS12/12 markets priced (e.g. NVDA 100.64877804762844, MU 150.6692364835962)1 msPrice history (show"
     },
     {
       "name": "Touch joystick moves the player",
       "ok": true,
-      "detail": "0.53 m"
+      "detail": "0.51 m"
     },
     {
       "name": "No blocking runtime errors",

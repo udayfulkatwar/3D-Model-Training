@@ -43,8 +43,9 @@ behaviour, not frame rate.
 | `F` | Employee directory (search, Go to, Profile) |
 | `N` | Floors & rooms navigation, Return to Reception |
 | `M` | Toggle building overview; `1`-`4` pick a floor cutaway |
-| `P` | Pause / resume the simulation |
 | `L` | Toggle employee labels |
+| `H` / **Hide panels** | Hide or show the side cards for a clear view |
+| **▁ Minimise** (any panel) | Shrink the panel to a small bar; it keeps running and you can walk around; **Restore** brings it back |
 | `O` / **Owner** button | Owner tools: call a meeting with everyone, departments or picked people in any room; call people to you; send them to a room; read replies |
 | `E` on a person | Talk to them (in person when close, by phone otherwise); ask questions, give instructions, assign tasks |
 | Touch | Left joystick moves, drag on the right half looks, ● interacts |
