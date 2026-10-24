@@ -10,6 +10,7 @@ import { EYE_HEIGHT, SPAWN, describeLocation, groundHeight, resolveMove, safeSpo
 import { getSim } from '../store/simInstance';
 import { input, player, takeTeleport } from '../store/player';
 import { inputBlocked, useUI } from '../store/ui';
+import { CCTV_CAMERAS } from '../world/cctv';
 import { computeVisibility } from './visibility';
 import { playSound } from '../audio/sound';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
@@ -136,13 +137,20 @@ export function CameraController() {
     else if (ui.mode === 'seated') seated(ui);
     else orbitModes(dt, ui);
 
+    // CCTV full view: the main camera looks through the chosen room camera (the player stays where they are)
+    const cctv = ui.panel?.kind === 'cctv' && !ui.panelMin ? CCTV_CAMERAS[ui.panel.cam] : undefined;
+    if (cctv) {
+      camera.position.set(cctv.pos.x, cctv.pos.y, cctv.pos.z);
+      camera.lookAt(cctv.target.x, cctv.target.y, cctv.target.z);
+    }
+
     // shared outputs
     player.camX = camera.position.x;
     player.camY = camera.position.y;
     player.camZ = camera.position.z;
     const focus = ui.mode === 'follow' && ui.followId ? Math.floor(((sim.byId.get(ui.followId)?.y ?? 0) + 0.3) / 4)
       : ui.mode === 'inspect' && ui.inspect ? Math.floor((ui.inspect.y + 0.3) / 4) : player.floor;
-    computeVisibility(ui.mode, ui.overviewFloor, camera.position.x, camera.position.y, camera.position.z, Math.max(0, Math.min(2, focus)));
+    computeVisibility(cctv ? 'walk' : ui.mode, ui.overviewFloor, camera.position.x, camera.position.y, camera.position.z, Math.max(0, Math.min(2, focus)));
     sim.player = ui.mode === 'walk' || ui.mode === 'seated' ? { x: player.x, y: player.y, z: player.z, floor: player.floor } : null;
     placeTimer.current -= Math.min(dtRaw, 0.5);
     if (placeTimer.current <= 0) {

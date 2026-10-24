@@ -106,37 +106,37 @@ export function Doors() {
 /** Brass name plate screwed to the corridor face of a door leaf, at eye height (moves with the door). */
 function namePlate(title: string, sub: string, leafW: number, face: 1 | -1): THREE.Mesh {
   const c = document.createElement('canvas');
-  c.width = 640;
-  c.height = 240;
+  c.width = 1024;
+  c.height = 400;
   const g = c.getContext('2d')!;
-  const grad = g.createLinearGradient(0, 0, 640, 240);
-  grad.addColorStop(0, '#d9b872');
-  grad.addColorStop(0.5, '#f0d89a');
-  grad.addColorStop(1, '#b8924c');
+  const grad = g.createLinearGradient(0, 0, 1024, 400);
+  grad.addColorStop(0, '#e2c37e');
+  grad.addColorStop(0.5, '#f7e3ae');
+  grad.addColorStop(1, '#c9a35a');
   g.fillStyle = grad;
-  g.fillRect(0, 0, 640, 240);
-  g.strokeStyle = '#7a5a25';
-  g.lineWidth = 6;
-  g.strokeRect(14, 14, 612, 212);
-  g.fillStyle = '#6b4f1f';
-  for (const [x, y] of [[34, 34], [606, 34], [34, 206], [606, 206]]) { g.beginPath(); g.arc(x, y, 7, 0, Math.PI * 2); g.fill(); }
+  g.fillRect(0, 0, 1024, 400);
+  g.strokeStyle = '#6e4f1c';
+  g.lineWidth = 10;
+  g.strokeRect(22, 22, 980, 356);
+  g.fillStyle = '#5a4018';
+  for (const [x, y] of [[54, 54], [970, 54], [54, 346], [970, 346]]) { g.beginPath(); g.arc(x, y, 11, 0, Math.PI * 2); g.fill(); }
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.fillStyle = '#2b2112';
-  let fs = 64;
-  g.font = `600 ${fs}px Georgia, "Times New Roman", serif`;
-  while (g.measureText(title.toUpperCase()).width > 540 && fs > 30) { fs -= 2; g.font = `600 ${fs}px Georgia, "Times New Roman", serif`; }
-  g.fillText(title.toUpperCase(), 320, 100);
-  g.fillRect(200, 142, 240, 3);
-  g.font = 'italic 500 36px Georgia, "Times New Roman", serif';
-  g.fillText(sub, 320, 180);
+  g.fillStyle = '#16100a';
+  let fs = 118;
+  g.font = `700 ${fs}px Georgia, "Times New Roman", serif`;
+  while (g.measureText(title.toUpperCase()).width > 880 && fs > 50) { fs -= 2; g.font = `700 ${fs}px Georgia, "Times New Roman", serif`; }
+  g.fillText(title.toUpperCase(), 512, 160);
+  g.fillRect(332, 238, 360, 5);
+  g.font = 'italic 600 64px Georgia, "Times New Roman", serif';
+  g.fillText(sub, 512, 300);
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
-  const pw = Math.min(0.6, leafW - 0.2);
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(pw, pw * 0.375), new THREE.MeshStandardMaterial({ map: tex, metalness: 0.55, roughness: 0.35, emissive: '#ffffff', emissiveMap: tex, emissiveIntensity: 0.15 }));
-  // centred on the leaf, clear of the handle, just proud of the leaf surface on the corridor side
-  m.position.set(leafW / 2, 1.5, face * 0.026);
+  tex.anisotropy = 8;
+  const pw = Math.min(0.72, leafW - 0.16);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(pw, pw * (400 / 1024)), new THREE.MeshStandardMaterial({ map: tex, metalness: 0.35, roughness: 0.4, emissive: '#ffffff', emissiveMap: tex, emissiveIntensity: 0.35 }));
+  // centred on the leaf at eye height, clear of the handle, just proud of the leaf surface on the corridor side
+  m.position.set(leafW / 2, 1.52, face * 0.026);
   if (face === -1) m.rotation.y = Math.PI;
   m.userData = { doorPlate: title };
   return m;

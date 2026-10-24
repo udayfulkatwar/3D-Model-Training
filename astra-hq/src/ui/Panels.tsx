@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { CctvPanel } from './Cctv';
 import { FLOOR_NAMES, ROOMS, roomById } from '../world/building';
 import { MONITOR_INDEX, PANELS, WS_INDEX } from '../world/furniture';
 import { fmtTime } from '../util/math';
@@ -58,6 +59,7 @@ function panelTitle(p: Panel): string {
     case 'monitor': return `Monitor ${p.monitorId}`;
     case 'wall': return 'Wall screen';
     case 'owner': return 'Owner';
+    case 'cctv': return 'CCTV';
     default: return p.kind.charAt(0).toUpperCase() + p.kind.slice(1);
   }
 }
@@ -101,6 +103,7 @@ function PanelSwitch({ panel }: { panel: Panel }) {
     case 'log': return <LogPanel />;
     case 'owner': return <OwnerPanel key={`${panel.pc ? 'pc' : 'owner'}-${panel.tab ?? ''}`} tab={panel.tab} pc={panel.pc} />;
     case 'talk': return <TalkPanel id={panel.id} />;
+    case 'cctv': return <CctvPanel cam={panel.cam} />;
   }
 }
 

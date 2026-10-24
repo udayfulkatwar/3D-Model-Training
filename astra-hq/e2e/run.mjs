@@ -31,7 +31,10 @@ const check = (name, ok, detail = '') => {
   results.push({ name, ok: !!ok, detail });
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? `  (${detail})` : ''}`);
 };
+// ONLY=load,enter,chairman runs just the steps whose names contain one of these (quick local iteration)
+const only = process.env.ONLY?.split(',');
 const step = async (name, fn) => {
+  if (only && !only.some((o) => name.includes(o))) return;
   current = name;
   try { await fn(); } catch (e) { check(name, false, `exception: ${e.message.split('\n')[0]}`); }
 };
@@ -550,7 +553,7 @@ await step('room accessibility in browser', async () => {
 });
 
 await step("chairman's office", async () => {
-  await teleport(2, 29.4, 6.3, Math.PI, 0.02);
+  await teleport(2, 29.4, 6.6, Math.PI, 0.16);
   await wait(1500);
   const plate = await A(() => { let hit = null; window.__astra.scene?.traverse((o) => { if (o.userData?.doorPlate) hit = o.userData.doorPlate; }); return hit; });
   const signAbove = await A(() => { let hit = false; window.__astra.scene?.traverse((o) => { if (o.userData?.doorSign === 's-d-chair') hit = true; }); return hit; });
@@ -560,7 +563,7 @@ await step("chairman's office", async () => {
   await wait(1200);
   await shot('31-chairman-office');
   // the Chairman's PC on the desk opens the console with access to the whole office
-  await teleport(2, 31.1, 16.75, 0, -0.42);
+  await teleport(2, 31.1, 16.75, 0.2, -0.3);
   await wait(1200);
   await shot('32-chairman-pc');
   await useWhenPrompt(/Chairman's PC/);
@@ -575,6 +578,37 @@ await step("chairman's office", async () => {
   await page.click('[data-testid="back-to-pc"]');
   await page.waitForSelector('[data-testid="office-tab"]', { timeout: 10000 });
   check("A staff screen opened from the Chairman's PC, with a way back to the console", onMonitor === 'monitor', `panel=${onMonitor}`);
+  await A(() => window.__astra.ui.getState().closePanel());
+  // CCTV wall TV: live grid of the offices, and the full-screen camera view
+  await teleport(2, 30.7, 11.6, Math.PI / 2, 0);
+  await wait(9000);
+  await shot('34-chairman-cctv-wall');
+  await useWhenPrompt(/CCTV/);
+  await page.waitForSelector('[data-testid="cctv-view"]', { timeout: 15000 });
+  await wait(2500);
+  const lab1 = await page.textContent('[data-testid="cctv-label"]');
+  const cam1 = await A(() => ({ y: window.__astra.player.camY, f: window.__astra.player.floor }));
+  await shot('35-cctv-full-view');
+  await page.click('[data-testid="cctv-next"]');
+  await wait(2500);
+  const lab2 = await page.textContent('[data-testid="cctv-label"]');
+  await shot('35b-cctv-ceo-office');
+  for (let i = 0; i < 4; i++) await page.click('[data-testid="cctv-next"]');
+  await wait(2500);
+  await shot('36-cctv-trading-floor');
+  check('CCTV TV opens a full-screen live room camera and switches cameras', lab1 !== lab2 && /CAM-\d\d/.test(lab1 ?? '') && cam1.y > 8, `${lab1} -> ${lab2} camY=${cam1.y}`);
+  await page.click('[data-testid="close-panel"]');
+  const back = await P();
+  check('Closing CCTV returns to where you stood', back.floor === 2 && Math.abs(back.x - 30.7) < 0.8, JSON.stringify(back));
+});
+
+if (process.env.CCTV_ALL) await step('chairman cctv every camera', async () => {
+  await teleport(2, 30.7, 11.6, Math.PI / 2, 0);
+  for (let i = 0; i < 18; i++) {
+    await A((i) => window.__astra.ui.getState().openPanel({ kind: 'cctv', cam: i }), i);
+    await wait(2200);
+    await shot(`cctv-all-${String(i + 1).padStart(2, '0')}`);
+  }
   await A(() => window.__astra.ui.getState().closePanel());
 });
 

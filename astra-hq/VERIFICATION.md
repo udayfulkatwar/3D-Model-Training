@@ -22,8 +22,8 @@ real touch hardware. No frame-rate claim is made for real hardware.
 |---|---|
 | `npm install` | OK, 0 vulnerabilities reported |
 | `npm run build` | OK. Chunks (gzip): app 89 kB, react 64 kB, three + r3f 272 kB, post-processing 156 kB (lazy, High preset only), CSS 4 kB |
-| `npm test` | **83/83 passed** (11 files) |
-| `npm run e2e` | **79/79 passed** (viewport 960×570, Low preset for responsiveness under software rendering) |
+| `npm test` | **84/84 passed** (11 files) |
+| `npm run e2e` | **81/81 passed** (viewport 960×570, Low preset for responsiveness under software rendering) |
 
 ### Unit tests (`tests/`)
 
@@ -75,10 +75,11 @@ real touch hardware. No frame-rate claim is made for real hardware.
 
 ### Browser acceptance (`e2e/run.mjs`)
 
-All 79 checks passed, including:
+All 81 checks passed, including:
 
 - Chairman's Office (second floor, east of Portfolio Management): the door carries the brass plate "Uday Fulkatwar · Chairman · ASTRA" on the leaf itself, with no sign above that door; all 22 rooms reachable.
 - Chairman's PC on the cabin desk: using it opens the console listing every person with their screens, every room and wall display, rooms and records, plus all owner tabs; a staff screen opened from it has a "‹ Chairman's PC" button back.
+- CCTV wall TV in the cabin: 3 x 3 grid of live room cameras (two pages, 18 rooms, restrooms never covered), name, floor and head count per tile; using it switches the main view to that camera full screen with prev/next, auto-cycle, a camera list and who is in the room; closing returns you to where you stood. `CCTV_ALL=1` captures every camera (all 18 checked unobstructed).
 
 - Loads with *Office Simulation* / *Simulated Data* labels; 30 employees; Enter Office → walkthrough (pointer lock was granted in headless Chromium); spawn at reception.
 - The day starts with an empty building; the real-time clock option runs 1 simulated minute per real minute; by 07:50 staff have badged in at the entrance and reached their floors, some by lift (screenshot `19-morning-arrivals.png`).

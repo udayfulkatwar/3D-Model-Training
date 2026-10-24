@@ -10,6 +10,8 @@ export const vis = {
   roof: true,
   focusFloor: 0,
   interior: false,
+  /** A floor the CCTV wall needs drawn this frame as well (-1: none). Not seen from inside: slabs and ceilings hide it. */
+  extraFloor: -1,
 };
 
 export function computeVisibility(mode: Mode, overviewFloor: number, camX: number, camY: number, camZ: number, focusFloor: number) {
@@ -49,6 +51,7 @@ export function computeVisibility(mode: Mode, overviewFloor: number, camX: numbe
     vis.floors[k] = k === f || (stair && Math.abs(k - f) === 1);
     vis.ceilings[k] = true;
   }
+  if (vis.extraFloor >= 0) vis.floors[vis.extraFloor] = true;
   vis.roof = false;
   vis.interior = true;
   vis.focusFloor = f;

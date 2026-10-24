@@ -170,3 +170,17 @@ describe("chairman's PC", () => {
     for (const p of pcs) expect(p.roomId).toBe('s-chair');
   });
 });
+
+describe('CCTV', () => {
+  it('covers the working rooms from inside each room, never restrooms', async () => {
+    const { CCTV_CAMERAS } = await import('../src/world/cctv');
+    expect(CCTV_CAMERAS.length).toBe(18);
+    for (const c of CCTV_CAMERAS) {
+      const room = ROOMS.find((r) => r.id === c.roomId)!;
+      expect(room.kind).not.toBe('restroom');
+      expect(roomAt(c.floor, c.pos.x, c.pos.z)?.id).toBe(c.roomId);
+      expect(c.pos.y).toBeGreaterThan(c.floor * FLOOR_H + 2.4);
+      expect(c.pos.y).toBeLessThan((c.floor + 1) * FLOOR_H - 0.6);
+    }
+  });
+});

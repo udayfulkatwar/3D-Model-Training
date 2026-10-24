@@ -251,3 +251,15 @@ kbd { font-family: var(--mono); font-size: 11px; background: #23262c; border: 1p
 /* minimised panel: hidden but still running; a small bar restores it */
 .panel-hidden { display: none; }
 .min-bar { position: absolute; right: 12px; bottom: 40px; z-index: 31; display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; background: var(--panel-solid); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); max-width: calc(100vw - 24px); }
+
+/* CCTV full view: camera fills the screen, controls stay at the edges */
+.cctv { position: fixed; inset: 0; pointer-events: none; z-index: 30; font-family: inherit; color: #fff; }
+.cctv > * { pointer-events: auto; }
+.cctv-top { position: absolute; top: 12px; left: 12px; display: flex; gap: 14px; align-items: center; background: rgba(0,0,0,.62); padding: 8px 14px; border-radius: 8px; font-size: 15px; }
+.cctv-rec { color: #ff453a; font-weight: 700; animation: cctvBlink 1.2s steps(2) infinite; }
+@keyframes cctvBlink { 50% { opacity: .25; } }
+.cctv-people { position: absolute; top: 60px; right: 12px; width: 230px; max-height: 55vh; overflow: auto; background: rgba(0,0,0,.55); padding: 10px 12px; border-radius: 8px; }
+.cctv-bar { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: rgba(0,0,0,.62); padding: 8px 10px; border-radius: 8px; }
+.cctv-cams { display: flex; gap: 6px; overflow-x: auto; max-width: 100%; flex: 1 1 360px; padding-bottom: 2px; }
+.cctv-cams .btn { white-space: nowrap; }
+@media (max-width: 640px) { .cctv-people { display: none; } .cctv-top { font-size: 13px; right: 12px; flex-wrap: wrap; } }

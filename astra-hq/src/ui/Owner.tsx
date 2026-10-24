@@ -396,6 +396,7 @@ function OfficeTab() {
       <div className="section">
         <h3>Office records</h3>
         <div className="row wrap">
+          <button className="btn small" data-testid="office-cctv" onClick={() => ui.openFromPc({ kind: 'cctv', cam: 0 })}>CCTV: every office live</button>
           <button className="btn small" onClick={() => ui.openFromPc({ kind: 'directory' })}>Staff directory</button>
           <button className="btn small" onClick={() => ui.openFromPc({ kind: 'log' })}>Full activity log</button>
           <button className="btn small" onClick={() => ui.openFromPc({ kind: 'settings', tab: 'about' })}>Settings</button>

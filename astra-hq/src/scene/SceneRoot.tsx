@@ -16,6 +16,8 @@ import { DoorSigns } from './DoorSigns';
 
 const PostFX = lazy(() => import('./PostFX'));
 
+import { CctvWall } from './Cctv';
+
 export function SceneRoot({ labelLayer }: { labelLayer: HTMLDivElement | null }) {
   const graphics = useUI((s) => s.settings.graphics);
   const lighting = useUI((s) => s.settings.lighting);
@@ -46,6 +48,9 @@ export function SceneRoot({ labelLayer }: { labelLayer: HTMLDivElement | null })
       <CameraController />
       <Interaction />
       <Labels container={labelLayer} />
+      <Suspense fallback={null}>
+        <CctvWall />
+      </Suspense>
       {post && (
         <Suspense fallback={null}>
           <PostFX />

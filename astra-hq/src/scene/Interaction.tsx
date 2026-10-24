@@ -12,6 +12,8 @@ import { inputBlocked, useUI } from '../store/ui';
 import { APPS } from '../sim/apps';
 import { playSound } from '../audio/sound';
 import { GeoBuilder } from './geo';
+import { cctvPage } from './Cctv';
+import { CCTV_PAGE } from '../world/cctv';
 import { materials } from './materials';
 import { peopleIndex, peopleMeshes } from './People';
 import { screenRegistry } from './Screens';
@@ -134,6 +136,7 @@ export function describeHit(h: Hit): string | null {
     }
     case 'coffee': return 'Make a coffee';
     case 'ceoDesk': return 'Open company overview';
+    case 'cctv': return 'Watch CCTV · live cameras in every office';
     case 'liftCall': return `Call elevator to this floor`;
     case 'liftPanel': return 'Elevator: choose a floor';
     case 'person': {
@@ -194,6 +197,10 @@ export function activateHit(h: Hit) {
       playSound('coffee');
       break;
     }
+    case 'cctv':
+      ui.openPanel({ kind: 'cctv', cam: cctvPage() * CCTV_PAGE });
+      playSound('click');
+      break;
     case 'ceoDesk':
       ui.openPanel({ kind: 'wall', panelId: 'p-ceo-tv' });
       playSound('click');

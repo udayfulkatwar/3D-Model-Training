@@ -32,6 +32,8 @@ function Fallback({ title, detail }: { title: string; detail: string }) {
 
 export function App() {
   const graphics = useUI((s) => s.settings.graphics);
+  // CCTV full view: the room camera fills the screen with only the CCTV controls on top
+  const cctvOn = useUI((s) => s.panel?.kind === 'cctv' && !s.panelMin);
   const [labelLayer, setLabelLayer] = useState<HTMLDivElement | null>(null);
   const [gl] = useState(webglSupport);
   const [contextLost, setContextLost] = useState(false);
@@ -77,10 +79,10 @@ export function App() {
         </Canvas>
       </ErrorBoundary>
       <div className="label-layer" ref={setLabelLayer} />
-      <TopBar />
-      <LeftDock />
-      <RightDock />
-      <CenterOverlays />
+      {!cctvOn && <TopBar />}
+      {!cctvOn && <LeftDock />}
+      {!cctvOn && <RightDock />}
+      {!cctvOn && <CenterOverlays />}
       <TouchControls onInteract={() => {
         const ev = new KeyboardEvent('keydown', { code: 'KeyE' });
         window.dispatchEvent(ev);

@@ -20,7 +20,8 @@ export type Panel =
   | { kind: 'help' }
   | { kind: 'log' }
   | { kind: 'owner'; tab?: OwnerTab; pc?: boolean }
-  | { kind: 'talk'; id: string };
+  | { kind: 'talk'; id: string }
+  | { kind: 'cctv'; cam: number };
 
 export interface InspectTarget { x: number; y: number; z: number; radius: number; label: string }
 
