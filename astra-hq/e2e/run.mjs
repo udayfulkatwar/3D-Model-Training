@@ -151,6 +151,8 @@ await step('doors', async () => {
 });
 
 await step('stairs', async () => {
+  // staff now arrive from 06:45 and use the same stairs; keep them off-site so nobody blocks the flight
+  await A(() => { const s = window.__astra.sim(); s.reset(); s.paused = true; });
   await teleport(0, 18.45, 5.1, 0);
   await walkUntilStopped('KeyW', 20000);
   let p = await P();
@@ -168,6 +170,7 @@ await step('stairs', async () => {
   await A(() => { window.__astra.player.yaw = 0; window.__astra.player.pitch = 0; });
   await wait(1500);
   await shot('03-stairwell');
+  await A(() => { window.__astra.sim().paused = false; });
 });
 
 await step('elevator', async () => {
