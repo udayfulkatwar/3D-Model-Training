@@ -12,7 +12,8 @@ import { player } from '../store/player';
 import { useUI } from '../store/ui';
 import { vis } from './visibility';
 
-export const CCTV_TV = { x: 28.49, y: 1.62, z: 11.6, w: 2.7, h: 1.52, floor: 2 };
+/** On the chairman's office east wall (to the boardroom), facing the sofa. */
+export const CCTV_TV = { x: 9.91, y: 1.62, z: 11.4, w: 2.7, h: 1.52, floor: 2, heading: -Math.PI / 2, roomId: 's-chair' };
 const COLS = 3;
 const TILE_W = 448, TILE_H = 252;
 const PAGE_SECONDS = 15;
@@ -47,7 +48,7 @@ export function CctvWall() {
   const frame = useMemo(() => {
     const g = new THREE.Group();
     g.position.set(CCTV_TV.x, CCTV_TV.floor * FLOOR_H + CCTV_TV.y, CCTV_TV.z);
-    g.rotation.y = Math.PI / 2;
+    g.rotation.y = CCTV_TV.heading;
     const bezel = new THREE.Mesh(new THREE.BoxGeometry(CCTV_TV.w + 0.06, CCTV_TV.h + 0.06, 0.04), new THREE.MeshStandardMaterial({ color: '#111214', roughness: 0.4, metalness: 0.5 }));
     bezel.position.z = -0.012;
     const screen = new THREE.Mesh(new THREE.PlaneGeometry(CCTV_TV.w, CCTV_TV.h), new THREE.MeshBasicMaterial({ map: rt.texture, toneMapped: false }));
@@ -69,7 +70,7 @@ export function CctvWall() {
   useFrame(() => {
     const ui = useUI.getState();
     frame.visible = vis.floors[CCTV_TV.floor];
-    const near = (ui.mode === 'walk' || ui.mode === 'seated') && player.floor === CCTV_TV.floor && Math.abs(player.x - 31.1) < 4.5 && player.z > 7.5;
+    const near = (ui.mode === 'walk' || ui.mode === 'seated') && player.floor === CCTV_TV.floor && roomAt(player.floor, player.x, player.z)?.id === CCTV_TV.roomId;
     const s = st.current;
     const page = cctvPage();
     if (!near || ui.panel?.kind === 'cctv') { vis.extraFloor = -1; s.floor = -1; return; }

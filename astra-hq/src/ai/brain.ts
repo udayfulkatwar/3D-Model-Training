@@ -61,7 +61,7 @@ function tools(sim: Simulation, empId: string, ownerSpot: () => { floor: number;
     },
     {
       name: 'go_to_room',
-      description: 'Walk to a room in the building and wait there for the owner (e.g. "Conference Room", "Boardroom", "Founder / CEO Office", "Café"). Returns the room name.',
+      description: 'Walk to a room in the building and wait there for the owner (e.g. "Conference Room", "Boardroom", "CEO Office", "Café"). Returns the room name.',
       inputSchema: { type: 'object', properties: { room: { type: 'string' } }, required: ['room'] },
       execute: (i) => {
         const id = findRoom(String(i.room ?? ''));

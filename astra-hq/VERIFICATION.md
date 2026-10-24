@@ -77,7 +77,7 @@ real touch hardware. No frame-rate claim is made for real hardware.
 
 All 83 checks passed, including:
 
-- Chairman's Office (second floor, east of Portfolio Management): the door carries the brass plate "ASTRA CHAIRMAN" (large) over "Uday Fulkatwar" (small) on the leaf itself, with no sign above that door; all 22 rooms reachable.
+- Chairman's Office (second floor corner office; the CEO moved to the office east of Portfolio Management): the door carries the brass plate "ASTRA CHAIRMAN" (large) over "Uday Fulkatwar" (small) on the leaf itself, with no sign above that door; all 22 rooms reachable.
 - Chairman's PC on the cabin desk: using it opens the console listing every person with their screens, every room and wall display, rooms and records, plus all owner tabs; a staff screen opened from it has a "‹ Chairman's PC" button back.
 - Clean screen (the default): only the ASTRA mark, the time and one ☰ button; the button (or C) brings back every control and ✕ hides them again, remembered per viewer.
 - CCTV wall TV in the cabin: 3 x 3 grid of live room cameras (two pages, 18 rooms, restrooms never covered), name, floor and head count per tile; using it switches the main view to that camera full screen with prev/next, auto-cycle, a camera list and who is in the room; closing returns you to where you stood. `CCTV_ALL=1` captures every camera (all 18 checked unobstructed).

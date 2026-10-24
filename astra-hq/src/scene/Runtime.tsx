@@ -8,6 +8,8 @@ import { useUI } from '../store/ui';
 import { ACTIVITY_COLOR, ACTIVITY_LABEL } from '../sim/simulation';
 import { playSound, setAmbienceLevel } from '../audio/sound';
 import { vis } from './visibility';
+import { roomAt } from '../world/building';
+import { CCTV_CAMERAS } from '../world/cctv';
 
 export function SimDriver() {
   const last = useRef(-1);
@@ -113,6 +115,8 @@ export function Labels({ container }: { container: HTMLDivElement | null }) {
     const show = ui.settings.labels && ui.mode !== 'intro';
     const radius = ui.mode === 'walk' || ui.mode === 'seated' ? 16 : ui.mode === 'overview' ? 26 : 30;
     const selected = ui.panel?.kind === 'employee' ? ui.panel.id : ui.followId;
+    // a CCTV camera only labels the people in the room it watches (labels would otherwise show through walls)
+    const cctvRoom = ui.panel?.kind === 'cctv' && !ui.panelMin ? CCTV_CAMERAS[ui.panel.cam]?.roomId : undefined;
     sim.employees.forEach((e, i) => {
       const el = els.current[i];
       if (!el) return;
@@ -122,7 +126,7 @@ export function Labels({ container }: { container: HTMLDivElement | null }) {
       const d = camera.position.distanceTo(v);
       v.project(camera);
       const onFocus = vis.interior || ui.mode !== 'overview' ? f === vis.focusFloor : ui.overviewFloor < 3 && f === ui.overviewFloor;
-      const visible = show && e.phase !== 'away' && vis.floors[f] && (d < radius || e.cfg.id === selected) && v.z < 1 && v.z > -1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1 && (onFocus || e.cfg.id === selected);
+      const visible = show && e.phase !== 'away' && vis.floors[f] && (d < radius || e.cfg.id === selected) && v.z < 1 && v.z > -1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1 && (onFocus || e.cfg.id === selected) && (!cctvRoom || roomAt(e.floor, e.x, e.z)?.id === cctvRoom);
       if (!visible) { if (el.style.display !== 'none') el.style.display = 'none'; return; }
       el.style.display = '';
       const x = (v.x * 0.5 + 0.5) * size.width;

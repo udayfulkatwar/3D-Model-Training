@@ -88,6 +88,8 @@ export class WorkEngine {
   regimes = new Map<string, { trend: 'up' | 'down' | 'range'; rsi: number; vol: number; chg: number; t: number }>();
   focus = new Map<string, { family?: Family; interval?: Interval; until: number }>();
   failStreak = new Map<string, number>();
+  /** When each PM last held a research-direction meeting for their desk (at most one a day per desk). */
+  private deskMeetingAt = new Map<string, number>();
   kill: { on: boolean; at: number; reason: string } = { on: false, at: 0, reason: '' };
   data: DataPort | null = null;
   private seq = 1;
@@ -318,8 +320,12 @@ export class WorkEngine {
         const iv = INTERVALS[(Math.floor(t / 20) + e.index) % INTERVALS.length];
         return mk('data-refresh', { interval: iv }, `Refresh ${iv} candles for all ${INSTRUMENTS.length} markets`);
       }
-      case 'ops':
-        return (t + e.index) % 2 ? mk('reconciliation', {}, 'Reconcile strategy books with the firm ledger') : mk('pnl-report', {}, 'P&L report by book and strategy');
+      case 'ops': {
+        // alternate: after a reconciliation comes a P&L report and the other way round (tasks are newest first)
+        const last = this.tasks.find((x) => x.owner === id && (x.kind === 'reconciliation' || x.kind === 'pnl-report'));
+        const recon = last ? last.kind === 'pnl-report' : e.index % 2 === 0;
+        return recon ? mk('reconciliation', {}, 'Reconcile strategy books with the firm ledger') : mk('pnl-report', {}, 'P&L report by book and strategy');
+      }
       case 'ceo':
         return mk('review-reports', {}, 'Read reports from the heads of department and decide');
       case 'receptionist':
@@ -654,11 +660,56 @@ export class WorkEngine {
   }
 
   // ------------------------------------------------------------------ problem-solving meetings
+  /**
+   * A trader with 8 failed tests in a row: their desk meets about research direction, at most once a day per desk.
+   * Traders who hit the streak while a desk meeting is booked join it; after the day's meeting, their PM redirects
+   * them directly using the same firm-wide evidence (no extra meeting).
+   */
   private researchMeeting(trader: string) {
-    const pm = this.managerOf(trader);
-    const people = [trader, pm, this.head('researcher')?.cfg.id, this.sim.employees.find((e) => /head trader/i.test(e.cfg.title))?.cfg.id].filter((x, i, a): x is string => !!x && a.indexOf(x) === i);
+    const pm = this.managerOf(trader) ?? '';
     this.failStreak.set(trader, 0);
-    this.meeting('research-direction', `Research direction: ${this.name(trader)} has 8 failed tests in a row`, people, 'f-m1a', { trader });
+    const now = this.now();
+    for (const [evId, d] of this.decisions) {
+      if (d.kind !== 'research-direction' || d.data.pm !== pm) continue;
+      const ev = this.sim.events.find((x) => x.id === evId);
+      if (ev && ev.status === 'scheduled') {
+        const traders = String(d.data.traders).split(',');
+        if (!traders.includes(trader)) { traders.push(trader); d.data.traders = traders.join(','); }
+        if (!ev.attendeeIds.includes(trader)) ev.attendeeIds.push(trader);
+        ev.title = `Research direction: ${traders.length} ${this.deskName(pm)} traders with 8+ failed tests in a row`;
+        ev.agenda = [ev.title];
+        return;
+      }
+    }
+    if (now - (this.deskMeetingAt.get(pm) ?? -1e9) < 1440) {
+      const f = this.bestFocus();
+      this.focus.set(trader, { ...f, until: now + 1440 });
+      const text = `${this.name(pm)} redirected ${this.name(trader)} to ${f.family ? FAMILY_LABEL[f.family] : 'other families'}${f.interval ? ` at ${f.interval}` : ''} after 8 failed tests (desk already met today)`;
+      this.sim.addLog(text, 'office');
+      const e = this.sim.byId.get(trader);
+      if (e) this.sim.pushHistory(e, text);
+      return;
+    }
+    this.deskMeetingAt.set(pm, now);
+    const people = [trader, pm, this.head('researcher')?.cfg.id, this.sim.employees.find((e) => /head trader/i.test(e.cfg.title))?.cfg.id].filter((x, i, a): x is string => !!x && a.indexOf(x) === i);
+    this.meeting('research-direction', `Research direction: ${this.name(trader)} has 8 failed tests in a row`, people, 'f-m1a', { trader, traders: trader, pm });
+  }
+
+  private deskName(pm: string): string {
+    const book = [...this.sim.finance.pmByBook.entries()].find(([, id]) => id === pm)?.[0];
+    return (book && BOOK_INDEX.get(book as never)?.short) ?? 'desk';
+  }
+
+  /** The family and interval with the best out-of-sample record across the whole firm so far. */
+  private bestFocus(): { family?: Family; interval?: Interval } {
+    // score = pass rate first, then average out-of-sample Sharpe (a family that never passes is not "best")
+    const stats = new Map<string, { n: number; s: number; p: number }>();
+    for (const r of this.tested.values()) {
+      for (const k of [`f:${r.family}`, `i:${r.interval}`]) { const x = stats.get(k) ?? { n: 0, s: 0, p: 0 }; x.n++; x.s += r.sharpe; x.p += r.pass ? 1 : 0; stats.set(k, x); }
+    }
+    const score = (x: { n: number; s: number; p: number }) => x.p / x.n * 10 + x.s / x.n;
+    const best = (prefix: string) => [...stats.entries()].filter(([k]) => k.startsWith(prefix)).sort((a, b) => score(b[1]) - score(a[1]))[0]?.[0].slice(2);
+    return { family: best('f:') as Family | undefined, interval: best('i:') as Interval | undefined };
   }
 
   private meeting(kind: PendingDecision['kind'], title: string, people: string[], room: string, data: Record<string, string | number>) {
@@ -687,19 +738,11 @@ export class WorkEngine {
     this.decisions.delete(ev.id);
     let decision = '';
     if (d.kind === 'research-direction') {
-      const trader = String(d.data.trader);
       // pick the family and interval that have done best out of sample across the whole firm so far
-      // score = pass rate first, then average out-of-sample Sharpe (a family that never passes is not "best")
-      const stats = new Map<string, { n: number; s: number; p: number }>();
-      for (const r of this.tested.values()) {
-        for (const k of [`f:${r.family}`, `i:${r.interval}`]) { const x = stats.get(k) ?? { n: 0, s: 0, p: 0 }; x.n++; x.s += r.sharpe; x.p += r.pass ? 1 : 0; stats.set(k, x); }
-      }
-      const score = (x: { n: number; s: number; p: number }) => x.p / x.n * 10 + x.s / x.n;
-      const best = (prefix: string) => [...stats.entries()].filter(([k]) => k.startsWith(prefix)).sort((a, b) => score(b[1]) - score(a[1]))[0]?.[0].slice(2);
-      const family = best('f:') as Family | undefined;
-      const interval = best('i:') as Interval | undefined;
-      this.focus.set(trader, { family, interval, until: this.now() + 1440 });
-      decision = `Decision: ${this.name(trader)} focuses on ${family ? FAMILY_LABEL[family] : 'other families'}${interval ? ` at ${interval}` : ''} for the next day (best firm-wide out-of-sample results so far).`;
+      const traders = String(d.data.traders ?? d.data.trader).split(',');
+      const { family, interval } = this.bestFocus();
+      for (const trader of traders) this.focus.set(trader, { family, interval, until: this.now() + 1440 });
+      decision = `Decision: ${traders.map((x) => this.name(x)).join(', ')} focus${traders.length === 1 ? 'es' : ''} on ${family ? FAMILY_LABEL[family] : 'other families'}${interval ? ` at ${interval}` : ''} for the next day (best firm-wide out-of-sample results so far).`;
     } else if (d.kind === 'loss-limit') {
       decision = 'Decision: strategies stay paused until tomorrow; each PM re-reviews their book and halves allocations on restart.';
       for (const s of this.strats) if (s.status === 'paused') s.alloc *= 0.5;
@@ -722,7 +765,7 @@ export class WorkEngine {
 
   // ------------------------------------------------------------------ persistence (the office keeps its memory across reloads)
   serialize() {
-    return { v: 1, seq: this.seq, tasks: this.tasks.slice(0, 200), strats: this.strats, reports: this.reports.slice(0, 150), tested: [...this.tested.entries()], regimes: [...this.regimes.entries()], focus: [...this.focus.entries()], kill: this.kill, objectives: this.objectives, planDay: this.planDay };
+    return { v: 1, seq: this.seq, tasks: this.tasks.slice(0, 200), strats: this.strats, reports: this.reports.slice(0, 150), tested: [...this.tested.entries()], regimes: [...this.regimes.entries()], focus: [...this.focus.entries()], kill: this.kill, objectives: this.objectives, planDay: this.planDay, deskMeetingAt: [...this.deskMeetingAt.entries()] };
   }
 
   restore(d: ReturnType<WorkEngine['serialize']>) {
@@ -738,6 +781,7 @@ export class WorkEngine {
     this.kill = d.kill ?? this.kill;
     this.objectives = d.objectives ?? [];
     this.planDay = d.planDay ?? -1;
+    this.deskMeetingAt = new Map(d.deskMeetingAt ?? []);
   }
 }
 

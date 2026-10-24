@@ -107,7 +107,7 @@ describe('owner features', () => {
     const sim = office();
     const ceo = sim.employees.find((e) => e.cfg.roleType === 'ceo')!;
     sim.advance(0.5);
-    sim.player = { x: 8.0, y: 8, z: 10.2, floor: 2 }; // just inside the CEO office door
+    sim.player = { x: 29.4, y: 8, z: 10.2, floor: 2 }; // just inside the CEO office door
     sim.advance(1.5);
     expect(ceo.greet?.stage).toBe('hold');
     expect(ceo.phase).toBe('standing');

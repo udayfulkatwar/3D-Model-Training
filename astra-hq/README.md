@@ -62,7 +62,7 @@ Movement input is ignored while a panel is open or a text field has focus.
 |---|---|
 | Ground | Entrance plaza & canopy signage, Reception & Lobby (reception desk with 2 monitors, logo wall, directory kiosk), Visitor Lounge, Café (counter, coffee machine, display fridge, 4 tables, window bar, armchairs), Interview Room, Training Room, Restrooms A & B, Utility & Storage |
 | First | Trading Floor (10 desks × 3 monitors, market display wall), Research Area (5 desks × 2 monitors, collaboration table, 2 flex desks), Risk Management (3 desks), Meeting Rooms 1A & 1B, Conference Room (18 seats) |
-| Second | Founder / CEO Office, Chairman's Office (Uday Fulkatwar, brass name plate on the door; the desk PC opens a console with access to every screen, display, person and owner control; a CCTV wall TV shows 18 live room cameras, and opening it gives each camera full screen), Portfolio Management (3 desks), Technology (4 desks), Operations (2 desks), Boardroom (16 seats), Staff Lounge, glass-enclosed Server Room |
+| Second | Chairman's Office (the corner office: Uday Fulkatwar, brass ASTRA CHAIRMAN plate on the door; the desk PC opens a console with access to every screen, display, person and owner control; a CCTV wall TV shows 18 live room cameras, and opening it gives each camera full screen), CEO Office (east of Portfolio Management), Portfolio Management (3 desks), Technology (4 desks), Operations (2 desks), Boardroom (16 seats), Staff Lounge, glass-enclosed Server Room |
 
 **Simulation** (`src/sim/`): one clock (1 real second = 20 simulated seconds at 1×; 2× and 5× available, or a
 real-time clock option where one simulated minute takes one real minute) drives schedules, events, the market,
@@ -121,7 +121,7 @@ simulated work (no AI service).
 - **Talk** (press `E` on anyone, or *Talk* in a profile): ask for a status update, P&L, risk, problems or their next
   meeting, or type anything. **Assign a task**: they work on it at their desk and report back when done.
 - **Messages**: every acknowledgement and reply lands in Owner → Messages and pops up as a notification.
-- **CEO courtesy**: when you walk into the Founder / CEO Office while the CEO is at the desk, the CEO stands up to
+- **CEO courtesy**: when you walk into the CEO Office while the CEO is at the desk, the CEO stands up to
   greet you and sits down again once you take a seat (or leave).
 - **Door signs**: every room door has a name plate with the room and the department working there (it follows the
   departments you set in the editor).

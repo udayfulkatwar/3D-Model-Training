@@ -14,7 +14,7 @@ describe('building layout', () => {
     for (const n of [
       '0:Reception & Lobby', '0:Visitor Lounge', '0:Café', '0:Interview Room', '0:Training Room', '0:Restroom A', '0:Restroom B', '0:Utility & Storage',
       '1:Trading Floor', '1:Research Area', '1:Risk Management', '1:Meeting Room 1A', '1:Meeting Room 1B', '1:Conference Room',
-      '2:Founder / CEO Office', '2:Portfolio Management', '2:Technology', '2:Operations', '2:Boardroom', '2:Staff Lounge', '2:Server Room',
+      '2:CEO Office', "2:Chairman's Office", '2:Portfolio Management', '2:Technology', '2:Operations', '2:Boardroom', '2:Staff Lounge', '2:Server Room',
     ]) expect(names).toContain(n);
   });
 

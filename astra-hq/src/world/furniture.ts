@@ -520,24 +520,27 @@ standSpot('slounge-q1', 2, 32.6, 1.7, -HALF);
 standSpot('slounge-q2', 2, 32.6, 2.8, -HALF);
 addFurn('plant', 2, 29.45, 5.5);
 
-// CEO office ---------------------------------------------------------------------
-workstation({ id: 'ws-ceo', kind: 'ceo', label: 'CEO Desk', floor: 2, x: 5.0, z: 15.0, rot: 0, w: 2.2, d: 1.0, monitors: 2, deskType: 'deskExec', chair: 'chairExec', seatOffset: 0.88 });
+// Chairman's office (Uday Fulkatwar) -------------------------------------------
+addFurn('deskExec', 2, 5.0, 15.0, 0, 2.2, 1.0, 0.76);
+chairSeat('chair-exec-s1', 'chairExec', 2, 5.0, 15.9, PI, 'meeting');
 addFurn('credenza', 2, 5.0, 19.1, PI, 2.4, 0.5, 0.7);
-chairSeat('ceo-guest-s1', 'chairMeeting', 2, 4.4, 13.85, 0, 'meeting');
-chairSeat('ceo-guest-s2', 'chairMeeting', 2, 5.6, 13.85, 0, 'meeting');
+// Chairman's PC: two screens on the desk facing the chair; using it opens the console with access to the whole office
+panel({ id: 'p-chair-pc-1', kind: 'chairmanPc', floor: 2, x: 4.66, y: 1.1, z: 14.66, heading: 0.12, w: 0.64, h: 0.38, label: "Chairman's PC (screen 1)", roomId: 's-chair' });
+panel({ id: 'p-chair-pc-2', kind: 'chairmanPc', floor: 2, x: 5.34, y: 1.1, z: 14.66, heading: -0.12, w: 0.64, h: 0.38, label: "Chairman's PC (screen 2)", roomId: 's-chair' });
+chairSeat('chair-guest-s1', 'chairMeeting', 2, 4.4, 13.85, 0, 'meeting');
+chairSeat('chair-guest-s2', 'chairMeeting', 2, 5.6, 13.85, 0, 'meeting');
 addFurn('sofa', 2, 0.65, 11.2, HALF, 2.2, 0.9, 0.8);
-sofaSeat('ceo-sofa-s1', 2, 0.7, 10.6, HALF);
-sofaSeat('ceo-sofa-s2', 2, 0.7, 11.8, HALF);
+sofaSeat('chair-sofa-s1', 2, 0.7, 10.6, HALF);
+sofaSeat('chair-sofa-s2', 2, 0.7, 11.8, HALF);
 addFurn('coffeeTable', 2, 1.95, 11.2, HALF, 1.2, 0.6, 0.4);
-chairSeat('ceo-arm-s1', 'armchair', 2, 3.2, 10.6, -HALF, 'lounge');
-chairSeat('ceo-arm-s2', 'armchair', 2, 3.2, 11.8, -HALF, 'lounge');
+chairSeat('chair-arm-s1', 'armchair', 2, 3.2, 10.6, -HALF, 'lounge');
+chairSeat('chair-arm-s2', 'armchair', 2, 3.2, 11.8, -HALF, 'lounge');
 addFurn('rug', 2, 1.9, 11.2, 0, 3.0, 3.2, 0.01, { noCollide: true, variant: 1 });
-roundTable('ceo-table', 2, 8.1, 12.7, 1.0, 3, 0);
+roundTable('chair-table', 2, 7.6, 17.4, 1.0, 3, 0);
 ceilingFreeBookshelf(2, 9.68, 15.2, -HALF, 2.4);
 addFurn('plantTall', 2, 0.65, 18.9);
 addFurn('plantTall', 2, 9.5, 18.9);
 addFurn('coatStand', 2, 9.55, 9.0);
-panel({ id: 'p-ceo-tv', kind: 'ceoTv', floor: 2, x: 0.3, y: 1.75, z: 15.0, heading: HALF, w: 1.6, h: 0.9, label: 'Company overview screen', roomId: 's-ceo' });
 
 // Boardroom -----------------------------------------------------------------------
 meetingTable('s-board', 2, 15.5, 14.0, 6.0, 1.6, true, 7, true, 'chairExec');
@@ -559,24 +562,21 @@ addFurn('plantTall', 2, 21.6, 18.9);
 addFurn('plant', 2, 27.9, 18.9);
 panel({ id: 'p-pm-wall', kind: 'pmWall', floor: 2, x: 28.3, y: 1.75, z: 14.2, heading: -HALF, w: 2.0, h: 1.12, label: 'Portfolio summary display', roomId: 's-pm' });
 
-// Chairman's office (Uday Fulkatwar) ---------------------------------------------
-addFurn('deskExec', 2, 31.1, 15.4, 0, 2.0, 0.95, 0.76);
-chairSeat('chair-exec-s1', 'chairExec', 2, 31.1, 16.3, PI, 'meeting');
+// CEO office --------------------------------------------------------------------
+workstation({ id: 'ws-ceo', kind: 'ceo', label: 'CEO Desk', floor: 2, x: 31.1, z: 15.4, rot: 0, w: 2.0, d: 0.95, monitors: 2, deskType: 'deskExec', chair: 'chairExec', seatOffset: 0.88 });
 addFurn('credenza', 2, 31.1, 19.1, PI, 2.4, 0.5, 0.7);
-// Chairman's PC: two screens on the desk facing the chair; using it opens the console with access to the whole office
-panel({ id: 'p-chair-pc-1', kind: 'chairmanPc', floor: 2, x: 30.76, y: 1.1, z: 15.06, heading: 0.12, w: 0.64, h: 0.38, label: "Chairman's PC (screen 1)", roomId: 's-chair' });
-panel({ id: 'p-chair-pc-2', kind: 'chairmanPc', floor: 2, x: 31.44, y: 1.1, z: 15.06, heading: -0.12, w: 0.64, h: 0.38, label: "Chairman's PC (screen 2)", roomId: 's-chair' });
-chairSeat('chair-guest-s1', 'chairMeeting', 2, 30.5, 14.25, 0, 'meeting');
-chairSeat('chair-guest-s2', 'chairMeeting', 2, 31.7, 14.25, 0, 'meeting');
+chairSeat('ceo-guest-s1', 'chairMeeting', 2, 30.5, 14.25, 0, 'meeting');
+chairSeat('ceo-guest-s2', 'chairMeeting', 2, 31.7, 14.25, 0, 'meeting');
 addFurn('sofa', 2, 33.2, 11.3, -HALF, 2.2, 0.9, 0.8);
-sofaSeat('chair-sofa-s1', 2, 33.15, 10.7, -HALF);
-sofaSeat('chair-sofa-s2', 2, 33.15, 11.9, -HALF);
+sofaSeat('ceo-sofa-s1', 2, 33.15, 10.7, -HALF);
+sofaSeat('ceo-sofa-s2', 2, 33.15, 11.9, -HALF);
 addFurn('coffeeTable', 2, 32.0, 11.3, HALF, 1.1, 0.55, 0.4);
 addFurn('rug', 2, 32.1, 11.3, 0, 2.6, 3.0, 0.01, { noCollide: true, variant: 1 });
 ceilingFreeBookshelf(2, 28.8, 15.4, HALF, 2.2);
 addFurn('plantTall', 2, 28.9, 18.9);
 addFurn('plantTall', 2, 33.4, 18.9);
 addFurn('coatStand', 2, 28.9, 9.0);
+panel({ id: 'p-ceo-tv', kind: 'ceoTv', floor: 2, x: 28.5, y: 1.75, z: 11.6, heading: HALF, w: 1.6, h: 0.9, label: 'Company overview screen', roomId: 's-ceo' });
 
 // =====================================================================
 // CORRIDORS & CORE (every floor)
@@ -595,9 +595,9 @@ for (const [id, floor, x, y, z, heading, w, label] of [
   ['p-world-risk', 1, 17.78, 1.85, 3.0, -HALF, 2.2, 'World markets screen (risk)'],
   ['p-world-conf', 1, 28.7, 1.95, 0.28, 0, 2.6, 'World markets screen (conference room)'],
   ['p-world-board', 2, 10.12, 1.95, 17.4, HALF, 2.0, 'World markets screen (boardroom)'],
-  ['p-world-ceo', 2, 3.2, 1.9, 8.53, 0, 2.4, 'World markets screen (CEO office)'],
+  ['p-world-chair', 2, 3.2, 1.9, 8.53, 0, 2.4, "World markets screen (chairman's office)"],
   ['p-world-pm', 2, 21.12, 1.9, 14.0, HALF, 2.4, 'World markets screen (portfolio management)'],
-  ['p-world-chair', 2, 33.72, 1.9, 15.4, -HALF, 2.0, "World markets screen (chairman's office)"],
+  ['p-world-ceo', 2, 33.72, 1.9, 15.4, -HALF, 2.0, 'World markets screen (CEO office)'],
   ['p-world-lounge', 2, 33.72, 1.85, 2.6, -HALF, 1.8, 'World markets screen (staff lounge)'],
 ] as const) panel({ id, kind: 'worldMarkets', floor, x, y, z, heading, w, h: w * 0.5625, label });
 

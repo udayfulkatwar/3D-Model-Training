@@ -112,10 +112,10 @@ export const ROOMS: RoomDef[] = [
   { id: 's-server', floor: 2, name: 'Server Room', kind: 'server', rect: R(23.5, 0.15, 29.0, 6.0), finish: 'raised', entry: { x: 26.2, z: 5.1 } },
   { id: 's-lounge', floor: 2, name: 'Staff Lounge', kind: 'staff-lounge', rect: R(29.0, 0.15, 33.85, 6.0), finish: 'wood', entry: { x: 31.4, z: 4.9 } },
   { id: 's-corridor', floor: 2, name: 'Second Floor Corridor', kind: 'corridor', rect: R(0.15, 6.0, 33.85, 8.4), finish: 'carpetDark', entry: { x: 19.3, z: 7.2 }, hidden: true },
-  { id: 's-ceo', floor: 2, name: 'Founder / CEO Office', kind: 'office', rect: R(0.15, 8.4, 10.0, 19.45), finish: 'wood', entry: { x: 8.0, z: 10.0 } },
+  { id: 's-chair', floor: 2, name: "Chairman's Office", kind: 'office', rect: R(0.15, 8.4, 10.0, 19.45), finish: 'wood', entry: { x: 8.0, z: 10.0 } },
   { id: 's-board', floor: 2, name: 'Boardroom', kind: 'boardroom', rect: R(10.0, 8.4, 21.0, 19.45), finish: 'carpetDark', entry: { x: 15.5, z: 9.8 }, bookable: true },
   { id: 's-pm', floor: 2, name: 'Portfolio Management', kind: 'pm', rect: R(21.0, 8.4, 28.4, 19.45), finish: 'carpet', entry: { x: 25.9, z: 9.8 } },
-  { id: 's-chair', floor: 2, name: "Chairman's Office", kind: 'office', rect: R(28.4, 8.4, 33.85, 19.45), finish: 'wood', entry: { x: 29.4, z: 10.0 } },
+  { id: 's-ceo', floor: 2, name: 'CEO Office', kind: 'office', rect: R(28.4, 8.4, 33.85, 19.45), finish: 'wood', entry: { x: 29.4, z: 10.0 } },
 ];
 
 // Core spaces exist on every floor.
@@ -239,10 +239,10 @@ door({ id: 's-d-ops', floor: 2, axis: 'x', at: 6.0, center: 4.0, width: 0.9, gla
 door({ id: 's-d-tech', floor: 2, axis: 'x', at: 6.0, center: 13.0, width: 0.9, glass: true, label: 'Technology', swing: -1 });
 door({ id: 's-d-server', floor: 2, axis: 'x', at: 6.0, center: 26.2, width: 0.9, glass: true, label: 'Server Room', swing: -1, defaultOpen: false });
 door({ id: 's-d-lounge', floor: 2, axis: 'x', at: 6.0, center: 31.4, width: 0.9, label: 'Staff Lounge', swing: -1 });
-door({ id: 's-d-ceo', floor: 2, axis: 'x', at: 8.4, center: 8.0, width: 0.9, label: 'CEO Office', swing: 1 });
+door({ id: 's-d-chair', floor: 2, axis: 'x', at: 8.4, center: 8.0, width: 1.0, label: "Chairman's Office", swing: 1, defaultOpen: false, plate: { title: 'Astra Chairman', sub: 'Uday Fulkatwar' } });
 door({ id: 's-d-board', floor: 2, axis: 'x', at: 8.4, center: 15.5, width: 1.6, kind: 'double', glass: true, label: 'Boardroom', swing: 1 });
 door({ id: 's-d-pm', floor: 2, axis: 'x', at: 8.4, center: 25.9, width: 0.9, glass: true, label: 'Portfolio Management', swing: 1 });
-door({ id: 's-d-chair', floor: 2, axis: 'x', at: 8.4, center: 29.4, width: 1.0, label: "Chairman's Office", swing: 1, defaultOpen: false, plate: { title: 'Astra Chairman', sub: 'Uday Fulkatwar' } });
+door({ id: 's-d-ceo', floor: 2, axis: 'x', at: 8.4, center: 29.4, width: 0.9, label: 'CEO Office', swing: 1 });
 
 // ---------------------------------------------------------------- lookups
 export function roomAt(floor: number, x: number, z: number): RoomDef | undefined {

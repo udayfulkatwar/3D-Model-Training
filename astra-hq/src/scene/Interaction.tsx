@@ -53,8 +53,8 @@ function chairmanPcGeometry() {
     b.box('blackMetal', p.x - Math.sin(p.heading) * 0.08, base + 0.13, p.z - Math.cos(p.heading) * 0.08, 0.05, 0.26, 0.03, p.heading);
     b.box('blackMetal', p.x - Math.sin(p.heading) * 0.06, base + 0.008, p.z - Math.cos(p.heading) * 0.06, 0.24, 0.016, 0.18, p.heading);
   }
-  b.box('plasticDark', 31.1, base + 0.012, 15.62, 0.44, 0.02, 0.14);
-  b.box('plasticDark', 31.5, base + 0.014, 15.64, 0.06, 0.025, 0.1);
+  b.box('plasticDark', 5.0, base + 0.012, 15.22, 0.44, 0.02, 0.14);
+  b.box('plasticDark', 5.4, base + 0.014, 15.24, 0.06, 0.025, 0.1);
   return b.build();
 }
 

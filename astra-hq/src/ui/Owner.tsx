@@ -18,7 +18,7 @@ import { playSound } from '../audio/sound';
 import { goToEmployee, goToRoom } from './actions';
 import { BackToPc, MinimizeButton } from './Panels';
 
-export const MEETING_ROOMS = ['f-conf', 's-board', 'g-training', 'f-m1a', 'f-m1b', 'g-interview', 's-ceo', 'g-lobby'] as const;
+export const MEETING_ROOMS = ['f-conf', 's-board', 'g-training', 'f-m1a', 'f-m1b', 'g-interview', 's-chair', 's-ceo', 'g-lobby'] as const;
 
 function capacity(roomId: string) {
   const seats = SEATS.filter((s) => s.roomId === roomId && (s.kind === 'meeting' || s.kind === 'lounge')).length;
@@ -102,7 +102,7 @@ export function OwnerPanel({ tab: initial, pc }: { tab?: OwnerTab; pc?: boolean 
   const [room, setRoom] = useState<string>('f-conf');
   const [minutes, setMinutes] = useState(30);
   const [topic, setTopic] = useState('');
-  const [sendRoom, setSendRoom] = useState<string>('s-ceo');
+  const [sendRoom, setSendRoom] = useState<string>('s-chair');
   const [note, setNote] = useState<string | null>(null);
   const meetings = sim.ownerMeetings();
   const withOrders = sim.employees.filter((e) => e.order);
@@ -589,7 +589,7 @@ export function TalkPanel({ id }: { id: string }) {
   const e = sim.byId.get(id);
   const [text, setText] = useState('');
   const [task, setTask] = useState('');
-  const [room, setRoom] = useState<string>('s-ceo');
+  const [room, setRoom] = useState<string>('s-chair');
   const [, force] = useState(0);
   const [pending, setPending] = useState<string | null>(null);
   const [aiNote, setAiNote] = useState<string | null>(null);
