@@ -40,7 +40,7 @@ export function TopBar() {
         <Logo />
         <div>
           <div className="brand-name">{sim.config.companyName.toUpperCase()}</div>
-          <div className="brand-sub">Headquarters · Office Simulation</div>
+          <div className="brand-sub">Headquarters · {sim.realMode ? 'Live office' : 'Office Simulation'}</div>
         </div>
       </div>
       <div className="bar-group" aria-label="Simulation clock">
@@ -192,7 +192,7 @@ export function CenterOverlays() {
       {toastVisible && toast && <div className="toast" key={toast.id} data-testid="toast">{toast.text}</div>}
       {fade > 0 && <div className="fade" style={{ opacity: fade }} />}
       {showFps && <div className="fps" data-testid="fps">{fps} fps · {stats.calls} draw calls · {(stats.triangles / 1000).toFixed(0)}k tris · {stats.textures} textures</div>}
-      <div className="disclaimer">Office Simulation · fictional people · {getSim().live ? 'live prices (Co-Invest), paper trading only' : 'Simulated Data'}</div>
+      <div className="disclaimer">{getSim().realMode ? `Live office · AI staff · ${getSim().live ? 'live prices (Co-Invest), paper trading only' : 'waiting for live prices'}` : 'Office Simulation · fictional people · Simulated Data'}</div>
     </>
   );
 }
@@ -204,15 +204,19 @@ export function IntroOverlay() {
   return (
     <div className="overlay" data-testid="intro">
       <div className="overlay-card">
-        <div className="row"><span className="chip sim-chip">OFFICE SIMULATION</span><span className="chip">Simulated Data</span></div>
+        {sim.realMode
+          ? <div className="row"><span className="chip sim-chip">LIVE OFFICE</span><span className="chip">Real time · live prices · paper trading</span></div>
+          : <div className="row"><span className="chip sim-chip">OFFICE SIMULATION</span><span className="chip">Simulated Data</span></div>}
         <h1>{sim.config.companyName.toUpperCase()} Headquarters</h1>
-        <p>An interactive, frontend-only office simulation inspired by a premium investment firm. Thirty fictional, editable employees work, meet and take breaks across three floors; every screen shows simulated applications driven by one shared, seeded model. Nothing here is real trading data or real people.</p>
+        {sim.realMode
+          ? <p>Your firm, running now in real time, 24/7. Thirty AI staff (editable, not real people) take tasks from their seniors, test trading strategies on real Co-Invest price history, check risk, allocate paper capital and report to the CEO, who reports to you. Prices are live; every trade is paper; nothing is replayed or sped up.</p>
+          : <p>An interactive, frontend-only office simulation inspired by a premium investment firm. Thirty fictional, editable employees work, meet and take breaks across three floors; every screen shows simulated applications driven by one shared, seeded model. Nothing here is real trading data or real people.</p>}
         <div className="keys">
           <kbd>W A S D</kbd><span>Move (hold <kbd>Shift</kbd> to walk faster)</span>
           <kbd>Mouse</kbd><span>Look around</span>
           <kbd>E</kbd><span>Interact: doors, monitors, chairs, coffee, elevator</span>
           <kbd>Esc</kbd><span>Release the cursor</span>
-          <kbd>F</kbd><span>Employee directory · <kbd>N</kbd> rooms · <kbd>M</kbd> overview · <kbd>P</kbd> pause</span>
+          <kbd>F</kbd><span>Employee directory · <kbd>N</kbd> rooms · <kbd>M</kbd> overview · <kbd>O</kbd> owner</span>
           <kbd>O</kbd><span>Owner tools: call meetings, call anyone to you, talk to anyone</span>
         </div>
         <div className="row">

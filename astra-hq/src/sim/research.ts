@@ -206,7 +206,7 @@ export interface ResearchResult {
   dataEnd: number;
 }
 
-export const PASS = { testSharpe: 1.0, testPf: 1.2, minTrades: 4, maxDD: 0.12, trainSharpe: 0.5, robustness: 0.3 };
+export const PASS = { testSharpe: 1.0, testPf: 1.2, minTrades: 5, maxDD: 0.12, trainSharpe: 0.5, robustness: 0.3 };
 
 /** Walk-forward: choose parameters on the first 65 % of the candles, judge on the last 35 %. */
 export function research(symbol: string, family: Family, interval: Interval, cs: Candle[]): ResearchResult | null {

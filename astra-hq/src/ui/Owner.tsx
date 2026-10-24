@@ -105,7 +105,7 @@ export function OwnerPanel({ tab: initial }: { tab?: OwnerTab }) {
   const c = capacity(room);
   const over = ids.length > c.seats + c.stand;
   return (
-    <Shell testId="owner-panel" title="Owner" sub="Call people to meetings, give instructions, and read their replies (Office Simulation)">
+    <Shell testId="owner-panel" title="Owner" sub={sim.realMode ? 'Your firm: work, strategies, meetings, instructions and reports' : 'Call people to meetings, give instructions, and read their replies (Office Simulation)'}>
       <div className="tabs">
         {sim.realMode && <button className={tab === 'work' ? 'active' : ''} onClick={() => setTab('work')} data-testid="owner-tab-work">Work board</button>}
         {sim.realMode && <button className={tab === 'strategies' ? 'active' : ''} onClick={() => setTab('strategies')} data-testid="owner-tab-strategies">Strategies</button>}

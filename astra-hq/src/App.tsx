@@ -21,7 +21,7 @@ function Fallback({ title, detail }: { title: string; detail: string }) {
   return (
     <div className="error-screen">
       <div className="overlay-card">
-        <span className="chip sim-chip">OFFICE SIMULATION</span>
+        <span className="chip sim-chip">ASTRA HQ</span>
         <h1 style={{ fontSize: 22 }}>{title}</h1>
         <p>{detail}</p>
         <button className="btn primary" onClick={() => window.location.reload()}>Reload</button>

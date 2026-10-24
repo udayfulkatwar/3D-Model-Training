@@ -314,7 +314,7 @@ function CoffeePanel({ where, drink }: { where: 'cafe' | 'lounge'; drink: string
 
 function HelpPanel() {
   return (
-    <Shell title="Help & controls" sub="Office Simulation · all people fictional · all financial data simulated" narrow>
+    <Shell title="Help & controls" sub={getSim().realMode ? 'Live office · AI staff (not real people) · live prices, paper trading' : 'Office Simulation · all people fictional · all financial data simulated'} narrow>
       <div className="keys">
         <kbd>Enter Office</kbd><span>Start the walkthrough (locks the cursor)</span>
         <kbd>W A S D / arrows</kbd><span>Move · <kbd>Shift</kbd> faster</span>
@@ -324,7 +324,6 @@ function HelpPanel() {
         <kbd>F</kbd><span>Employee directory & search</span>
         <kbd>N</kbd><span>Floors & rooms navigation</span>
         <kbd>M</kbd><span>Toggle building overview · <kbd>1-4</kbd> pick floor</span>
-        <kbd>P</kbd><span>Pause / resume the simulation</span>
         <kbd>L</kbd><span>Toggle employee labels</span>
         <kbd>O</kbd><span>Owner: call meetings, call or send people, messages</span>
         <kbd>E on a person</kbd><span>Talk to them (questions, instructions, tasks)</span>

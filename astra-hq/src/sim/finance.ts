@@ -196,7 +196,8 @@ export class Finance {
         this.traders.set(t.empId, { empId: t.empId, bookId: b.id, coverage, positions: new Map(), orders: [], fills: [], reduced: new Set() });
       });
       // prior 20 days of fictional daily P&L for the performance chart
-      this.daily.set(b.id, Array.from({ length: 20 }, (_, d) => (hashRand(seed, 'bookdaily', b.id, d) - 0.46) * b.capital * 0.012));
+      // real mode starts with no history: only days the office actually traded are recorded
+      this.daily.set(b.id, this.real ? [] : Array.from({ length: 20 }, (_, d) => (hashRand(seed, 'bookdaily', b.id, d) - 0.46) * b.capital * 0.012));
     }
     if (!this.real) this.seedPositions();
     this.newDay();

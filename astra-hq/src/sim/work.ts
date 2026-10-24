@@ -27,7 +27,7 @@ export interface DataPort {
 }
 
 export type TaskKind =
-  | 'research' | 'review-live' | 'regime-report' | 'news-brief' | 'peer-review' | 'stress-test' | 'risk-report'
+  | 'research' | 'research-review' | 'review-live' | 'regime-report' | 'news-brief' | 'peer-review' | 'stress-test' | 'risk-report'
   | 'allocation' | 'perf-review' | 'data-refresh' | 'feed-check' | 'engine-selftest' | 'reconciliation' | 'pnl-report'
   | 'daily-plan' | 'review-reports' | 'room-schedule' | 'meeting-minutes';
 
@@ -68,7 +68,7 @@ export interface Objective { id: number; day: number; text: string; metric: 'tes
 export interface Report { id: number; t: number; from: string; to: string; text: string; ok: boolean }
 
 const DUR: Record<TaskKind, number> = {
-  research: 35, 'review-live': 20, 'regime-report': 30, 'news-brief': 25, 'peer-review': 30, 'stress-test': 30, 'risk-report': 25,
+  research: 35, 'research-review': 20, 'review-live': 20, 'regime-report': 30, 'news-brief': 25, 'peer-review': 30, 'stress-test': 30, 'risk-report': 25,
   allocation: 25, 'perf-review': 25, 'data-refresh': 15, 'feed-check': 15, 'engine-selftest': 20, reconciliation: 20, 'pnl-report': 20,
   'daily-plan': 20, 'review-reports': 25, 'room-schedule': 30, 'meeting-minutes': 30,
 };
@@ -96,6 +96,13 @@ export class WorkEngine {
   private lastAlloc = new Map<string, number>();
   private lastReview = new Map<string, number>();
   private lastRisk = 0;
+  private lastDone = new Map<string, number>();
+  private due(key: string, every: number): boolean {
+    const t = this.now();
+    if (t - (this.lastDone.get(key) ?? -1e9) < every) return false;
+    this.lastDone.set(key, t);
+    return true;
+  }
   private lastNews = '';
 
   constructor(private sim: Simulation) {}
@@ -281,7 +288,10 @@ export class WorkEngine {
           this.lastNews = newsKey;
           return mk('news-brief', {}, 'News brief: which headlines touch our markets');
         }
-        const stale = [...INSTRUMENTS].map((i) => i.sym).sort((a, b) => (this.regimes.get(a)?.t ?? -1) - (this.regimes.get(b)?.t ?? -1)).slice(0, 4);
+        // the stalest markets nobody else is already covering
+        const busy = new Set(this.tasks.filter((x) => x.kind === 'regime-report' && (x.status === 'active' || x.status === 'waiting')).flatMap((x) => x.params.syms ?? []));
+        const stale = [...INSTRUMENTS].map((i) => i.sym).filter((s) => !busy.has(s)).sort((a, b) => (this.regimes.get(a)?.t ?? -1) - (this.regimes.get(b)?.t ?? -1)).slice(0, 3);
+        if (!stale.length) return mk('news-brief', {}, 'News brief: which headlines touch our markets');
         return mk('regime-report', { syms: stale }, `Regime report: ${stale.join(', ')}`);
       }
       case 'risk': {
@@ -299,13 +309,14 @@ export class WorkEngine {
           this.lastAlloc.set(book, t);
           return mk('allocation', { book }, `Allocate ${BOOK_INDEX.get(book as never)?.short ?? book} risk budget across approved strategies`);
         }
-        return mk('perf-review', { book }, `Performance review: ${BOOK_INDEX.get(book as never)?.short ?? book} live strategies`);
+        if (this.due(`pm:perf:${book}`, 120)) return mk('perf-review', { book }, `Performance review: ${BOOK_INDEX.get(book as never)?.short ?? book} live strategies`);
+        return mk('research-review', { book }, `Review the ${BOOK_INDEX.get(book as never)?.short ?? book} traders' latest tests and set next steps`);
       }
       case 'tech': {
-        const k = (t + e.index) % 3;
-        if (k === 0) { const iv = INTERVALS[(Math.floor(t / 20) + e.index) % INTERVALS.length]; return mk('data-refresh', { interval: iv }, `Refresh ${iv} candles for all ${INSTRUMENTS.length} markets`); }
-        if (k === 1) return mk('feed-check', {}, 'Check Co-Invest feed health (latency, errors, staleness)');
-        return mk('engine-selftest', {}, 'Backtest engine self-test (known-answer cases)');
+        if (this.due('tech:selftest', 360)) return mk('engine-selftest', {}, 'Backtest engine self-test (known-answer cases)');
+        if (this.due('tech:feed', 30)) return mk('feed-check', {}, 'Check Co-Invest feed health (latency, errors, staleness)');
+        const iv = INTERVALS[(Math.floor(t / 20) + e.index) % INTERVALS.length];
+        return mk('data-refresh', { interval: iv }, `Refresh ${iv} candles for all ${INSTRUMENTS.length} markets`);
       }
       case 'ops':
         return (t + e.index) % 2 ? mk('reconciliation', {}, 'Reconcile strategy books with the firm ledger') : mk('pnl-report', {}, 'P&L report by book and strategy');
@@ -361,7 +372,7 @@ export class WorkEngine {
         const streak = r.pass ? 0 : (this.failStreak.get(t.owner) ?? 0) + 1;
         this.failStreak.set(t.owner, streak);
         if (r.pass) this.newStrategy(t.owner, r);
-        else if (streak >= 5) this.researchMeeting(t.owner);
+        else if (streak >= 8 && (this.focus.get(t.owner)?.until ?? -1e9) < this.now() + 720) this.researchMeeting(t.owner);
         return { ok: true, summary: r.verdict, detail: [`In-sample: ${(r.train.ret * 100).toFixed(2)}%, Sharpe ${r.train.sharpe.toFixed(2)}, ${r.train.trades} trades`, `Out-of-sample: ${(r.test.ret * 100).toFixed(2)}%, Sharpe ${r.test.sharpe.toFixed(2)}, PF ${r.test.pf.toFixed(2)}, DD ${(r.test.maxDD * 100).toFixed(1)}%, ${r.test.trades} trades`, `Robustness ${(r.robustness * 100).toFixed(0)}% of ${r.tested} settings`] };
       }
       case 'peer-review': {
@@ -403,6 +414,18 @@ export class WorkEngine {
         return { ok: true, summary: `#${s.id} ${s.sym}: ${st.note}` };
       }
       case 'risk-report': return this.riskReport();
+      case 'research-review': {
+        // the PM reads the team's recent tests; near-misses are re-tested on another time frame
+        const traders = [...this.sim.finance.traders.values()].filter((x) => x.bookId === p.book).map((x) => x.empId);
+        const recent = [...this.tested.values()].filter((x) => this.now() - x.t < 240 && traders.some((id) => this.sim.finance.traders.get(id)?.coverage.includes(x.sym)));
+        const near = recent.filter((x) => !x.pass && x.sharpe > 0.5).sort((a, b) => b.sharpe - a.sharpe).slice(0, 2);
+        for (const n of near) {
+          const owner = traders.find((id) => this.sim.finance.traders.get(id)?.coverage.includes(n.sym));
+          const iv = n.interval === '4h' ? '1d' : '4h';
+          if (owner && !this.tested.has(`${n.sym}|${n.family}|${iv}`)) this.task('research', owner, t.owner, { sym: n.sym, family: n.family, interval: iv }, `Re-test near-miss: ${FAMILY_LABEL[n.family]} on ${n.sym} at ${iv}`);
+        }
+        return { ok: true, summary: `${recent.length} tests in 4 h, ${recent.filter((x) => x.pass).length} passed; ${near.length ? `asked for re-tests of ${near.map((x) => `${x.sym} ${x.family}`).join(', ')}` : 'no near-misses to follow up'}` };
+      }
       case 'allocation': return this.allocate(p.book ?? 'eq', t.owner);
       case 'perf-review': return this.perfReview(p.book, t.owner);
       case 'review-live': {
@@ -490,7 +513,8 @@ export class WorkEngine {
     cands.forEach((s, i) => {
       // diversify: no single strategy above 25 % and no single market above 35 % of the book
       const used = perSym.get(s.sym) ?? 0;
-      s.alloc = Math.max(0, Math.min(b.capital * LIMITS.maxAllocPct, (budget * w[i]) / sum, b.capital * LIMITS.maxSymbolPct - used));
+      const cap = s.peer && !s.peer.startsWith('corroborated') ? 0.1 : LIMITS.maxAllocPct; // fragile: not confirmed on another time frame
+      s.alloc = Math.max(0, Math.min(b.capital * cap, (budget * w[i]) / sum, b.capital * LIMITS.maxSymbolPct - used));
       perSym.set(s.sym, used + s.alloc);
       if (s.status === 'approved' && !this.kill.on) { s.status = 'live'; s.fwd.since = this.now(); s.notes.push({ t: this.now(), text: `Live with ${fmtMoney(s.alloc)} (paper), allocated by ${this.name(pm)}` }); }
       lines.push(`#${s.id} ${s.sym} ${s.r.interval}: ${fmtMoney(s.alloc)}`);
@@ -634,7 +658,7 @@ export class WorkEngine {
     const pm = this.managerOf(trader);
     const people = [trader, pm, this.head('researcher')?.cfg.id, this.sim.employees.find((e) => /head trader/i.test(e.cfg.title))?.cfg.id].filter((x, i, a): x is string => !!x && a.indexOf(x) === i);
     this.failStreak.set(trader, 0);
-    this.meeting('research-direction', `Research direction: ${this.name(trader)} has 5 failed tests in a row`, people, 'f-m1a', { trader });
+    this.meeting('research-direction', `Research direction: ${this.name(trader)} has 8 failed tests in a row`, people, 'f-m1a', { trader });
   }
 
   private meeting(kind: PendingDecision['kind'], title: string, people: string[], room: string, data: Record<string, string | number>) {
@@ -665,11 +689,13 @@ export class WorkEngine {
     if (d.kind === 'research-direction') {
       const trader = String(d.data.trader);
       // pick the family and interval that have done best out of sample across the whole firm so far
-      const stats = new Map<string, { n: number; s: number }>();
+      // score = pass rate first, then average out-of-sample Sharpe (a family that never passes is not "best")
+      const stats = new Map<string, { n: number; s: number; p: number }>();
       for (const r of this.tested.values()) {
-        for (const k of [`f:${r.family}`, `i:${r.interval}`]) { const x = stats.get(k) ?? { n: 0, s: 0 }; x.n++; x.s += r.sharpe; stats.set(k, x); }
+        for (const k of [`f:${r.family}`, `i:${r.interval}`]) { const x = stats.get(k) ?? { n: 0, s: 0, p: 0 }; x.n++; x.s += r.sharpe; x.p += r.pass ? 1 : 0; stats.set(k, x); }
       }
-      const best = (prefix: string) => [...stats.entries()].filter(([k]) => k.startsWith(prefix)).sort((a, b) => b[1].s / b[1].n - a[1].s / a[1].n)[0]?.[0].slice(2);
+      const score = (x: { n: number; s: number; p: number }) => x.p / x.n * 10 + x.s / x.n;
+      const best = (prefix: string) => [...stats.entries()].filter(([k]) => k.startsWith(prefix)).sort((a, b) => score(b[1]) - score(a[1]))[0]?.[0].slice(2);
       const family = best('f:') as Family | undefined;
       const interval = best('i:') as Interval | undefined;
       this.focus.set(trader, { family, interval, until: this.now() + 1440 });

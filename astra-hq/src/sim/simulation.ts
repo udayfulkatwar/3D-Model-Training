@@ -1864,13 +1864,14 @@ export class Simulation {
     if (!e) return '';
     const m = Math.floor(this.minute);
     const lines: string[] = [];
-    lines.push(`Time: ${fmtTime(m)}, day ${this.day + 1}. Market data: ${this.live ? 'LIVE prices from Co-Invest (read-only); all orders are paper' : 'simulated fictional market'}.`);
+    lines.push(`Time: ${fmtTime(m)}, ${this.realMode ? this.clock().toDateString() : `day ${this.day + 1}`}. Market data: ${this.live ? 'LIVE prices from Co-Invest (read-only); all orders are paper' : 'simulated fictional market'}.`);
     lines.push(`You: ${e.cfg.name}, ${e.cfg.title} (${ROLE_LABELS[e.cfg.roleType]}), ${e.cfg.department}. Desk ${e.ws.label}.`);
     lines.push(`Now: ${ACTIVITY_LABEL[e.activity]}; ${e.task}; location ${this.roomName(e)}; talking ${this.talkMode(id)}.`);
-    lines.push(`Hours today: due ${fmtTime(e.hours.arrive)}-${fmtTime(e.hours.leave)}${e.badge.in !== null ? `, badged in ${fmtTime(e.badge.in)}` : ''}${e.badge.out !== null ? `, left ${fmtTime(e.badge.out)}` : ''}.`);
+    if (this.realMode) lines.push('Hours: the office runs 24/7 and you are on site.');
+    else lines.push(`Hours today: due ${fmtTime(e.hours.arrive)}-${fmtTime(e.hours.leave)}${e.badge.in !== null ? `, badged in ${fmtTime(e.badge.in)}` : ''}${e.badge.out !== null ? `, left ${fmtTime(e.badge.out)}` : ''}.`);
     lines.push(`Work: ${this.statusLine(e)}`);
     const wt = this.work.current(e.cfg.id);
-    if (wt) lines.push(`Current task (from ${this.name(wt.by)}): ${wt.title}, ${Math.round(wt.progress * 100)}%`);
+    if (wt) lines.push(`Current task (${wt.by === e.cfg.id ? 'own plan' : `from ${this.name(wt.by)}`}): ${wt.title}, ${Math.round(wt.progress * 100)}%`);
     const done = this.work.tasks.filter((t) => t.owner === e.cfg.id && t.result).slice(0, 4);
     if (done.length) lines.push(`Recent results: ${done.map((t) => `${t.title}: ${t.result!.summary}`).join(' | ')}`);
     if (this.realMode && (e.cfg.roleType === 'ceo' || e.cfg.roleType === 'pm' || e.cfg.roleType === 'risk' || e.cfg.roleType === 'trader')) lines.push(`Strategies: ${this.work.strats.slice(0, 8).map((s) => `#${s.id} ${s.sym} ${s.r.family} ${s.r.interval} ${s.status} alloc ${fmtMoney(s.alloc)} fwd ${fmtMoney(s.fwd.pnl)}`).join('; ') || 'none passed yet'}`);
@@ -1953,7 +1954,7 @@ export class Simulation {
   private statusLine(e: Employee): string {
     const m = Math.floor(this.minute);
     const wt = this.work.current(e.cfg.id);
-    if (this.realMode && wt && e.order?.kind !== 'task') return `I'm on "${wt.title}" for ${this.name(wt.by)} (${Math.round(wt.progress * 100)}% done).`;
+    if (this.realMode && wt && e.order?.kind !== 'task') return `I'm on "${wt.title}" ${wt.by === e.cfg.id ? '(my own plan)' : `for ${this.name(wt.by)}`} (${Math.round(wt.progress * 100)}% done).`;
     if (e.order?.kind === 'task') return `I'm working on your request "${e.order.text}"; done by ${fmtTime(e.order.until)}.`;
     switch (e.cfg.roleType) {
       case 'trader': {
@@ -2460,7 +2461,7 @@ export class Simulation {
     const sections: { title: string; lines: string[] }[] = [];
     const last5 = BOOKS.reduce((a, b) => a + (this.finance.daily.get(b.id) ?? []).slice(-5).reduce((x, y) => x + y, 0), 0);
     sections.push({ title: 'Paper trading account', lines: [
-      `Paper capital ${fmtMoney(firmCapital())} · NAV ${fmtMoney(firm.nav)} (simulated money, no real orders)`,
+      `Paper capital ${fmtMoney(firmCapital())} · NAV ${fmtMoney(firm.nav)} (${this.realMode ? 'paper money at live prices' : 'simulated money'}, no real orders)`,
       `Today ${fmtMoney(firm.pnl)} (${pct(firm.pnlPct)}) · last 5 sessions ${fmtMoney(last5)}`,
       `Gross ${fmtMoney(firm.gross)} · net ${fmtMoney(firm.net)} · VaR95 ${fmtMoney(firm.var95)}`,
     ] });
@@ -2470,7 +2471,7 @@ export class Simulation {
     sections.push({ title: 'Traders', lines: [
       ...traders.slice(0, 3).map((t, i) => `${i + 1}. ${this.name(t.id)} ${fmtMoney(t.pnl)} (${t.fills} fills)`),
       ...traders.slice(-2).map((t) => `Weakest: ${this.name(t.id)} ${fmtMoney(t.pnl)} (${t.fills} fills)`),
-      live.length ? `Trained strategies live: ${live.join(', ')}` : 'No trained strategies live yet',
+      ...(this.realMode ? [] : [live.length ? `Trained strategies live: ${live.join(', ')}` : 'No trained strategies live yet']),
     ] });
     const open = this.finance.openAlerts();
     const closedToday = this.finance.alerts.filter((a) => a.status === 'resolved').length;
@@ -2478,10 +2479,12 @@ export class Simulation {
     const tr = this.finance.trades;
     sections.push({ title: 'Operations', lines: [`${tr.length} trades today: ${tr.filter((x) => x.status === 'matched').length} matched, ${tr.filter((x) => x.status === 'pending').length} pending, ${tr.filter((x) => x.status === 'break').length} breaks open, ${tr.filter((x) => x.status === 'resolved').length} breaks fixed`] });
     const inc = this.tech.incident;
-    sections.push({ title: 'Technology', lines: [`Feed incident ${inc.id}: ${inc.status}`, `${this.tech.builds.filter((b) => b.status === 'passed').length} builds passed, ${this.tech.builds.filter((b) => b.status === 'failed').length} failed`] });
-    sections.push({ title: 'Research', lines: this.employees.filter((e) => e.cfg.roleType === 'researcher').map((e) => `${e.cfg.name}: ${e.work.title} (${e.work.words.toLocaleString()} words)`) });
+    sections.push({ title: 'Technology', lines: [this.realMode ? (this.tech.incidentActive ? `Open incident ${inc.id}: ${inc.title}` : 'No open incidents') : `Feed incident ${inc.id}: ${inc.status}`, `${this.tech.builds.filter((b) => b.status === 'passed').length} builds passed, ${this.tech.builds.filter((b) => b.status === 'failed').length} failed`] });
+    sections.push({ title: 'Research', lines: this.realMode
+      ? [`Regimes (4h candles): ${[...this.work.regimes.entries()].map(([k, r]) => `${k} ${r.trend}`).join(', ') || 'not read yet'}`, this.news.length ? `Headlines: ${this.news.slice(0, 3).map((n) => n.title).join(' | ')}` : 'No live headlines yet']
+      : this.employees.filter((e) => e.cfg.roleType === 'researcher').map((e) => `${e.cfg.name}: ${e.work.title} (${e.work.words.toLocaleString()} words)`) });
     const onSite = this.employees.filter((e) => this.onSite(e));
-    const late = this.employees.filter((e) => e.badge.in !== null && e.badge.in > e.hours.arrive + 15).length;
+    const late = this.realMode ? 0 : this.employees.filter((e) => e.badge.in !== null && e.badge.in > e.hours.arrive + 15).length;
     const counts = this.activityCounts();
     sections.push({ title: 'People', lines: [`${onSite.length}/${this.employees.length} in the building · ${counts.meeting} in meetings · ${counts.cafe + counts.break} on breaks · ${counts.away} out of office`, `${this.employees.filter((e) => e.badge.in !== null).length} badged in today${late ? `, ${late} late` : ''}`] });
     const recs = this.employees.map((e) => this.trainingRecord(e.cfg.id));
@@ -2491,7 +2494,7 @@ export class Simulation {
     const sessions = this.events.filter((ev) => ev.academy && ev.status !== 'completed' && ev.status !== 'cancelled');
     sections.push({ title: 'Training', lines: [
       `${recs.filter(certified).length}/${recs.length} fully certified · average skill ${avg.toFixed(0)}/100 · ${today} modules passed today`,
-      `${recs.filter((r) => r.strategy).length} traders through the strategy lab: ${recs.filter((r) => r.strategy?.active).length} strategies live, ${notLive} rejected on unseen data`,
+      ...(this.realMode ? [] : [`${recs.filter((r) => r.strategy).length} traders through the strategy lab: ${recs.filter((r) => r.strategy?.active).length} strategies live, ${notLive} rejected on unseen data`]),
       sessions.length ? `Next session: ${sessions[0].title} at ${fmtTime(sessions[0].start)}${this.academyQueue.length ? ` (+${this.academyQueue.length} cohorts waiting)` : ''}` : this.academyQueue.length ? `${this.academyQueue.length} cohorts waiting for tomorrow` : 'No sessions booked',
     ] });
     const ideas = this.tickets.filter((k) => k.kind === 'idea' && k.day === this.day);
