@@ -22,8 +22,8 @@ real touch hardware. No frame-rate claim is made for real hardware.
 |---|---|
 | `npm install` | OK, 0 vulnerabilities reported |
 | `npm run build` | OK. Chunks (gzip): app 89 kB, react 64 kB, three + r3f 272 kB, post-processing 156 kB (lazy, High preset only), CSS 4 kB |
-| `npm test` | **47/47 passed** (5 files) |
-| `npm run e2e` | **61/61 passed** (viewport 960×570, Low preset for responsiveness under software rendering) |
+| `npm test` | **64/64 passed** (9 files) |
+| `npm run e2e` | **68/68 passed** (viewport 960×570, Low preset for responsiveness under software rendering) |
 
 ### Unit tests (`tests/`)
 
@@ -57,9 +57,19 @@ real touch hardware. No frame-rate claim is made for real hardware.
   seat invariants hold all day; everyone has badged out and the building is empty by 19:25; restroom spots are walkable;
   lift doors re-open for someone in the doorway; the real-time clock runs one simulated minute per real minute.
 
+- **training.test.ts (8)** — the grid search picks the in-sample best and validates it on unseen sessions; some
+  strategies pass and some fail; all 10 traders go through the lab; Training Room sessions (≤12, no double booking,
+  traders after the close) raise skill; the CEO report and end-of-day report; records survive reloads.
+- **live.test.ts (3)** — Co-Invest payload parsing; switching to live instruments re-keys the books and sizes positions
+  at live prices; the live lab forward test is suspended after losing round trips.
+- **workflow.test.ts (4)** — two full days: research ideas flow researcher → PM → trader; fat-finger errors are blocked
+  or unwound with the cost booked; work mistakes lead to coaching; the CEO report shows it.
+- **world-markets.test.ts (2)** — exchange sessions across time zones, lunch breaks, weekends and the US daylight-saving
+  change; a world markets screen in each of the ten rooms.
+
 ### Browser acceptance (`e2e/run.mjs`)
 
-All 61 checks passed, including:
+All 68 checks passed, including:
 
 - Loads with *Office Simulation* / *Simulated Data* labels; 30 employees; Enter Office → walkthrough (pointer lock was granted in headless Chromium); spawn at reception.
 - The day starts with an empty building; the real-time clock option runs 1 simulated minute per real minute; by 07:50 staff have badged in at the entrance and reached their floors, some by lift (screenshot `19-morning-arrivals.png`).
@@ -79,6 +89,8 @@ All 61 checks passed, including:
 - Teleport to every one of the 21 rooms yields a valid standing spot on the right floor.
 - Mobile emulation (412×860, touch): the on-screen joystick moves the player.
 - Owner tools: `O` opens the Owner panel; calling everyone to the Conference Room gets 30/30 in the room; a typed question gets a live-data reply; "Come to me" brings the trader to within 1.3 m; the CEO stands to greet and sits once the owner sits.
+- Training: the owner starts the programme, all 10 traders finish the strategy lab, the CEO report and Workflow tab render.
+- Live mode with a stubbed claude.ai runtime: real instrument symbols with feed prices, LIVE chip, only read-only Co-Invest tools called, market wall shows headlines; a (stub) Claude reply's `go_to_room` tool call sends the employee to the Boardroom.
 - No uncaught page errors or console errors; **no network requests to any host other than the local server**.
 
 ## Performance measurements (what could be measured)

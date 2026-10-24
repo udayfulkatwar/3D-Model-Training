@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-23T11:07:09.735Z",
+  "date": "2026-10-24T11:50:24.963Z",
   "browser": "Chromium 141.0.7390.37 headless",
   "renderer": "SwiftShader (software)",
   "results": [
@@ -26,17 +26,17 @@
     {
       "name": "W moves the player forward (north)",
       "ok": true,
-      "detail": "17.60 -> 17.29"
+      "detail": "17.60 -> 16.79"
     },
     {
       "name": "Collision stops the player at the reception desk",
       "ok": true,
-      "detail": "stopped at z=14.73"
+      "detail": "stopped at z=14.75"
     },
     {
       "name": "Exterior wall blocks movement",
       "ok": true,
-      "detail": "stopped at x=0.45"
+      "detail": "stopped at x=0.43"
     },
     {
       "name": "Player position stays valid",
@@ -46,7 +46,7 @@
     {
       "name": "Closed door blocks the player",
       "ok": true,
-      "detail": "z=6.38"
+      "detail": "z=6.35"
     },
     {
       "name": "Door opens with E when aimed at (prompt shown)",
@@ -56,12 +56,12 @@
     {
       "name": "Open door lets the player through",
       "ok": true,
-      "detail": "z=3.67"
+      "detail": "z=4.01"
     },
     {
       "name": "Flight A climbs to the mid landing",
       "ok": true,
-      "detail": "y=2.00 z=0.56"
+      "detail": "y=2.00 z=1.12"
     },
     {
       "name": "Flight B reaches the first floor",
@@ -71,7 +71,7 @@
     {
       "name": "Player can walk into the elevator car",
       "ok": true,
-      "detail": "z=4.92"
+      "detail": "z=5.60"
     },
     {
       "name": "Elevator carries the player to the second floor",
@@ -81,7 +81,7 @@
     {
       "name": "Player exits the elevator on the second floor",
       "ok": true,
-      "detail": "z=7.16 y=8.00"
+      "detail": "z=8.00 y=8.00"
     },
     {
       "name": "Overview cutaway selects floor 0",
@@ -99,6 +99,21 @@
       "detail": "{\"mode\":\"overview\",\"f\":2,\"vis\":[true,true,true]}"
     },
     {
+      "name": "The day starts with an empty building (everyone off-site)",
+      "ok": true,
+      "detail": "{\"onSite\":0,\"minute\":390}"
+    },
+    {
+      "name": "Real-time clock runs 1 simulated minute per real minute",
+      "ok": true,
+      "detail": "1.2 simulated s in 3 real s"
+    },
+    {
+      "name": "Staff badge in at the entrance and walk to their floors (stairs and lift)",
+      "ok": true,
+      "detail": "{\"onSite\":23,\"badged\":23,\"lift\":12}"
+    },
+    {
       "name": "Directory search filters employees",
       "ok": true,
       "detail": "1 result(s)"
@@ -111,7 +126,7 @@
     {
       "name": "Go to Employee places the player next to them",
       "ok": true,
-      "detail": "distance 2.77 m"
+      "detail": "distance 1.49 m"
     },
     {
       "name": "Profile shows task, activity, department and workstation",
@@ -136,7 +151,7 @@
     {
       "name": "Switching a panel tab switches the in-world monitor (same state)",
       "ok": true,
-      "detail": "{\"sim\":0,\"drawn\":\"Positions\",\"panel\":\"Positions\"}"
+      "detail": "{\"sim\":0,\"drawn\":\"Trade blotter\",\"panel\":\"Trade blotter\"}"
     },
     {
       "name": "In-world screen redraws to the selected tab",
@@ -166,7 +181,7 @@
     {
       "name": "Risk application lists the alert lifecycle",
       "ok": true,
-      "detail": "Risk Monitor · LimitsLimitsAlerts14:26Simulated DataRisk alerts 13:38 RA00287 Macro drawdown 1.06% (limit 1.00%) · RESOL"
+      "detail": "Risk Monitor · LimitsLimitsAlerts14:25Simulated DataALERT RA00262: Macro drawdown 1.16% > 1.00% · ACTIONRisk alerts 13:3"
     },
     {
       "name": "Pause freezes the simulation clock",
@@ -181,7 +196,7 @@
     {
       "name": "Reset restarts the simulated day",
       "ok": true,
-      "detail": "{\"minute\":460,\"trades\":0,\"alerts\":0}"
+      "detail": "{\"minute\":390,\"trades\":0,\"alerts\":0}"
     },
     {
       "name": "Selected chairs offer a seated viewpoint",
@@ -211,7 +226,7 @@
     {
       "name": "Talking to an employee gets a reply from live data",
       "ok": true,
-      "detail": "ur P&L today?08:05 My positions are $23.2k today (simulated); the Equities book is $64.9k."
+      "detail": " P&L today?06:55 My positions are -$87.6k today (simulated); the Equities book is -$47.1k."
     },
     {
       "name": "\"Come to me\" brings the employee to the owner",
@@ -227,6 +242,26 @@
       "name": "CEO sits down after the owner takes a seat",
       "ok": true,
       "detail": ""
+    },
+    {
+      "name": "Owner starts the training programme (strategy lab + Training Room sessions)",
+      "ok": true,
+      "detail": "10 traders started the strategy lab. 3 Training Room sessions booked."
+    },
+    {
+      "name": "Every trader backtested and validated a strategy; only validated ones go live",
+      "ok": true,
+      "detail": "{\"trained\":10,\"live\":4,\"saved\":true}"
+    },
+    {
+      "name": "CEO report shows paper account, books, risk, ops, tech, people and training",
+      "ok": true,
+      "detail": "CEO report · Day 1 · 10:26Prepared by Alexander Reed from the live office state. Paper trading only: simulated money, fi"
+    },
+    {
+      "name": "Workflow tab shows the research → PM → trader → risk → ops chain, tickets and mistakes",
+      "ok": true,
+      "detail": "How work flowsResearchers publish notes → the PM of the book approves or rejects the idea → the cove"
     },
     {
       "name": "Editor saves locally",
@@ -276,12 +311,27 @@
     {
       "name": "Renderer statistics collected for each preset",
       "ok": true,
-      "detail": "{\"low\":{\"fps\":1,\"calls\":132,\"triangles\":199470,\"textures\":164,\"geometries\":399},\"medium\":{\"fps\":1,\"calls\":132,\"triangles\":199830,\"textures\":38,\"geometries\":135},\"high\":{\"fps\":0,\"calls\":277,\"triangles\":401323,\"textures\":60,\"geometries\":159}}"
+      "detail": "{\"low\":{\"fps\":1,\"calls\":133,\"triangles\":199472,\"textures\":174,\"geometries\":409},\"medium\":{\"fps\":1,\"calls\":133,\"triangles\":199832,\"textures\":39,\"geometries\":136},\"high\":{\"fps\":0,\"calls\":278,\"triangles\":401325,\"textures\":61,\"geometries\":160}}"
+    },
+    {
+      "name": "Live mode: real instrument symbols with feed prices, LIVE chip, read-only tools only",
+      "ok": true,
+      "detail": "{\"live\":true,\"syms\":12,\"nvda\":100.35369481967044,\"chip\":\"● LIVE PRICES · 0s\",\"calls\":[\"Co-Invest/analyze_markets_batch\",\"Co-Invest/get_news\"]}"
+    },
+    {
+      "name": "Market wall shows live-priced instruments and headlines (paper trading tag)",
+      "ok": true,
+      "detail": "Market Display WallTrading Floor · First FloorClose ✕ASTRA Markets · Live prices · Paper06:30Live prices · PaperInstrumentsSymNameLastChgNVD"
+    },
+    {
+      "name": "Claude reply is shown and its tool call acts in the office (sent to the Boardroom)",
+      "ok": true,
+      "detail": "{\"reply\":\"Going to the Boardroom now.\",\"order\":\"room\",\"room\":\"s-board\"}"
     },
     {
       "name": "Touch joystick moves the player",
       "ok": true,
-      "detail": "0.37 m"
+      "detail": "0.51 m"
     },
     {
       "name": "No blocking runtime errors",
