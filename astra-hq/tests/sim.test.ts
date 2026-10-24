@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { defaultConfig } from '../src/config/defaults';
 import { Simulation } from '../src/sim/simulation';
-import { MONITOR_INDEX, SEAT_INDEX, WS_INDEX } from '../src/world/furniture';
+import { MONITOR_INDEX, WS_INDEX } from '../src/world/furniture';
 import { isWalkable } from '../src/world/nav';
 import { STATIC_BOXES, inStairwell } from '../src/world/physics';
 
@@ -97,7 +97,7 @@ describe('a full simulated day', () => {
   });
 
   it('turns a simulated breach into an alert, a review meeting with the PM, and a resolution', () => {
-    const alert = sim.finance.alerts.find((a) => a.metric === 'drawdown');
+    const alert = [...sim.finance.alerts].sort((a, b) => a.t - b.t).find((a) => a.metric === 'drawdown'); // the first breach of the day
     expect(alert).toBeTruthy();
     expect(alert!.t).toBeGreaterThanOrEqual(13 * 60 + 35);
     const review = sim.events.find((e) => e.kind === 'risk-review' && e.alertId === alert!.id)!;
@@ -210,7 +210,12 @@ describe('clock controls', () => {
     a.reset();
     expect(a.minute).toBe(DAY_START);
     expect(a.finance.trades.length).toBe(0);
-    for (const e of a.employees) expect(SEAT_INDEX.get(e.ws.seatId)!.x).toBeCloseTo(e.x, 5);
+    // a new day starts with the building empty: everyone is off-site until their arrival time
+    for (const e of a.employees) {
+      expect(e.phase).toBe('away');
+      expect(e.hours.arrive).toBeGreaterThan(DAY_START);
+      expect(a.reservations.get(e.ws.seatId)).toBe(e.cfg.id);
+    }
   });
 
   it('rolls over into a second day with a fresh schedule', () => {

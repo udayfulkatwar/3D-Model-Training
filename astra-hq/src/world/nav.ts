@@ -1,11 +1,12 @@
 // Navigation grid (0.2 m cells per floor) with A* search, line-of-sight smoothing and stair transfers.
 import { BLD, DOORS, FLOOR_COUNT, FLOOR_H, STAIR } from './building';
-import { STATIC_BOXES, floorWalkable } from './physics';
+import { PLAZA, STATIC_BOXES, floorWalkable } from './physics';
 
 export const NAV_CELL = 0.2;
 export const NAV_RADIUS = 0.24;
 const NW = Math.ceil((BLD.x1 + 0.01) / NAV_CELL);
-const ND = Math.ceil((BLD.z1 + 0.01) / NAV_CELL);
+// rows extend over the entrance plaza so people can walk in and out of the building
+const ND = Math.ceil((PLAZA.z1 + 0.01) / NAV_CELL);
 
 export interface Waypoint {
   x: number;
@@ -33,7 +34,7 @@ function buildGrid(floor: number): FloorGrid {
     for (let ix = 0; ix < NW; ix++) {
       const x = (ix + 0.5) * NAV_CELL;
       const z = (iz + 0.5) * NAV_CELL;
-      walk[iz * NW + ix] = floorWalkable(floor, x, z) && z < BLD.z1 - 0.2 ? 1 : 0;
+      walk[iz * NW + ix] = floorWalkable(floor, x, z) ? 1 : 0;
     }
   }
   // Block cells covered by obstacles (inflated by the walker radius) in the body height band.
@@ -64,7 +65,6 @@ function buildGrid(floor: number): FloorGrid {
     for (let iz = Math.floor(z0 / NAV_CELL); iz <= Math.floor(z1 / NAV_CELL); iz++) {
       for (let ix = Math.floor(x0 / NAV_CELL); ix <= Math.floor(x1 / NAV_CELL); ix++) {
         if (ix < 0 || iz < 0 || ix >= NW || iz >= ND) continue;
-        if (d.kind === 'auto') continue; // employees never use the entrance
         // Open the wall cells in the doorway (the wall box was rasterised above).
         const cx = (ix + 0.5) * NAV_CELL;
         const cz = (iz + 0.5) * NAV_CELL;

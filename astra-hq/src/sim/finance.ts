@@ -352,10 +352,10 @@ export class Finance {
       const alert = this.alerts.find((a) => a.id === ds.alertId);
       if (!alert) { this.derisk.delete(bookId); continue; }
       const allDone = [...this.traders.values()].filter((t) => t.bookId === bookId).every((t) => [...t.positions.values()].every((p) => p.qty === 0 || t.reduced.has(p.sym)));
-      if (m.gross <= ds.targetGross || allDone || minute - ds.startedAt > 120) {
+      if (m.gross <= ds.targetGross || allDone || minute - ds.startedAt > 120 || minute >= MARKET_CLOSE) {
         alert.status = 'resolved';
         alert.resolvedAt = minute;
-        alert.log.push({ t: minute, text: m.gross <= ds.targetGross || allDone ? `Exposure reduced to ${(m.gross / 1e6).toFixed(1)}m (from ${(alert.grossAtBreach / 1e6).toFixed(1)}m). Alert closed.` : 'Reduction window ended; residual exposure accepted by PM and Head of Risk. Alert closed.' });
+        alert.log.push({ t: minute, text: m.gross <= ds.targetGross || allDone ? `Exposure reduced to ${(m.gross / 1e6).toFixed(1)}m (from ${(alert.grossAtBreach / 1e6).toFixed(1)}m). Alert closed.` : minute >= MARKET_CLOSE ? 'Market closed before the full reduction; residual exposure carried overnight with PM and Head of Risk sign-off. Alert closed.' : 'Reduction window ended; residual exposure accepted by PM and Head of Risk. Alert closed.' });
         this.derisk.delete(bookId);
       }
     }

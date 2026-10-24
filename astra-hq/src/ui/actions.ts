@@ -11,6 +11,10 @@ export function goToEmployee(id: string) {
   const sim = getSim();
   const e = sim.byId.get(id);
   if (!e) return;
+  if (e.phase === 'away') {
+    useUI.getState().showToast(`${e.cfg.name} is out of the office (${e.task.replace(/^Out of office \(|\)$/g, '')}). Use Talk to phone them or Call to me.`);
+    return;
+  }
   const floor = Math.max(0, Math.min(2, Math.floor((e.y + 0.3) / 4)));
   const front = rotLocal(0, 1.4, e.heading);
   let spot = nearestWalkable(floor, e.x + front.x, e.z + front.z, 2.5);

@@ -398,6 +398,10 @@ for (const [x0, mirror] of [[9.08, false], [13.53, true]] as const) {
   for (let i = 0; i < 3; i++) addFurn('stall', 0, x0 + 0.72 + i * 1.42, 0.95, 0, 1.4, 1.6, 2.1);
   addFurn('vanity', 0, mirror ? x0 + 0.32 : x0 + 3.98, 3.6, mirror ? HALF : -HALF, 2.2, 0.55, 0.85);
   addFurn('plant', 0, mirror ? x0 + 3.95 : x0 + 0.35, 5.5);
+  // occupancy spots for short breaks: in front of the cubicles and at the basins
+  const room = mirror ? 'b' : 'a';
+  for (let i = 0; i < 3; i++) standSpot(`wc-${room}-${i + 1}`, 0, Math.min(x0 + 0.72 + i * 1.42, mirror ? 99 : x0 + 3.35), 2.25, PI);
+  for (let i = 0; i < 2; i++) standSpot(`wc-${room}-v${i + 1}`, 0, mirror ? x0 + 1.05 : x0 + 3.25, 3.1 + i * 1.0, mirror ? -HALF : HALF);
 }
 
 // =====================================================================

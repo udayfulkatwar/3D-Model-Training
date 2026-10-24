@@ -244,7 +244,7 @@ export function People({ farHz }: { farHz: number }) {
     let selected: Employee | undefined;
     const sel = ui.panel?.kind === 'employee' ? ui.panel.id : ui.followId;
     emps.forEach((e, i) => {
-      const visible = vis.floors[Math.max(0, Math.min(2, e.floor))] || vis.floors[Math.max(0, Math.min(2, Math.floor((e.y + 0.3) / 4)))];
+      const visible = e.phase !== 'away' && (vis.floors[Math.max(0, Math.min(2, e.floor))] || vis.floors[Math.max(0, Math.min(2, Math.floor((e.y + 0.3) / 4)))]);
       if (e.cfg.id === sel) selected = e;
       if (!visible) {
         for (const [k, im] of meshes) {
@@ -268,7 +268,7 @@ export function People({ farHz }: { farHz: number }) {
     for (const im of meshes.values()) im.instanceMatrix.needsUpdate = true;
     shadowMesh.instanceMatrix.needsUpdate = true;
     if (ring.current) {
-      ring.current.visible = !!selected && vis.floors[Math.max(0, Math.min(2, selected.floor))];
+      ring.current.visible = !!selected && selected.phase !== 'away' && vis.floors[Math.max(0, Math.min(2, selected.floor))];
       if (selected) {
         const fy = Math.floor((selected.y + 0.3) / 4) * 4;
         ring.current.position.set(selected.x, fy + 0.02, selected.z);

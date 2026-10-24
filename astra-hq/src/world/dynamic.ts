@@ -102,7 +102,8 @@ export class DynamicWorld {
     return out;
   }
 
-  update(dt: number, agents: Agent[], liftOccupied: boolean) {
+  /** `liftBoarding`: someone is in the car doorway, so the doors must not close (safety edge). */
+  update(dt: number, agents: Agent[], liftOccupied: boolean, liftBoarding = false) {
     // swing animation + automatic entrance doors
     for (const d of this.doors.values()) {
       if (d.def.kind === 'auto') {
@@ -118,13 +119,17 @@ export class DynamicWorld {
       const target = d.open ? 1 : 0;
       if (d.t !== target) d.t = d.t < target ? Math.min(target, d.t + dt * speed) : Math.max(target, d.t - dt * speed);
     }
-    this.updateLift(dt, liftOccupied);
+    this.updateLift(dt, liftOccupied, liftBoarding);
   }
 
-  private updateLift(dt: number, occupied: boolean) {
+  private updateLift(dt: number, occupied: boolean, boarding: boolean) {
     const l = this.lift;
     switch (l.phase) {
       case 'idle': {
+        if (boarding && l.doorT > 0.85) {
+          l.holdTimer = Math.max(l.holdTimer, 1.5);
+          break;
+        }
         l.holdTimer -= dt;
         if (l.queue.length) {
           const next = l.queue[0];
@@ -142,6 +147,10 @@ export class DynamicWorld {
         break;
       }
       case 'closing':
+        if (boarding && l.doorT > 0) {
+          l.phase = 'opening'; // door edge sensor: re-open for the person stepping through
+          break;
+        }
         l.doorT = Math.max(0, l.doorT - dt * 1.2);
         if (l.doorT === 0) {
           const next = l.queue.shift();

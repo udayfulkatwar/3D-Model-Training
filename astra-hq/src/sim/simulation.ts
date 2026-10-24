@@ -3,22 +3,22 @@
 // monitor renders. Pure TypeScript: runs headless in tests and in the browser.
 import type { EmployeeConfig, OfficeConfig, RoleType } from '../config/types';
 import { ROLE_LABELS } from '../config/types';
-import { FLOOR_H, roomAt, roomById, ROOMS } from '../world/building';
+import { ELEVATOR, FLOOR_H, roomAt, roomById, ROOMS } from '../world/building';
 import { DynamicWorld, type Agent } from '../world/dynamic';
 import { MONITORS, SEATS, SEAT_INDEX, WORKSTATIONS, WS_INDEX, rotLocal, type Seat, type Workstation } from '../world/furniture';
 import { findPath, nearestWalkable, type Waypoint } from '../world/nav';
 import { fmtMoney, fmtTime } from '../util/math';
 import { hashRand } from '../util/rng';
 import { APPS, appFor, type AppId } from './apps';
-import { DAY_END, DAY_START, SIM_MIN_PER_REAL_SEC, WALK_SPEED, type Speed } from './constants';
+import { DAY_END, DAY_START, REALTIME_MIN_PER_SEC, SIM_MIN_PER_REAL_SEC, WALK_SPEED, type Speed } from './constants';
 import { BOOKABLE_FOR_REVIEW, INCIDENT_START, SHOCK_MINUTE, scheduledEvents, type OfficeEvent } from './events';
 import { BOOK_INDEX, Finance, type RiskAlert } from './finance';
 import { INSTRUMENTS, Market, fmtPx } from './market';
-import { buildSchedule, type Block } from './schedule';
+import { buildSchedule, workingHours, type Block } from './schedule';
 import { Tech } from './tech';
 
-export type Activity = 'working' | 'reviewing' | 'walking' | 'meeting' | 'cafe' | 'returning' | 'discussing' | 'investigating';
-export const ACTIVITIES: Activity[] = ['working', 'reviewing', 'walking', 'meeting', 'cafe', 'returning', 'discussing', 'investigating'];
+export type Activity = 'working' | 'reviewing' | 'walking' | 'meeting' | 'cafe' | 'returning' | 'discussing' | 'investigating' | 'break' | 'away';
+export const ACTIVITIES: Activity[] = ['working', 'reviewing', 'walking', 'meeting', 'cafe', 'returning', 'discussing', 'investigating', 'break', 'away'];
 export const ACTIVITY_LABEL: Record<Activity, string> = {
   working: 'Working',
   reviewing: 'Reviewing screens',
@@ -28,10 +28,12 @@ export const ACTIVITY_LABEL: Record<Activity, string> = {
   returning: 'Returning to desk',
   discussing: 'Discussing work',
   investigating: 'Investigating incident',
+  break: 'Short break',
+  away: 'Out of office',
 };
 export const ACTIVITY_COLOR: Record<Activity, string> = {
   working: '#5fb37a', reviewing: '#7fb6d9', walking: '#d9c27f', meeting: '#b48ad9', cafe: '#d99a6c',
-  returning: '#c9b26a', discussing: '#6cd9c4', investigating: '#e06c6c',
+  returning: '#c9b26a', discussing: '#6cd9c4', investigating: '#e06c6c', break: '#a3a8d9', away: '#6b7280',
 };
 
 export type Pose = 'sit' | 'sitType' | 'sitTalk' | 'stand' | 'standTalk' | 'walk';
@@ -42,6 +44,8 @@ export type Intent =
   | { kind: 'lunch'; blockId: string }
   | { kind: 'coffee'; blockId: string; where: 'cafe' | 'lounge' }
   | { kind: 'discuss'; blockId: string; withId: string }
+  | { kind: 'restroom'; blockId: string }
+  | { kind: 'home' }
   | { kind: 'owner'; orderId: number };
 
 /** Instructions given by the company owner (the visitor) to an employee. */
@@ -53,7 +57,15 @@ export type OwnerOrder =
 export interface ChatLine { t: number; day: number; from: 'owner' | 'employee'; text: string }
 export interface OwnerMessage { id: number; t: number; day: number; empId: string; name: string; text: string }
 
-type Phase = 'seated' | 'standing' | 'walking' | 'sitting-down' | 'standing-up' | 'door-wait';
+type Phase = 'seated' | 'standing' | 'walking' | 'sitting-down' | 'standing-up' | 'door-wait' | 'lift' | 'away';
+
+/** An elevator trip: walk to the lift lobby, call the car, board, ride, step out, carry on. */
+export interface LiftTrip { from: number; to: number; stage: 'approach' | 'wait' | 'enter' | 'ride' | 'exit'; t: number; slot: number; lobby: { x: number; z: number } }
+
+const LIFT_CAPACITY = 6;
+/** Standing positions inside the car (3 × 2). */
+const LIFT_SLOTS = [21.4, 22.1, 22.8].flatMap((x) => [4.05, 4.95].map((z) => ({ x, z })));
+const RESTROOMS = ['g-wc-a', 'g-wc-b'];
 
 export interface HistoryEntry { t: number; day: number; activity: Activity; text: string; room: string }
 
@@ -104,6 +116,11 @@ export interface Employee {
   talking: boolean;
   /** CEO courtesy: stand up when the owner enters the office, sit again afterwards. */
   greet: { stage: 'up' | 'hold' | 'down'; t: number } | null;
+  /** Today's arrival and departure times (simulated minutes). */
+  hours: { arrive: number; leave: number };
+  /** Access-control record for today: when the badge was used at the entrance. */
+  badge: { in: number | null; out: number | null };
+  liftTrip: LiftTrip | null;
 }
 
 export interface MonitorState { appId: AppId; tab: number; pinnedUntil: number; lastChange: number }
@@ -150,6 +167,8 @@ export class Simulation {
   private orderSeq = 100;
   private ownerSeq = 1;
   private ceoGreetArmed = true;
+  /** Clock runs at real time (1 simulated minute per real minute) instead of the 20× office clock. */
+  realtime = false;
 
   constructor(config: OfficeConfig) {
     this.config = config;
@@ -205,7 +224,7 @@ export class Simulation {
       discussWith: null, coffeePhase: null, coffeeUntil: 0, startedBlocks: new Set(), history: [], schedule: [],
       work: { title: topic.title, sym: topic.sym, words: 600 + Math.floor(hashRand(this.seed, 'words', cfg.id) * 900), file: DEV_FILES[index % DEV_FILES.length], line: 40 + Math.floor(hashRand(this.seed, 'line', cfg.id) * 200) },
       lastAction: null, doorToClose: null, laneOffset: (hashRand(this.seed, 'lane', cfg.id) - 0.5) * 0.24,
-      order: null, chat: [], talking: false, greet: null,
+      order: null, chat: [], talking: false, greet: null, hours: { arrive: DAY_START, leave: DAY_END }, badge: { in: null, out: null }, liftTrip: null,
     };
     this.reservations.set(seat.id, cfg.id);
     return e;
@@ -216,10 +235,35 @@ export class Simulation {
     for (const e of this.employees) {
       e.schedule = buildSchedule(this.seed, this.day, e.cfg, e.index, e.ws.floor, this.config.employees, this.events);
       e.startedBlocks.clear();
-      e.task = this.deskTask(e);
-      this.pushHistory(e, `Day ${this.day + 1} started at ${e.ws.label}`);
+      e.hours = workingHours(this.seed, this.day, e.cfg, this.events, e.schedule);
+      this.placeAway(e);
+      e.badge = { in: null, out: null };
+      this.pushHistory(e, `Day ${this.day + 1}: due in at ${fmtTime(e.hours.arrive)}`);
     }
     this.addLog(`Simulated day ${this.day + 1} begins. ${this.events.length} meetings scheduled.`, 'office');
+  }
+
+  /** Outside on the plaza, off-site: where people appear from in the morning and disappear to at night. */
+  private exitSpot(e: Employee): Seat {
+    const w = nearestWalkable(0, 16.2 + (e.index % 10) * 0.65, 26.6, 1) ?? { x: 19, z: 26.6 };
+    return { id: `exit:${e.cfg.id}`, floor: 0, x: w.x, z: w.z, y: 0, heading: 0, kind: 'stand', roomId: 'outside', approach: w };
+  }
+
+  private placeAway(e: Employee) {
+    const s = this.exitSpot(e);
+    if (e.seatId && e.seatId !== e.ws.seatId) this.release(e.seatId, e.cfg.id);
+    this.reservations.set(e.ws.seatId, e.cfg.id);
+    this.reservations.set(s.id, e.cfg.id);
+    Object.assign(e, {
+      x: s.x, y: 0, z: s.z, floor: 0, heading: 0, seatId: s.id, target: s, at: s, phase: 'away', path: [], pathI: 0,
+      intent: { kind: 'home' }, intentKey: 'home', activity: 'away', task: `Out of office (due in at ${fmtTime(e.hours.arrive)})`,
+      discussWith: null, coffeePhase: null, pose: 'stand', liftTrip: null, doorToClose: null, talking: false,
+    });
+  }
+
+  /** In the building (not off-site). */
+  onSite(e: Employee): boolean {
+    return e.phase !== 'away';
   }
 
   private initMonitors() {
@@ -247,7 +291,7 @@ export class Simulation {
   /** Advance by a real-time delta (seconds); applies pause and speed. */
   tick(realDt: number) {
     if (this.paused) {
-      this.dyn.update(Math.min(realDt, 0.1), this.agents(), this.liftOccupied());
+      this.dyn.update(Math.min(realDt, 0.1), this.agents(), this.liftOccupied(), this.liftBoarding());
       return;
     }
     // clamp long frames (tab switches, slow devices) so the office never jumps ahead
@@ -260,27 +304,39 @@ export class Simulation {
     while (remaining > 1e-6) {
       const step = Math.min(remaining, 0.1);
       remaining -= step;
-      this.minute += step * SIM_MIN_PER_REAL_SEC;
+      this.minute += step * (this.realtime ? REALTIME_MIN_PER_SEC : SIM_MIN_PER_REAL_SEC);
       while (Math.floor(this.minute) > this.lastMinute) {
         this.lastMinute++;
         this.onMinute(this.lastMinute);
       }
       for (const e of this.employees) this.updateEmployee(e, step);
       this.updateCeoCourtesy();
-      this.dyn.update(step, this.agents(), this.liftOccupied());
+      this.dyn.update(step, this.agents(), this.liftOccupied(), this.liftBoarding());
+      // riders move with the car
+      for (const e of this.employees) if (e.liftTrip?.stage === 'ride') e.y = this.dyn.lift.y;
       if (this.minute >= DAY_END) this.nextDay();
     }
   }
 
   private agents(): Agent[] {
-    const a: Agent[] = this.employees.map((e) => ({ x: e.x, y: e.y, z: e.z }));
+    const a: Agent[] = this.employees.filter((e) => e.phase !== 'away').map((e) => ({ x: e.x, y: e.y, z: e.z }));
     if (this.player) a.push(this.player);
     return a;
   }
 
   private liftOccupied(): boolean {
     const p = this.player;
-    return !!p && p.x > 20.9 && p.x < 23.3 && p.z > 3.5 && p.z < 5.95;
+    if (p && p.x > 20.9 && p.x < 23.3 && p.z > 3.5 && p.z < 5.95) return true;
+    return this.employees.some((e) => e.liftTrip?.stage === 'ride');
+  }
+
+  /** Someone is stepping in or out of the car: the doors stay open (door sensor). */
+  private liftBoarding(): boolean {
+    return this.employees.some((e) => e.liftTrip?.stage === 'enter' || e.liftTrip?.stage === 'exit');
+  }
+
+  private liftRiders(): Employee[] {
+    return this.employees.filter((e) => e.liftTrip?.stage === 'enter' || e.liftTrip?.stage === 'ride');
   }
 
   private nextDay() {
@@ -292,14 +348,10 @@ export class Simulation {
     this.finance.newDay();
     this.tech.newDay(INCIDENT_START);
     this.cafeOrders = [];
-    // overnight: everyone is back at their desk the next morning
+    // overnight: everyone has gone home; tomorrow they come in through the entrance again
     for (const e of this.employees) {
       e.order = null;
       e.greet = null;
-      if (e.seatId && e.seatId !== e.ws.seatId) this.release(e.seatId, e.cfg.id);
-      const seat = SEAT_INDEX.get(e.ws.seatId)!;
-      this.reservations.set(seat.id, e.cfg.id);
-      Object.assign(e, { x: seat.x, y: seat.y, z: seat.z, floor: e.ws.floor, heading: seat.heading, seatId: seat.id, target: seat, at: seat, phase: 'seated', path: [], intent: { kind: 'desk' }, intentKey: 'desk', activity: 'working', discussWith: null, coffeePhase: null, pose: 'sitType' });
     }
     this.startDay();
     this.version++;
@@ -490,8 +542,17 @@ export class Simulation {
         return { kind: 'event', eventId: ev.id, remote };
       }
     }
+    // before arriving and after leaving for the day (owner's instructions and meetings still bring people in)
+    if (m < e.hours.arrive || m >= e.hours.leave) return { kind: 'home' };
+    // a restroom trip is finished once there (a few minutes), however long the walk took
+    if (e.intent.kind === 'restroom' && m < e.coffeeUntil) return e.intent;
     for (const b of e.schedule) {
       if (m < b.start || m >= b.end) continue;
+      if (b.kind === 'restroom') {
+        if (e.intent.kind === 'restroom' && e.intent.blockId === b.id) return e.intent;
+        if (!e.startedBlocks.has(b.id)) return { kind: 'restroom', blockId: b.id };
+        continue;
+      }
       if (b.kind === 'lunch') return { kind: 'lunch', blockId: b.id };
       if (b.kind === 'coffee') return { kind: 'coffee', blockId: b.id, where: b.where ?? 'cafe' };
       if (b.kind === 'discuss' && b.withId) {
@@ -515,6 +576,8 @@ export class Simulation {
       case 'lunch': return `lunch:${i.blockId}`;
       case 'coffee': return `coffee:${i.blockId}`;
       case 'discuss': return `discuss:${i.blockId}`;
+      case 'restroom': return `restroom:${i.blockId}`;
+      case 'home': return 'home';
       case 'owner': return `owner:${i.orderId}`;
     }
   }
@@ -605,6 +668,16 @@ export class Simulation {
         e.startedBlocks.add(want.blockId);
         break;
       }
+      case 'restroom': {
+        e.startedBlocks.add(want.blockId);
+        e.coffeeUntil = Number.MAX_SAFE_INTEGER;
+        target = this.pickSeat(e, SEATS.filter((s) => RESTROOMS.includes(s.roomId) && s.kind === 'stand'), `wc:${want.blockId}`);
+        if (!target) { want = { kind: 'desk' }; target = deskSeat; } // all occupied: try again at the next break
+        break;
+      }
+      case 'home':
+        target = this.exitSpot(e);
+        break;
       case 'owner':
         target = this.ownerTarget(e) ?? deskSeat;
         break;
@@ -662,6 +735,28 @@ export class Simulation {
   }
 
   private depart(e: Employee, target: Seat, m: number) {
+    if (e.phase === 'away') {
+      this.pushHistory(e, 'Arrived at the office (badged in at the entrance)');
+      this.addLog(`${e.cfg.name} badged in at the entrance`, 'office');
+      if (e.badge.in === null) e.badge.in = Math.floor(this.minute);
+      // called in early (e.g. by the owner): they stay for the day rather than going home again
+      if (this.minute < e.hours.arrive) e.hours.arrive = Math.floor(this.minute);
+    }
+    // Inside or stepping into the car: keep the ride and only change the floor; the route continues from there.
+    const trip = e.liftTrip;
+    if (trip && e.phase === 'lift' && trip.stage !== 'wait') {
+      e.at = null;
+      if (trip.stage !== 'exit' && trip.to !== target.floor) {
+        trip.to = target.floor;
+        if (trip.stage === 'ride') this.dyn.selectFloor(target.floor);
+      }
+      this.setWalkingTask(e, target);
+      return;
+    }
+    if (trip) {
+      e.liftTrip = null;
+      if (e.phase === 'lift') e.phase = 'standing';
+    }
     const fromSeat = (e.phase === 'seated' || e.phase === 'sitting-down') && !!e.at;
     let start = { x: e.x, z: e.z };
     if (fromSeat && e.at) start = nearestWalkable(e.at.floor, e.at.approach.x, e.at.approach.z, 0.8) ?? e.at.approach;
@@ -677,10 +772,22 @@ export class Simulation {
       const last = prefix[prefix.length - 1];
       from = { floor: last.floor, x: last.x, z: last.z };
     }
-    const rest = findPath(from, { floor: target.floor, x: goal.x, z: goal.z }, (id) => {
+    const closed = (id: string) => {
       const d = this.dyn.doors.get(id);
       return !!d && !d.open;
-    });
+    };
+    // Changing floors: two or more floors always by lift, one floor sometimes (most people take the stairs).
+    let rest: Waypoint[] | null = null;
+    const floors = Math.abs(target.floor - from.floor);
+    if (!prefix.length && floors > 0 && (floors >= 2 || hashRand(this.seed, 'lift', e.cfg.id, this.day, Math.floor(this.minute)) < 0.3)) {
+      const lobby = this.liftLobby(from.floor, e);
+      const toLift = lobby && findPath(from, { floor: from.floor, x: lobby.x, z: lobby.z }, closed);
+      if (lobby && toLift) {
+        rest = toLift;
+        e.liftTrip = { from: from.floor, to: target.floor, stage: 'approach', t: 0, slot: -1, lobby };
+      }
+    }
+    if (!rest) rest = findPath(from, { floor: target.floor, x: goal.x, z: goal.z }, closed);
     const path = rest ? [...prefix, ...rest] : null;
     if (!path) {
       // Should not happen (layout tests cover reachability); fall back to a direct placement.
@@ -699,11 +806,109 @@ export class Simulation {
     } else {
       e.phase = 'walking';
     }
-    const dest = roomById(target.roomId)?.name ?? 'destination';
-    e.activity = e.intent.kind === 'desk' ? 'returning' : 'walking';
-    e.task = e.intent.kind === 'desk' ? 'Returning to desk' : `Walking to ${this.purpose(e)} (${dest})`;
-    this.pushHistory(e, e.task);
+    this.setWalkingTask(e, target);
     void m;
+  }
+
+  private setWalkingTask(e: Employee, target: Seat) {
+    const dest = target.roomId === 'outside' ? 'entrance' : roomById(target.roomId)?.name ?? 'destination';
+    const lift = e.liftTrip ? ' by lift' : '';
+    e.activity = e.intent.kind === 'desk' ? 'returning' : 'walking';
+    if (e.intent.kind === 'home') e.task = `Leaving for the day${lift}`;
+    else if (e.intent.kind === 'desk') e.task = e.history[0]?.text.startsWith('Arrived') ? `Arrived; heading to ${e.ws.label}${lift}` : `Returning to desk${lift}`;
+    else e.task = `Walking to ${this.purpose(e)} (${dest})${lift}`;
+    this.pushHistory(e, e.task);
+  }
+
+  /** Waiting spot in front of the lift doors on a floor (spread out a little per person). */
+  private liftLobby(floor: number, e: Employee): { x: number; z: number } | null {
+    const ox = ((e.index % 5) - 2) * 0.32;
+    const oz = 0.75 + (e.index % 3) * 0.3;
+    return nearestWalkable(floor, ELEVATOR.doorCenter + ox, 6.0 + oz, 0.8);
+  }
+
+  /** Elevator ride state machine: wait → enter → ride → exit, then continue on foot. */
+  private rideLift(e: Employee, dt: number) {
+    const trip = e.liftTrip;
+    if (!trip) { e.phase = 'standing'; return; }
+    const L = this.dyn.lift;
+    trip.t += dt;
+    const moveTo = (x: number, z: number, sp: number): boolean => {
+      const dx = x - e.x;
+      const dz = z - e.z;
+      const d = Math.hypot(dx, dz);
+      const step = e.speed * 0.8 * dt;
+      if (d > 1e-3) e.heading = Math.atan2(dx, dz);
+      if (d <= step * sp) { e.x = x; e.z = z; return true; }
+      e.x += (dx / d) * step * sp;
+      e.z += (dz / d) * step * sp;
+      return false;
+    };
+    switch (trip.stage) {
+      case 'wait': {
+        e.heading = Math.PI; // facing the lift doors
+        const riders = this.liftRiders();
+        if (this.dyn.liftDoorOpenAt(trip.from) && riders.length < LIFT_CAPACITY) {
+          const used = new Set(riders.map((o) => o.liftTrip!.slot));
+          trip.slot = LIFT_SLOTS.findIndex((_, i) => !used.has(i));
+          trip.stage = 'enter';
+          trip.t = 0;
+        } else if (!this.dyn.liftDoorOpenAt(trip.from)) {
+          const atFloor = L.phase !== 'moving' && Math.abs(L.y - trip.from * FLOOR_H) < 0.02;
+          if (!(atFloor && (L.phase === 'opening')) && !L.queue.includes(trip.from)) this.dyn.callLift(trip.from);
+        }
+        // nobody comes for a long time: take the stairs instead
+        if (trip.stage === 'wait' && trip.t > 70) {
+          e.liftTrip = null;
+          e.phase = 'standing';
+          this.pushHistory(e, 'Lift busy; taking the stairs');
+          if (e.target) this.depart(e, e.target, this.minute);
+        }
+        break;
+      }
+      case 'enter': {
+        const s = LIFT_SLOTS[trip.slot];
+        // through the middle of the doorway, then to a free spot inside
+        const inside = e.z < 5.9;
+        if (inside ? moveTo(s.x, s.z, 1) : (moveTo(ELEVATOR.doorCenter, 5.7, 1), false)) {
+          trip.stage = 'ride';
+          trip.t = 0;
+          e.heading = 0; // face the doors
+          this.dyn.selectFloor(trip.to);
+        }
+        break;
+      }
+      case 'ride': {
+        e.y = L.y;
+        e.floor = Math.max(0, Math.round(L.y / FLOOR_H));
+        const there = L.phase !== 'moving' && Math.abs(L.y - trip.to * FLOOR_H) < 0.02;
+        if (there && this.dyn.liftDoorOpenAt(trip.to)) {
+          trip.stage = 'exit';
+          trip.t = 0;
+          e.y = trip.to * FLOOR_H;
+          e.floor = trip.to;
+          trip.lobby = this.liftLobby(trip.to, e) ?? { x: ELEVATOR.doorCenter, z: 6.8 };
+        } else if (there && L.phase === 'idle') {
+          this.dyn.callLift(trip.to); // doors closed at our floor: press "open"
+        } else if (!there && !L.queue.includes(trip.to) && !(L.phase === 'moving' && L.target === trip.to)) {
+          this.dyn.selectFloor(trip.to);
+        }
+        break;
+      }
+      case 'exit': {
+        const out = e.z > 6.1;
+        if (out ? moveTo(trip.lobby.x, trip.lobby.z, 1) : (moveTo(ELEVATOR.doorCenter, 6.3, 1), false)) {
+          e.liftTrip = null;
+          e.phase = 'standing';
+          e.y = e.floor * FLOOR_H;
+          e.segStartY = e.y;
+          if (e.target) this.depart(e, e.target, this.minute);
+        }
+        break;
+      }
+      case 'approach':
+        break;
+    }
   }
 
   private purpose(e: Employee): string {
@@ -715,6 +920,8 @@ export class Simulation {
       case 'lunch': return 'lunch';
       case 'coffee': return 'coffee break';
       case 'discuss': return `discuss work with ${this.name(e.intent.withId)}`;
+      case 'restroom': return 'the restroom';
+      case 'home': return 'the exit';
       case 'owner': {
         const o = e.order;
         if (o?.kind === 'come') return 'meet you';
@@ -780,6 +987,20 @@ export class Simulation {
         text = e.task;
         break;
       }
+      case 'restroom':
+        e.coffeeUntil = m + 3 + Math.floor(hashRand(this.seed, 'wcdur', e.cfg.id, m) * 3);
+        e.activity = 'break';
+        e.task = `Short break (${roomById(e.target?.roomId ?? '')?.name ?? 'restroom'})`;
+        text = e.task;
+        break;
+      case 'home':
+        e.phase = 'away';
+        e.activity = 'away';
+        e.task = `Out of office (left at ${fmtTime(m)})`;
+        text = 'Left the office for the day';
+        this.addLog(`${e.cfg.name} left the building`, 'office');
+        e.badge.out = m;
+        break;
       case 'owner': {
         const o = e.order;
         e.activity = o?.kind === 'room' ? 'meeting' : 'discussing';
@@ -851,6 +1072,9 @@ export class Simulation {
       case 'door-wait':
         this.walk(e, dt);
         break;
+      case 'lift':
+        this.rideLift(e, dt);
+        break;
       default:
         break;
     }
@@ -878,7 +1102,8 @@ export class Simulation {
       e.heading += dh * Math.min(1, dt * 6);
     }
     // pose
-    if (e.phase === 'walking') e.pose = 'walk';
+    if (e.phase === 'walking' || (e.phase === 'lift' && (e.liftTrip?.stage === 'enter' || e.liftTrip?.stage === 'exit'))) e.pose = 'walk';
+    else if (e.phase === 'lift' || e.phase === 'away') e.pose = 'stand';
     else if (e.phase === 'door-wait' || e.phase === 'standing-up') e.pose = 'stand';
     else if (e.phase === 'standing') e.pose = e.activity === 'discussing' || e.activity === 'meeting' || e.activity === 'investigating' ? 'standTalk' : 'stand';
     else if (e.phase === 'seated' || e.phase === 'sitting-down') {
@@ -946,6 +1171,13 @@ export class Simulation {
     }
     if (e.pathI >= e.path.length) {
       e.path = [];
+      if (e.liftTrip?.stage === 'approach') {
+        e.phase = 'lift';
+        e.liftTrip.stage = 'wait';
+        e.liftTrip.t = 0;
+        this.dyn.callLift(e.liftTrip.from);
+        return;
+      }
       this.arrive(e, this.minute);
     }
   }
@@ -1115,7 +1347,9 @@ export class Simulation {
   }
 
   roomName(e: Employee): string {
-    return roomAt(e.floor, e.x, e.z)?.name ?? 'Office';
+    if (e.phase === 'away') return 'Off-site';
+    if (e.phase === 'lift') return 'Elevator';
+    return roomAt(e.floor, e.x, e.z)?.name ?? (e.z > 19.6 ? 'Entrance plaza' : 'Office');
   }
 
   roomIdOf(e: Employee): string | undefined {
@@ -1166,7 +1400,7 @@ export class Simulation {
 
   floorOccupancy(): number[] {
     const occ = [0, 0, 0];
-    for (const e of this.employees) occ[Math.max(0, Math.min(2, e.floor))]++;
+    for (const e of this.employees) if (this.onSite(e)) occ[Math.max(0, Math.min(2, e.floor))]++;
     return occ;
   }
 
@@ -1176,7 +1410,7 @@ export class Simulation {
 
   addLog(text: string, kind: LogEntry['kind']) {
     this.log.unshift({ t: Math.floor(this.minute), day: this.day, text, kind });
-    if (this.log.length > 120) this.log.pop();
+    if (this.log.length > 400) this.log.pop();
   }
 
   private pushHistory(e: Employee, text: string) {
@@ -1384,6 +1618,12 @@ export class Simulation {
     const book = e.cfg.bookId ? this.finance.bookMetrics(this.finance.traders.get(e.cfg.id)?.bookId ?? e.cfg.bookId, m) : null;
     const next = this.events.find((ev) => ev.attendeeIds.includes(e.cfg.id) && ev.status === 'scheduled');
     const has = (...w: string[]) => w.some((x) => q.includes(x));
+    if (e.phase === 'away') {
+      const back = m < e.hours.arrive ? `I'm on my way in; I'll be at my desk around ${fmtTime(e.hours.arrive + 10)}.` : `I've left the office for today; I'm back tomorrow morning.`;
+      if (has('come', 'here', 'office', 'need you')) return `${back} Use "Come to me" or call a meeting and I'll come straight in.`;
+      if (has('where are you', 'location', 'where r u')) return `I'm not in the building. ${back}`;
+      if (has('status', 'update', 'working on', 'doing', 'progress', 'how is', "how's", 'how are')) return `${back} Before I left: ${this.statusLine(e)}`;
+    }
     if (has('thank', 'well done', 'good job', 'great work', 'appreciate')) return `Thank you, that means a lot. ${e.cfg.roleType === 'trader' ? 'The desk will be glad to hear it.' : 'I will pass it on to the team.'}`;
     if (has('where are you', 'location', 'where r u')) return `I'm in the ${this.roomName(e)} on the ${['ground', 'first', 'second'][Math.max(0, Math.min(2, e.floor))]} floor.`;
     if (has('p&l', 'pnl', 'profit', 'money', 'perform', 'return', 'loss')) {

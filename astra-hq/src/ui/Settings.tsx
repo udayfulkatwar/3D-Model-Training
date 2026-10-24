@@ -54,7 +54,8 @@ function SimulationTab() {
           {SPEEDS.map((s) => <button key={s} className={`btn ${sim.speed === s ? 'active' : ''}`} onClick={() => { sim.speed = s; sim.version++; force((x) => x + 1); }}>{s}×</button>)}
           <button className="btn danger" onClick={() => { rebuildSim(sim.config); force((x) => x + 1); useUI.getState().showToast('Simulation reset'); }}>Reset day</button>
         </div>
-        <p className="small muted">One clock drives schedules, events, markets and screens. At 1× one real second is 20 simulated seconds; walking happens at real pace multiplied by the speed.</p>
+        <label className="row"><input type="checkbox" checked={settings.realtimeClock} onChange={(e) => update({ realtimeClock: e.target.checked })} data-testid="realtime-toggle" /> Real-time clock (1 simulated minute = 1 real minute)</label>
+        <p className="small muted">One clock drives schedules, events, markets and screens. At 1× one real second is 20 simulated seconds (or one real second with the real-time clock); walking happens at real pace multiplied by the speed.</p>
       </div>
       <div className="section">
         <h3>Display</h3>

@@ -4,7 +4,7 @@ import type { EmployeeConfig } from '../config/types';
 import { hashRand } from '../util/rng';
 import type { OfficeEvent } from './events';
 
-export type BlockKind = 'coffee' | 'lunch' | 'discuss';
+export type BlockKind = 'coffee' | 'lunch' | 'discuss' | 'restroom';
 
 export interface Block {
   id: string;
@@ -71,7 +71,39 @@ export function buildSchedule(seed: number, day: number, emp: EmployeeConfig, in
       if (s !== null) blocks.push({ id: k(`disc${i}`), kind: 'discuss', start: s, end: s + dur, withId: p.id });
     }
   }
+  // one or two short restroom breaks (the building's restrooms are on the ground floor)
+  const nWc = 1 + Math.floor(hashRand(seed, k('nwc')) * 2);
+  for (let i = 0; i < nWc; i++) {
+    const s = place(seed, k(`wc${i}`), i === 0 ? H(9, 30) : H(14, 0), i === 0 ? H(12, 0) : H(17, 0), 8, events, blocks, emp.id);
+    if (s !== null) blocks.push({ id: k(`wc${i}`), kind: 'restroom', start: s, end: s + 8 });
+  }
   return blocks.sort((a, b) => a.start - b.start);
+}
+
+/**
+ * When an employee arrives at and leaves the building. Briefing attendees are in before it starts;
+ * nobody leaves before their last meeting or break is over.
+ */
+export function workingHours(seed: number, day: number, emp: EmployeeConfig, events: OfficeEvent[], blocks: Block[]): { arrive: number; leave: number } {
+  const r = (key: string) => hashRand(seed, 'hours', key, emp.id, day);
+  let arrive: number;
+  switch (emp.roleType) {
+    case 'coordinator': arrive = H(6, 45) + r('a') * 10; break;
+    case 'receptionist': arrive = H(7, 0) + r('a') * 10; break;
+    case 'trader': arrive = H(6, 45) + r('a') * 40; break;
+    case 'pm': case 'risk': arrive = H(6, 55) + r('a') * 35; break;
+    case 'ceo': arrive = H(7, 5) + r('a') * 20; break;
+    case 'tech': arrive = H(7, 50) + r('a') * 60; break;
+    case 'ops': arrive = H(7, 40) + r('a') * 45; break;
+    default: arrive = H(7, 20) + r('a') * 70; break;
+  }
+  const mine = events.filter((e) => e.attendeeIds.includes(emp.id));
+  const first = mine.length ? Math.min(...mine.map((e) => e.start)) : Infinity;
+  arrive = Math.min(arrive, first - 20);
+  let leave = (emp.roleType === 'trader' ? H(17, 10) : emp.roleType === 'coordinator' ? H(17, 30) : H(17, 30)) + r('l') * 90;
+  const lastBusy = Math.max(0, ...mine.map((e) => e.end), ...blocks.map((b) => b.end));
+  leave = Math.max(leave, lastBusy + 10);
+  return { arrive: Math.round(arrive), leave: Math.round(Math.min(leave, H(19, 10))) };
 }
 
 function discussionPartners(emp: EmployeeConfig, all: EmployeeConfig[]): EmployeeConfig[] {

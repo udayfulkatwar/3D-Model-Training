@@ -206,6 +206,26 @@ await step('overview and floor selection', async () => {
   await shot('05-overview-floor1');
 });
 
+await step('morning arrivals through the entrance', async () => {
+  await page.keyboard.press('Escape');
+  const empty = await A(() => { const s = window.__astra.sim(); return { onSite: s.employees.filter((e) => s.onSite(e)).length, minute: s.minute }; });
+  check('The day starts with an empty building (everyone off-site)', empty.onSite === 0, JSON.stringify(empty));
+  // real-time clock option: one simulated minute per real minute
+  await A(() => window.__astra.ui.getState().updateSettings({ realtimeClock: true }));
+  const r0 = await A(() => window.__astra.sim().minute);
+  await wait(3000);
+  const r1 = await A(() => window.__astra.sim().minute);
+  await A(() => window.__astra.ui.getState().updateSettings({ realtimeClock: false }));
+  check('Real-time clock runs 1 simulated minute per real minute', r1 > r0 && r1 - r0 < 0.15, `${((r1 - r0) * 60).toFixed(1)} simulated s in 3 real s`);
+  await teleport(0, 19, 16.4, Math.PI, 0.02);
+  await A(() => { const s = window.__astra.sim(); s.speed = 5; while (s.minute < 6 * 60 + 58) s.advance(0.5); s.speed = 1; });
+  await wait(4000);
+  await shot('19-morning-arrivals');
+  await A(() => { const s = window.__astra.sim(); s.speed = 5; while (s.minute < 7 * 60 + 50) s.advance(0.5); s.speed = 1; });
+  const st = await A(() => { const s = window.__astra.sim(); return { onSite: s.employees.filter((e) => s.onSite(e)).length, badged: s.employees.filter((e) => e.badge.in !== null).length, lift: s.employees.filter((e) => e.history.some((h) => /by lift/.test(h.text))).length }; });
+  check('Staff badge in at the entrance and walk to their floors (stairs and lift)', st.onSite >= 20 && st.badged === st.onSite && st.lift > 0, JSON.stringify(st));
+});
+
 await step('directory search and go to employee', async () => {
   await page.keyboard.press('Escape');
   await A(() => window.__astra.ui.getState().openPanel({ kind: 'directory' }));
@@ -400,7 +420,7 @@ await step('owner tools', async () => {
   await A(() => { const s = window.__astra.sim(); s.speed = 5; const end = s.minute + 15; while (s.minute < end) s.advance(0.5); s.speed = 1; });
   const came = await A(() => { const e = window.__astra.sim().byId.get('e02'); const p = window.__astra.player; return { d: Math.hypot(e.x - p.x, e.z - p.z), floor: e.floor, phase: e.phase }; });
   check('"Come to me" brings the employee to the owner', came.d < 3.5 && came.floor === 0 && came.phase === 'standing', JSON.stringify(came));
-  await A(() => { const s = window.__astra.sim(); s.dismiss(['e02']); s.reset(); });
+  await A(() => { const s = window.__astra.sim(); s.dismiss(['e02']); s.reset(); const ceo = s.employees.find((e) => e.cfg.roleType === 'ceo'); s.speed = 5; while (!s.atDesk(ceo) && s.minute < 10 * 60) s.advance(0.5); s.speed = 1; });
   await teleport(2, 8.0, 10.6, Math.atan2(-(5 - 8), -(15.6 - 10.6)));
   await page.waitForFunction(() => window.__astra.sim().employees.find((e) => e.cfg.roleType === 'ceo').greet?.stage === 'hold', null, { timeout: 60000 }).catch(() => {});
   const greet = await A(() => { const c = window.__astra.sim().employees.find((e) => e.cfg.roleType === 'ceo'); return { stage: c.greet?.stage ?? null, phase: c.phase }; });

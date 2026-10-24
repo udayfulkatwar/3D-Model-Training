@@ -19,6 +19,8 @@ export interface Settings {
   invertY: boolean;
   mouseSensitivity: number;
   minimap: boolean;
+  /** Run the office clock in real time (1 simulated minute per real minute). */
+  realtimeClock: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -27,6 +29,7 @@ export const DEFAULT_SETTINGS: Settings = {
   sound: false,
   labels: true,
   showFps: false,
+  realtimeClock: false,
   invertY: false,
   mouseSensitivity: 1,
   minimap: true,
@@ -81,7 +84,7 @@ export function loadSettings(): Settings {
     const out = { ...DEFAULT_SETTINGS };
     if (s.graphics === 'low' || s.graphics === 'medium' || s.graphics === 'high') out.graphics = s.graphics;
     if (s.lighting === 'auto' || s.lighting === 'day' || s.lighting === 'night') out.lighting = s.lighting;
-    for (const k of ['sound', 'labels', 'showFps', 'invertY', 'minimap'] as const) if (typeof s[k] === 'boolean') out[k] = s[k] as boolean;
+    for (const k of ['sound', 'labels', 'showFps', 'invertY', 'minimap', 'realtimeClock'] as const) if (typeof s[k] === 'boolean') out[k] = s[k] as boolean;
     if (typeof s.mouseSensitivity === 'number' && s.mouseSensitivity >= 0.2 && s.mouseSensitivity <= 3) out.mouseSensitivity = s.mouseSensitivity;
     return out;
   } catch {

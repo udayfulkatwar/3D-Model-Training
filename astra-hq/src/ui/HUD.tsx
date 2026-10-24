@@ -152,7 +152,7 @@ export function RightDock() {
     <div className="right-dock">
       {minimap && <Minimap />}
       <div className="card stats-card" data-testid="occupancy">
-        <h3>Occupancy</h3>
+        <h3>Occupancy · in building {occ[0] + occ[1] + occ[2]}/{sim.employees.length}</h3>
         {[2, 1, 0].map((f) => (
           <div className="stat-row" key={f}><span>{FLOOR_NAMES[f]}</span><span>{occ[f]}</span></div>
         ))}

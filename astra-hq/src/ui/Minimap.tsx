@@ -97,6 +97,7 @@ export function Minimap() {
       }
       // people
       for (const e of sim.employees) {
+        if (e.phase === 'away') continue;
         const f = Math.max(0, Math.min(2, Math.floor((e.y + 0.3) / 4)));
         if (f !== floor) continue;
         g.fillStyle = ACTIVITY_COLOR[e.activity];

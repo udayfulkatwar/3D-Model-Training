@@ -16,6 +16,7 @@ export function SimDriver() {
   const lastLift = useRef('');
   useFrame((_, dt) => {
     const sim = getSim();
+    sim.realtime = useUI.getState().settings.realtimeClock;
     sim.tick(dt);
     acc.current += dt;
     if (acc.current > 0.25 && sim.version !== last.current) {
@@ -39,7 +40,7 @@ export function SimDriver() {
         let near = 0;
         let typing = 0;
         for (const e of sim.employees) {
-          if (Math.abs(e.y - p.y) > 2) continue;
+          if (e.phase === 'away' || Math.abs(e.y - p.y) > 2) continue;
           const d = Math.hypot(e.x - p.x, e.z - p.z);
           if (d < 10) near++;
           if (d < 5 && e.pose === 'sitType') typing += 1 - d / 5;
@@ -120,7 +121,7 @@ export function Labels({ container }: { container: HTMLDivElement | null }) {
       const d = camera.position.distanceTo(v);
       v.project(camera);
       const onFocus = vis.interior || ui.mode !== 'overview' ? f === vis.focusFloor : ui.overviewFloor < 3 && f === ui.overviewFloor;
-      const visible = show && vis.floors[f] && (d < radius || e.cfg.id === selected) && v.z < 1 && v.z > -1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1 && (onFocus || e.cfg.id === selected);
+      const visible = show && e.phase !== 'away' && vis.floors[f] && (d < radius || e.cfg.id === selected) && v.z < 1 && v.z > -1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1 && (onFocus || e.cfg.id === selected);
       if (!visible) { if (el.style.display !== 'none') el.style.display = 'none'; return; }
       el.style.display = '';
       const x = (v.x * 0.5 + 0.5) * size.width;

@@ -12,9 +12,19 @@ const run = (sim: Simulation, simMinutes: number, check?: () => void) => {
   }
 };
 
+/** A simulation run until everyone has arrived (about 09:00). */
+const office = () => {
+  const sim = new Simulation(defaultConfig());
+  while (sim.minute < 9 * 60 + 40 || sim.employees.some((e) => !sim.onSite(e) || e.phase === 'walking' || e.phase === 'lift')) {
+    sim.advance(0.5);
+    if (sim.minute > 11 * 60) break;
+  }
+  return sim;
+};
+
 describe('owner features', () => {
   it('calls the whole company to the Conference Room and everyone fits (chairs + standing room)', () => {
-    const sim = new Simulation(defaultConfig());
+    const sim = office();
     const ev = sim.callMeeting({ attendeeIds: sim.employees.map((e) => e.cfg.id), roomId: 'f-conf', minutes: 20, topic: 'Quarterly plan' })!;
     expect(ev).toBeTruthy();
     const errs: string[] = [];
@@ -29,7 +39,7 @@ describe('owner features', () => {
   }, 60000);
 
   it('runs an all-hands standing in the lobby', () => {
-    const sim = new Simulation(defaultConfig());
+    const sim = office();
     const ev = sim.callMeeting({ attendeeIds: sim.employees.map((e) => e.cfg.id), roomId: 'g-lobby', minutes: 15, topic: '' })!;
     run(sim, 30);
     expect(ev.title).toMatch(/All-hands/);
@@ -38,7 +48,7 @@ describe('owner features', () => {
   }, 60000);
 
   it('calls a department to the owner, then lets them go', () => {
-    const sim = new Simulation(defaultConfig());
+    const sim = office();
     const risk = sim.employees.filter((e) => e.cfg.department === 'Risk').map((e) => e.cfg.id);
     sim.orderCome(risk, { floor: 0, x: 19, z: 17.2, yaw: 0 });
     run(sim, 20);
@@ -56,7 +66,7 @@ describe('owner features', () => {
   }, 60000);
 
   it('sends someone to a room and assigns a task that is reported back', () => {
-    const sim = new Simulation(defaultConfig());
+    const sim = office();
     sim.orderRoom(['e13'], 's-board');
     run(sim, 20);
     const e = sim.byId.get('e13')!;
@@ -70,8 +80,21 @@ describe('owner features', () => {
     expect(sim.ownerMessages.some((m) => m.empId === 'e02' && /^Done:/.test(m.text))).toBe(true);
   }, 60000);
 
-  it('answers questions from live data', () => {
+  it('brings people in from outside the building when called before they arrive', () => {
     const sim = new Simulation(defaultConfig());
+    expect(sim.employees.every((e) => !sim.onSite(e))).toBe(true);
+    const ev = sim.callMeeting({ attendeeIds: sim.employees.map((e) => e.cfg.id), roomId: 'g-lobby', minutes: 15, topic: 'Early start' })!;
+    run(sim, 12);
+    expect(sim.presentAttendees(ev).length).toBe(30);
+    expect(sim.log.filter((l) => /badged in/.test(l.text)).length).toBe(30);
+    // after the meeting they stay and start work instead of going home again
+    run(sim, 30);
+    expect(sim.employees.filter((e) => sim.onSite(e)).length).toBe(30);
+    expect(sim.talk('e02', 'Where are you?')).toMatch(/floor/);
+  }, 60000);
+
+  it('answers questions from live data', () => {
+    const sim = office();
     run(sim, 60);
     expect(sim.talk('e02', 'What is your P&L?')).toMatch(/\$/);
     expect(sim.talk('e17', 'Any risk alerts?')).toMatch(/alert|utilisation/);
@@ -81,7 +104,7 @@ describe('owner features', () => {
   }, 60000);
 
   it('CEO stands to greet the owner and sits again once the owner is seated', () => {
-    const sim = new Simulation(defaultConfig());
+    const sim = office();
     const ceo = sim.employees.find((e) => e.cfg.roleType === 'ceo')!;
     sim.advance(0.5);
     sim.player = { x: 8.0, y: 8, z: 10.2, floor: 2 }; // just inside the CEO office door

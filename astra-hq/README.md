@@ -62,12 +62,27 @@ Movement input is ignored while a panel is open or a text field has focus.
 | First | Trading Floor (10 desks × 3 monitors, market display wall), Research Area (5 desks × 2 monitors, collaboration table, 2 flex desks), Risk Management (3 desks), Meeting Rooms 1A & 1B, Conference Room (18 seats) |
 | Second | Founder / CEO Office, Portfolio Management (3 desks), Technology (4 desks), Operations (2 desks), Boardroom (16 seats), Staff Lounge, glass-enclosed Server Room |
 
-**Simulation** (`src/sim/`): one clock (1 real second = 20 simulated seconds at 1×; 2× and 5× available)
-drives schedules, events, the market, every screen and all movement. Employees follow a seeded daily
-routine (desk work, coffee, staggered lunch waves, desk discussions) plus coordinated events:
+**Simulation** (`src/sim/`): one clock (1 real second = 20 simulated seconds at 1×; 2× and 5× available, or a
+real-time clock option where one simulated minute takes one real minute) drives schedules, events, the market,
+every screen and all movement. The office day runs like a real one:
+
+- **Arrival and departure.** The building opens at 06:30 with nobody inside. Staff arrive at staggered, role-based
+  times (traders and the café coordinator first, technology last; anyone in the 08:00 briefing is in before it),
+  badge in at the automatic entrance, and walk to their desks. From ~17:10 they leave the same way, never before
+  their last meeting ends; by ~19:15 the building is empty. Each profile shows today's badge-in/out times.
+- **Stairs and elevator.** Trips of two floors always use the lift, one-floor trips usually the stairs. Riders walk
+  to the lift lobby, call the car, wait, step in (max 6), press their floor, ride with the car and step out; the
+  doors re-open for anyone in the doorway. If the car does not come within about a minute they take the stairs.
+- **Breaks.** Coffee, staggered lunch waves, desk discussions and one or two short restroom breaks (ground-floor
+  restrooms; doors closed behind them).
+- **Off-site people** are hidden from the building, the minimap and the occupancy counts; you can still phone them,
+  and calling them to you or to a meeting brings them in (they then stay for the day).
+
+Coordinated events:
 
 | Time | Event | Effect |
 |---|---|---|
+| 06:30-08:50 | Arrivals | Staff badge in at the entrance and take the stairs or the lift to their floor |
 | 08:00 | Morning Market Briefing (Conference Room) | Traders, PMs, CEO, heads of research and risk attend; whiteboard/display show live movers |
 | 09:15 | Technology stand-up | Tech team stands at the huddle table |
 | 10:30 | Research Review (Meeting Room 1A) | Researchers + equities PM; notes list live draft word counts |
@@ -77,6 +92,8 @@ routine (desk work, coffee, staggered lunch waves, desk discussions) plus coordi
 | 14:00 | Video interview (Interview Room) | Remote candidate (no visitor on site) |
 | 15:30 | Portfolio Review (Boardroom) | PMs, CEO, risk and research heads |
 | 16:30 | Compliance Training (Training Room) | Ops, coordinator, two researchers |
+| 17:00 | Market close | Any de-risking still open is closed with PM and Head of Risk sign-off (exposure carried overnight) |
+| 17:10-19:10 | Departures | Staff leave through the entrance; the next day starts at 06:30 with an empty building |
 
 **Shared financial model**: trader positions roll up into three PM books (Global Equities L/S, Global Macro,
 Credit Opportunities), books roll up into risk metrics (gross/net, sector exposure, VaR, intraday drawdown,

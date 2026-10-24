@@ -16,6 +16,7 @@ Status legend: **Done** = implemented and covered by an automated check (unit or
 | First-person WASD, mouse look, pointer lock, Esc | Done | browser checks (pointer lock granted in headless Chromium) |
 | Collision with walls, furniture, closed doors, people | Done | unit + browser collision checks |
 | Clickable doors with collision changes | Done | browser door checks |
+| Employees ride the elevator (call, wait, board max 6, ride, exit; doors re-open for people in the doorway; stairs fallback) | Done | day.test.ts (riders move with the car, capacity), door-sensor unit test; browser arrival check |
 | Never spawn inside objects; invalid-position recovery | Done | `safeSpot`, `validPosition`, recovery in controller; spawn check |
 | Orbit inspection, building overview with floor cutaway | Done | browser overview checks; "Orbit workstation" in profiles |
 | Minimap with current floor and position; click room to go | Done (manual) | screenshots |
@@ -36,7 +37,10 @@ Status legend: **Done** = implemented and covered by an automated check (unit or
 | Exactly 30 fictional, editable employees with required role mix | Done | roster test |
 | Stable ID, name, role, department, appearance, workstation, monitor IDs | Done | profile panel; config schema |
 | Current activity/location/task, daily schedule, activity history | Done | profile tabs; day-run test |
-| State machine: working, reviewing, walking, meeting, café, returning, discussing (+ investigating) | Done | full-day test |
+| State machine: working, reviewing, walking, meeting, café, returning, discussing (+ investigating, short break, out of office) | Done | full-day test |
+| Staggered arrivals through the entrance (badge-in), departures in the evening, empty building at night | Done | day.test.ts; browser "empty building" + "badge in" checks; screenshot 19 |
+| Restroom breaks in the ground-floor restrooms | Done | day.test.ts |
+| Real-time clock option | Done | day.test.ts; browser check |
 | Nav-grid routes avoiding walls/desks; closed doors avoided, opened only when needed | Done | path tests; server-room door open/close test |
 | Seat reservation (no double booking) | Done | `validate()` invariant checked through a full day |
 | Staggered routines, no synchronised wandering | Done | seeded schedules with collision-free placement |
@@ -87,8 +91,8 @@ Limitation: replies are scripted from keywords and live data, not free conversat
 
 - **No real-GPU frame-rate measurement.** Tests ran in a container with software rendering (SwiftShader, ~1-3 fps). Only draw calls, triangle counts and CPU costs were measured. Please check the FPS overlay (Settings → Simulation → FPS) on the target laptop and pick a preset accordingly.
 - **Stylised people.** Employees are procedural low-poly figures (capsules and spheres) with procedural animation, not photoreal scanned/rigged characters. No third-party character assets are bundled.
-- **Employees use the stairs only.** The elevator is fully working for the visitor; employees do not ride it. Employees also do not use the restrooms (deliberately not simulated).
-- **Arrival/departure.** The day starts with everyone at their desk (07:40) and loops at 19:30 to the next day with everyone back at their desks; nobody walks in through the entrance.
+- **Elevator sharing is simple.** Riders and the visitor are not checked against each other inside the car, and the car serves calls in the order they were made (no up/down collective control).
+- **Arrival/departure.** The day starts at 06:30 with an empty building and loops at 19:30 to the next day. There are no visitors other than you, and no weekends or holidays.
 - **Simple crowd behaviour.** Walkers slow down behind each other and stop for the visitor, but there is no full local avoidance; two employees can briefly overlap in a corridor or on a stair flight.
 - **Fixed layout and events.** The building, furniture and event calendar are code, not editable data; the editor covers people, roles, departments, desks and the company name.
 - **Head-less pointer lock.** Where pointer lock is unavailable the app falls back to drag-to-look; this fallback was exercised only in headless Chromium.
