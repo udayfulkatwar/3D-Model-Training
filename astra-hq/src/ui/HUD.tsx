@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { FLOOR_NAMES, FLOOR_SHORT } from '../world/building';
 import { fmtTime } from '../util/math';
-import { getSim, rebuildSim } from '../store/simInstance';
+import { getSim } from '../store/simInstance';
 import { useUI } from '../store/ui';
 import { ACTIVITIES, ACTIVITY_COLOR, ACTIVITY_LABEL } from '../sim/simulation';
-import { SPEEDS } from '../sim/constants';
 import { setSoundEnabled, playSound } from '../audio/sound';
 import { enterWalk } from '../scene/CameraController';
 import { Minimap } from './Minimap';
@@ -26,8 +25,6 @@ export function TopBar() {
   const open = useUI((s) => s.openPanel);
   const mode = useUI((s) => s.mode);
   const sim = getSim();
-  const [, force] = useState(0);
-  const rerender = () => force((x) => x + 1);
   const bar = useRef<HTMLDivElement>(null);
   // the top bar wraps on narrow screens; keep the side docks below it
   useEffect(() => {
@@ -49,15 +46,9 @@ export function TopBar() {
       <div className="bar-group" aria-label="Simulation clock">
         <div>
           <div className="clock" data-testid="sim-clock">{fmtTime(sim.minute)}</div>
-          <div className="clock-sub">Day {sim.day + 1}{sim.paused ? ' · paused' : ''}</div>
+          <div className="clock-sub">{sim.realMode ? new Date().toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }) : `Day ${sim.day + 1}${sim.paused ? ' · paused' : ''}`}</div>
         </div>
-        <button className={`icon-btn ${sim.paused ? 'active' : ''}`} title={sim.paused ? 'Resume simulation (P)' : 'Pause simulation (P)'} aria-label={sim.paused ? 'Resume' : 'Pause'} data-testid="pause" onClick={() => { sim.paused = !sim.paused; sim.version++; rerender(); }}>
-          {sim.paused ? '▶' : '❚❚'}
-        </button>
-        {SPEEDS.map((s) => (
-          <button key={s} className={`btn small ${sim.speed === s ? 'active' : ''}`} data-testid={`speed-${s}`} onClick={() => { sim.speed = s; sim.version++; rerender(); }} title={`Simulation speed ${s}x`}>{s}×</button>
-        ))}
-        <button className="btn small" data-testid="reset" title="Restart the simulated day" onClick={() => { if (window.confirm('Restart the simulated day? Employee positions, markets and events reset (your office configuration is kept).')) { rebuildSim(sim.config); rerender(); useUI.getState().showToast('Simulation reset'); } }}>Reset</button>
+<span className="small muted" title="The office runs on your real clock, 24/7">Real time · 24/7</span>
       </div>
       <LiveChip />
       <div className="bar-group secondary">
@@ -243,9 +234,7 @@ export function useShortcuts() {
       const ui = useUI.getState();
       if (e.code === 'Escape' && ui.panel) { ui.closePanel(); return; }
       if (ui.panel) return;
-      const sim = getSim();
       switch (e.code) {
-        case 'KeyP': sim.paused = !sim.paused; sim.version++; break;
         case 'KeyF': ui.openPanel({ kind: 'directory' }); e.preventDefault(); break;
         case 'KeyN': ui.openPanel({ kind: 'navigation' }); break;
         case 'KeyM': if (ui.mode === 'overview') enterWalk(document.querySelector('canvas'), false); else showOverview(); break;

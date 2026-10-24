@@ -12,7 +12,8 @@ import { hashRand } from '../util/rng';
 import { APPS, appFor, type AppId } from './apps';
 import { DAY_END, DAY_START, MARKET_CLOSE, MARKET_OPEN, REALTIME_MIN_PER_SEC, SIM_MIN_PER_REAL_SEC, WALK_SPEED, type Speed } from './constants';
 import { BOOKABLE_FOR_REVIEW, INCIDENT_START, SHOCK_MINUTE, scheduledEvents, type OfficeEvent } from './events';
-import { BOOK_INDEX, BOOKS, FIRM_CAPITAL, Finance, type RiskAlert } from './finance';
+import { BOOK_INDEX, BOOKS, Finance, firmCapital, setPaperCapital, type RiskAlert } from './finance';
+import { WorkEngine } from './work';
 import { INSTRUMENTS, INSTRUMENT_INDEX, Market, applyLiveUniverse, fmtPx, isLiveUniverse, type LiveQuote } from './market';
 import { buildSchedule, workingHours, type Block } from './schedule';
 import { Tech } from './tech';
@@ -170,6 +171,12 @@ const RESEARCH_TOPICS = [
   { title: 'Momentum factor decay study', sym: 'ORBL' },
   { title: 'Kestrel 2029 bond: refinancing risk', sym: 'KST29' },
 ];
+/** Local wall-clock day index and minute of day (with seconds as a fraction). */
+export function realNow(d = new Date()): { day: number; minute: number } {
+  const day = Math.floor((d.getTime() - d.getTimezoneOffset() * 60000) / 86400000);
+  return { day, minute: d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60 + d.getMilliseconds() / 60000 };
+}
+
 const DEV_FILES = ['src/feed/handler.ts', 'src/oms/router.ts', 'src/risk/aggregate.ts', 'src/recon/matcher.ts'];
 
 export class Simulation {
@@ -209,6 +216,18 @@ export class Simulation {
   indicators = new Map<string, { price: number; rsi?: number; sma20?: number; sma50?: number; sma200?: number }>();
   /** Clock runs at real time (1 simulated minute per real minute) instead of the 20× office clock. */
   realtime = false;
+  /**
+   * Real mode (the app): the office clock IS the local wall clock, the office works 24/7 with everyone on site,
+   * markets are only live data (nothing before the first snapshot), and only validated strategies trade (paper).
+   * Manual mode (tests) keeps the accelerated, seeded day so behaviour can be checked headlessly.
+   */
+  realMode = false;
+  /** Longest frame processed at once (tests raise it together with a fast clock). */
+  frameClamp = 0.25;
+  /** Wall clock (tests replace it to run the real office faster than real time). */
+  clock: () => Date = () => new Date();
+  /** Paper capital of the real office (USD). */
+  paperCapital = 1_000_000;
   /** Training records (skills, modules passed, traders' strategies). Survive resets and reloads. */
   training = new Map<string, TrainingRecord>();
   /** Training cohorts waiting for a Training Room slot. */
@@ -216,6 +235,10 @@ export class Simulation {
   /** Called after training results change (the app saves them locally). */
   onTrainingChange?: (records: TrainingRecord[]) => void;
   private academySeq = 1;
+  /** Tasks, reports, meetings and the strategy desk (see work.ts). Survives rebuilds. */
+  work: WorkEngine = new WorkEngine(this);
+  /** Called after state worth saving changed (the app saves the office's memory locally). */
+  onPersist?: () => void;
   tickets: Ticket[] = [];
   mistakes: Mistake[] = [];
   private ticketSeq = 1;
@@ -233,6 +256,14 @@ export class Simulation {
     this.day = 0;
     this.minute = DAY_START;
     this.lastMinute = DAY_START;
+    if (this.realMode) {
+      const now = realNow(this.clock());
+      this.day = now.day;
+      this.minute = now.minute;
+      this.lastMinute = Math.floor(now.minute);
+      this.useLiveUniverse();
+      setPaperCapital(this.paperCapital);
+    }
     this.dyn.reset();
     this.dyn.onDoor = (d, by) => {
       if (by !== 'player') this.addLog(`${by} ${d.open ? 'opened' : 'closed'} the ${d.def.label} door`, 'door');
@@ -243,16 +274,19 @@ export class Simulation {
     this.log = [];
     this.ownerMessages = [];
     this.ceoGreetArmed = true;
-    this.market = new Market(this.seed, DAY_START);
+    this.market = new Market(this.seed, this.realMode ? Math.floor(this.minute) : DAY_START);
+    if (this.realMode) this.market.clearForLive();
     if (this.liveQuotes) this.market.applyLive(this.liveQuotes);
-    else this.addShocks();
+    else if (!this.realMode) this.addShocks();
     const emps = this.config.employees;
     this.finance = new Finance(
       this.seed, this.market,
       emps.filter((e) => e.roleType === 'trader').map((e, i) => ({ empId: e.id, bookId: e.bookId ?? (['eq', 'macro', 'credit'] as const)[i % 3] })),
       emps.filter((e) => e.roleType === 'pm').map((e, i) => ({ empId: e.id, bookId: e.bookId ?? (['eq', 'macro', 'credit'] as const)[i % 3] })),
+      { real: this.realMode },
     );
-    this.tech = new Tech(this.seed, INCIDENT_START);
+    this.tech = new Tech(this.seed, this.realMode ? Infinity : INCIDENT_START);
+    this.tech.real = this.realMode;
     this.employees = emps.map((cfg, index) => this.makeEmployee(cfg, index));
     this.byId = new Map(this.employees.map((e) => [e.cfg.id, e]));
     for (const e of this.employees) this.wsOwner.set(e.ws.id, e.cfg.id);
@@ -261,7 +295,7 @@ export class Simulation {
     this.tickets = [];
     this.mistakes = [];
     this.seenBuilds.clear();
-    this.finance.fatFinger = (empId, oid) => hashRand(this.seed, 'fatfinger', oid, this.day) < 0.006 * (1.5 - this.skillOf(empId) / 100);
+    if (!this.realMode) this.finance.fatFinger = (empId, oid) => hashRand(this.seed, 'fatfinger', oid, this.day) < 0.006 * (1.5 - this.skillOf(empId) / 100);
     this.finance.preTradeCatch = (_empId, oid) => {
       const risk = this.employees.filter((x) => x.cfg.roleType === 'risk' && this.onSite(x));
       const p = risk.length ? 0.55 + 0.004 * (risk.reduce((a, x) => a + this.skillOf(x.cfg.id), 0) / risk.length) : 0.25;
@@ -296,11 +330,22 @@ export class Simulation {
     return e;
   }
 
-  private startDay() {
-    this.events = scheduledEvents(this.config.employees, this.day);
+  private startDay(firstDay = true) {
+    // real mode: no scripted incident and no fictional interview candidate; meetings follow the real clock
+    this.events = scheduledEvents(this.config.employees, this.day).filter((ev) => !this.realMode || (ev.kind !== 'incident' && ev.kind !== 'interview'));
+    if (this.realMode) for (const ev of this.events) if (ev.end <= this.minute) ev.status = 'completed';
     for (const e of this.employees) {
       e.schedule = buildSchedule(this.seed, this.day, e.cfg, e.index, e.ws.floor, this.config.employees, this.events);
       e.startedBlocks.clear();
+      if (this.realMode) {
+        // the office never closes: everyone stays in and keeps working, day and night
+        e.hours = { arrive: -1, leave: Number.MAX_SAFE_INTEGER, late: 0 };
+        for (const b of e.schedule) if (b.end <= this.minute) e.startedBlocks.add(b.id);
+        e.schedule = e.schedule.filter((b) => b.end > this.minute);
+        if (firstDay) e.badge = { in: Math.floor(this.minute), out: null };
+        if (firstDay) this.pushHistory(e, 'On site (24/7 office)');
+        continue;
+      }
       e.hours = workingHours(this.seed, this.day, e.cfg, this.events, e.schedule);
       e.work.published = Math.floor(e.work.words / 2000);
       this.placeAway(e);
@@ -360,6 +405,10 @@ export class Simulation {
   // ------------------------------------------------------------------ clock
   /** Advance by a real-time delta (seconds); applies pause and speed. */
   tick(realDt: number) {
+    if (this.realMode) {
+      this.tickReal(realDt);
+      return;
+    }
     if (this.paused) {
       this.dyn.update(Math.min(realDt, 0.1), this.agents(), this.liftOccupied(), this.liftBoarding());
       return;
@@ -385,6 +434,72 @@ export class Simulation {
       // riders move with the car
       for (const e of this.employees) if (e.liftTrip?.stage === 'ride') e.y = this.dyn.lift.y;
       if (this.minute >= DAY_END) this.nextDay();
+    }
+  }
+
+  /** Real mode: follow the wall clock; people move at real walking pace. */
+  private tickReal(realDt: number) {
+    const now = realNow(this.clock());
+    if (now.day !== this.day) this.rollDay(now.day);
+    this.minute = now.minute;
+    const target = Math.floor(now.minute);
+    // after the tab slept, don't replay hours minute by minute: jump (work catches up from real timestamps)
+    if (target - this.lastMinute > 30) this.lastMinute = target - 1;
+    while (this.lastMinute < target) {
+      this.lastMinute++;
+      this.onMinute(this.lastMinute);
+    }
+    let remaining = Math.min(realDt, this.frameClamp);
+    while (remaining > 1e-6) {
+      const step = Math.min(remaining, 0.1);
+      remaining -= step;
+      for (const e of this.employees) this.updateEmployee(e, step);
+      this.updateCeoCourtesy();
+      this.dyn.update(step, this.agents(), this.liftOccupied(), this.liftBoarding());
+      for (const e of this.employees) if (e.liftTrip?.stage === 'ride') e.y = this.dyn.lift.y;
+    }
+  }
+
+  /** Real mode midnight: a new date's meetings and routines; nobody goes anywhere. */
+  private rollDay(day: number) {
+    this.day = day;
+    this.lastMinute = -1;
+    this.market.newDay(this.day, 0);
+    this.finance.newDay();
+    this.cafeOrders = [];
+    this.startDay(false);
+    this.work.newDay();
+    this.addLog('New day (real date). The office keeps working through the night.', 'office');
+    this.version++;
+  }
+
+  /** The office's memory (work, strategies, paper ledger) for saving between visits. */
+  persistState() {
+    return { v: 1, savedAt: Date.now(), work: this.work.serialize(), finance: this.finance.serialize(), ownerMessages: this.ownerMessages.slice(0, 60) };
+  }
+
+  restoreState(d: ReturnType<Simulation['persistState']> | null) {
+    if (!d || d.v !== 1) return;
+    this.work.restore(d.work);
+    this.finance.restore(d.finance);
+    this.ownerMessages = d.ownerMessages ?? [];
+    const gap = Math.round((Date.now() - (d.savedAt ?? Date.now())) / 60000);
+    if (gap > 1) this.addLog(`Office resumed. The page was closed for ${gap >= 120 ? `${Math.round(gap / 60)} h` : `${gap} min`}: no work or trading happened in that time.`, 'office');
+    this.version++;
+  }
+
+  /** Switch between real mode (the app) and manual, accelerated mode (tests). Rebuilds the office. */
+  setRealMode(on: boolean) {
+    this.realMode = on;
+    this.build();
+    this.version++;
+  }
+
+  private useLiveUniverse() {
+    const renamed = applyLiveUniverse();
+    for (const b of BOOKS) {
+      b.base = Object.fromEntries(Object.entries(b.base).map(([k, v]) => [renamed.get(k) ?? k, v]));
+      if (b.id === 'credit') { b.name = 'Digital Assets'; b.short = 'Digital'; }
     }
   }
 
@@ -451,6 +566,8 @@ export class Simulation {
     for (const e of this.employees) this.decide(e, m);
     this.updateDeskWork(m);
     this.updateWorkflow(m);
+    if (this.realMode || this.work.data) this.work.minute();
+    if (this.realMode && m % 5 === 0) this.onPersist?.();
     this.drainStrategyEvents();
     this.updateCafe(m);
     this.version++;
@@ -487,6 +604,7 @@ export class Simulation {
   private onEventEnd(ev: OfficeEvent, m: number) {
     if (ev.academy) this.finishAcademySession(ev, m);
     if (ev.kind === 'coaching') this.finishCoaching(ev, m);
+    if (ev.kind === 'workshop') this.work.onMeetingEnd(ev);
     if (ev.kind === 'risk-review' && ev.alertId) {
       const a = this.finance.alerts.find((x) => x.id === ev.alertId);
       if (a && a.status !== 'resolved') {
@@ -503,7 +621,12 @@ export class Simulation {
     const notes: string[] = [];
     const firm = this.finance.firm(m);
     switch (ev.kind) {
+      case 'workshop':
+        for (const a of ev.agenda) notes.push(a);
+        notes.push(`In the room: ${this.presentAttendees(ev).length}/${ev.attendeeIds.length}`);
+        break;
       case 'briefing': {
+        if (this.realMode) for (const o of this.work.objectives) notes.push(`Goal: ${o.text} (${this.work.objectiveProgress(o).text})`);
         const movers = INSTRUMENTS.map((i) => ({ i, c: this.market.change(i.sym) })).sort((a, b) => Math.abs(b.c) - Math.abs(a.c)).slice(0, 3);
         notes.push(`Firm P&L since open: ${fmtMoney(firm.pnl)}`);
         for (const { i, c } of movers) notes.push(`${i.sym} ${(c * 100).toFixed(2)}% at ${fmtPx(i.sym, this.market.price(i.sym))}`);
@@ -563,6 +686,13 @@ export class Simulation {
   private handleAlert(a: RiskAlert, m: number) {
     const book = BOOK_INDEX.get(a.bookId)!;
     this.addLog(`Risk alert ${a.id}: ${book.name} ${a.metric} limit breached`, 'risk');
+    if (this.realMode) {
+      // real office: Risk investigates the live paper positions; the strategy desk's limits and kill switch act
+      a.status = 'acknowledged';
+      a.log.push({ t: m, text: 'Sent to the Head of Risk for an urgent risk report' });
+      this.work.onAlert(`${book.short} ${a.metric} limit breached (${(a.value * 100).toFixed(2)}% vs ${(a.limit * 100).toFixed(2)}%)`);
+      return;
+    }
     const riskTeam = this.employees.filter((e) => e.cfg.roleType === 'risk');
     const analyst = riskTeam.find((e) => this.atDesk(e)) ?? riskTeam[0];
     if (analyst) {
@@ -1322,7 +1452,7 @@ export class Simulation {
           break;
         }
         case 'researcher':
-          if (e.activity === 'working') e.work.words += Math.round((8 + Math.floor(hashRand(this.seed, 'w', e.cfg.id, m) * 14)) * skillFactor(this.skillOf(e.cfg.id)));
+          if (e.activity === 'working' && !this.realMode) e.work.words += Math.round((8 + Math.floor(hashRand(this.seed, 'w', e.cfg.id, m) * 14)) * skillFactor(this.skillOf(e.cfg.id)));
           break;
         case 'tech':
           if (e.activity === 'working') e.work.line = 20 + ((e.work.line + 1 + Math.floor(hashRand(this.seed, 'l', e.cfg.id, m) * 3)) % 260);
@@ -1362,6 +1492,8 @@ export class Simulation {
 
   deskTask(e: Employee): string {
     if (e.order?.kind === 'task') return `Working on your request: ${e.order.text}`;
+    const wt = this.work.current(e.cfg.id);
+    if (wt) return wt.status === 'waiting' ? `${wt.title} (waiting for Co-Invest data)` : `${wt.title} (${Math.round(wt.progress * 100)}%)`;
     const recent = e.lastAction && this.minute - e.lastAction.t < 6 ? e.lastAction.text : null;
     const m = Math.floor(this.minute);
     switch (e.cfg.roleType) {
@@ -1504,7 +1636,7 @@ export class Simulation {
     if (this.log.length > 400) this.log.pop();
   }
 
-  private pushHistory(e: Employee, text: string) {
+  pushHistory(e: Employee, text: string) {
     const last = e.history[0];
     if (last && last.text === text && last.activity === e.activity) return;
     e.history.unshift({ t: Math.floor(this.minute), day: this.day, activity: e.activity, text, room: roomAt(e.floor, e.x, e.z)?.name ?? '' });
@@ -1513,7 +1645,7 @@ export class Simulation {
 
 
   // ------------------------------------------------------------------ owner (the visitor) features
-  private ownerMessage(e: Employee, text: string) {
+  ownerMessage(e: Employee, text: string) {
     this.ownerMessages.unshift({ id: this.ownerSeq++, t: Math.floor(this.minute), day: this.day, empId: e.cfg.id, name: e.cfg.name, text });
     if (this.ownerMessages.length > 80) this.ownerMessages.pop();
     e.chat.push({ t: Math.floor(this.minute), day: this.day, from: 'employee', text });
@@ -1737,6 +1869,11 @@ export class Simulation {
     lines.push(`Now: ${ACTIVITY_LABEL[e.activity]}; ${e.task}; location ${this.roomName(e)}; talking ${this.talkMode(id)}.`);
     lines.push(`Hours today: due ${fmtTime(e.hours.arrive)}-${fmtTime(e.hours.leave)}${e.badge.in !== null ? `, badged in ${fmtTime(e.badge.in)}` : ''}${e.badge.out !== null ? `, left ${fmtTime(e.badge.out)}` : ''}.`);
     lines.push(`Work: ${this.statusLine(e)}`);
+    const wt = this.work.current(e.cfg.id);
+    if (wt) lines.push(`Current task (from ${this.name(wt.by)}): ${wt.title}, ${Math.round(wt.progress * 100)}%`);
+    const done = this.work.tasks.filter((t) => t.owner === e.cfg.id && t.result).slice(0, 4);
+    if (done.length) lines.push(`Recent results: ${done.map((t) => `${t.title}: ${t.result!.summary}`).join(' | ')}`);
+    if (this.realMode && (e.cfg.roleType === 'ceo' || e.cfg.roleType === 'pm' || e.cfg.roleType === 'risk' || e.cfg.roleType === 'trader')) lines.push(`Strategies: ${this.work.strats.slice(0, 8).map((s) => `#${s.id} ${s.sym} ${s.r.family} ${s.r.interval} ${s.status} alloc ${fmtMoney(s.alloc)} fwd ${fmtMoney(s.fwd.pnl)}`).join('; ') || 'none passed yet'}`);
     lines.push(`Training: ${this.trainingLine(e)}`);
     const next = this.events.filter((ev) => ev.attendeeIds.includes(e.cfg.id) && ev.status !== 'completed' && ev.status !== 'cancelled').slice(0, 3);
     if (next.length) lines.push(`Meetings: ${next.map((ev) => `${ev.title} ${fmtTime(ev.start)} ${roomById(ev.roomId)?.name} (${ev.status})`).join('; ')}`);
@@ -1773,9 +1910,9 @@ export class Simulation {
     if (has('thank', 'well done', 'good job', 'great work', 'appreciate')) return `Thank you, that means a lot. ${e.cfg.roleType === 'trader' ? 'The desk will be glad to hear it.' : 'I will pass it on to the team.'}`;
     if (has('where are you', 'location', 'where r u')) return `I'm in the ${this.roomName(e)} on the ${['ground', 'first', 'second'][Math.max(0, Math.min(2, e.floor))]} floor.`;
     if (has('p&l', 'pnl', 'profit', 'money', 'perform', 'return', 'loss')) {
-      if (e.cfg.roleType === 'trader') return `My positions are ${fmtMoney(this.finance.traderPnl(e.cfg.id))} today (simulated); the ${book?.short ?? ''} book is ${fmtMoney(book?.pnl ?? 0)}.`;
-      if (book) return `${book.name} is ${fmtMoney(book.pnl)} today (${(book.pnlPct * 100).toFixed(2)}%), gross ${fmtMoney(book.gross)}. All simulated figures.`;
-      return `I don't run a book, but the firm is ${fmtMoney(firm.pnl)} today across all books (simulated).`;
+      if (e.cfg.roleType === 'trader') return `My positions are ${fmtMoney(this.finance.traderPnl(e.cfg.id))} today ${this.realMode ? '(paper)' : '(simulated)'}; the ${book?.short ?? ''} book is ${fmtMoney(book?.pnl ?? 0)}.`;
+      if (book) return `${book.name} is ${fmtMoney(book.pnl)} today (${(book.pnlPct * 100).toFixed(2)}%), gross ${fmtMoney(book.gross)}. ${this.realMode ? 'Paper figures on live prices.' : 'All simulated figures.'}`;
+      return `I don't run a book, but the firm is ${fmtMoney(firm.pnl)} today across all books ${this.realMode ? '(paper)' : '(simulated)'}.`;
     }
     if (has('risk', 'limit', 'alert', 'drawdown', 'exposure')) {
       const open = this.finance.openAlerts();
@@ -1815,11 +1952,13 @@ export class Simulation {
 
   private statusLine(e: Employee): string {
     const m = Math.floor(this.minute);
+    const wt = this.work.current(e.cfg.id);
+    if (this.realMode && wt && e.order?.kind !== 'task') return `I'm on "${wt.title}" for ${this.name(wt.by)} (${Math.round(wt.progress * 100)}% done).`;
     if (e.order?.kind === 'task') return `I'm working on your request "${e.order.text}"; done by ${fmtTime(e.order.until)}.`;
     switch (e.cfg.roleType) {
       case 'trader': {
         const t = this.finance.traders.get(e.cfg.id);
-        return `I cover ${t?.coverage.join(', ') ?? 'my names'}; ${t?.orders.filter((o) => o.status === 'filled').length ?? 0} fills today and my P&L is ${fmtMoney(this.finance.traderPnl(e.cfg.id))} (simulated).`;
+        return `I cover ${t?.coverage.join(', ') ?? 'my names'}; ${t?.orders.filter((o) => o.status === 'filled').length ?? 0} fills today and my P&L is ${fmtMoney(this.finance.traderPnl(e.cfg.id))} ${this.realMode ? '(paper)' : '(simulated)'}.`;
       }
       case 'researcher': return `I'm drafting "${e.work.title}" — ${e.work.words.toLocaleString()} words so far.`;
       case 'risk': return this.deskTask(e) + '.';
@@ -1830,7 +1969,7 @@ export class Simulation {
         const next = this.events.find((ev) => ev.status === 'scheduled');
         return next ? `Front desk is covered. Next booking: ${next.title} at ${fmtTime(next.start)}.` : 'Front desk is covered; no more bookings today.';
       }
-      case 'ceo': return `The firm is ${fmtMoney(this.finance.firm(m).pnl)} today (simulated) with ${this.finance.openAlerts().length} open risk alerts. Happy to walk you through it.`;
+      case 'ceo': return `The firm is ${fmtMoney(this.finance.firm(m).pnl)} today ${this.realMode ? '(paper)' : '(simulated)'} with ${this.finance.openAlerts().length} open risk alerts. Happy to walk you through it.`;
       case 'coordinator': return `${this.cafeOrders.filter((o) => o.status !== 'collected').length} café orders in progress; rooms are set for the afternoon.`;
     }
   }
@@ -1890,13 +2029,16 @@ export class Simulation {
    * restarts with positions sized at live prices. Orders and P&L remain paper.
    */
   goLive(q: Map<string, LiveQuote>) {
-    const renamed = applyLiveUniverse();
-    for (const b of BOOKS) {
-      b.base = Object.fromEntries(Object.entries(b.base).map(([k, v]) => [renamed.get(k) ?? k, v]));
-      if (b.id === 'credit') { b.name = 'Digital Assets'; b.short = 'Digital'; }
-    }
     this.liveQuotes = new Map(q);
     this.liveUpdatedAt = Date.now();
+    if (this.realMode) {
+      // nothing to rebuild: the office already runs on the real universe and holds no made-up positions
+      this.market.applyLive(this.liveQuotes);
+      this.addLog('Live market data connected (Co-Invest, read-only). Paper trading on live prices.', 'office');
+      this.version++;
+      return;
+    }
+    this.useLiveUniverse();
     const speed = this.speed;
     this.reset();
     this.speed = speed;
@@ -2006,6 +2148,8 @@ export class Simulation {
     for (const e of this.employees) {
       const rec = this.trainingRecord(e.cfg.id);
       // a trader retrains when the strategy was suspended, or (live) when the regime may have changed
+      // in the real office traders train continuously on the strategy desk (real candles), not in a lab
+      if (this.realMode) continue;
       if (e.cfg.roleType !== 'trader' || (rec.modules.some((x) => x.id === 'strat' && x.passed) && (rec.strategy?.active || !this.live) && !(rec.strategy && !rec.strategy.active && rec.strategy.forward?.trades))) continue;
       if (e.order?.kind === 'task' && e.order.training) continue;
       const t = this.finance.traders.get(e.cfg.id);
@@ -2193,8 +2337,10 @@ export class Simulation {
         if (open) this.step(open, 'fixed', `Fixed in build #${b.id}`);
       }
     }
-    // researchers publish notes with trade ideas for the PM of the book that holds the name
+    // researchers publish notes with trade ideas for the PM of the book that holds the name (manual mode;
+    // the real office runs research through the work engine instead)
     for (const e of this.employees) {
+      if (this.realMode) break;
       if (e.cfg.roleType !== 'researcher' || !this.presentAtDesk(e)) continue;
       const n = Math.floor(e.work.words / 2000);
       if (n <= e.work.published) continue;
@@ -2314,7 +2460,7 @@ export class Simulation {
     const sections: { title: string; lines: string[] }[] = [];
     const last5 = BOOKS.reduce((a, b) => a + (this.finance.daily.get(b.id) ?? []).slice(-5).reduce((x, y) => x + y, 0), 0);
     sections.push({ title: 'Paper trading account', lines: [
-      `Paper capital ${fmtMoney(FIRM_CAPITAL)} · NAV ${fmtMoney(firm.nav)} (simulated money, no real orders)`,
+      `Paper capital ${fmtMoney(firmCapital())} · NAV ${fmtMoney(firm.nav)} (simulated money, no real orders)`,
       `Today ${fmtMoney(firm.pnl)} (${pct(firm.pnlPct)}) · last 5 sessions ${fmtMoney(last5)}`,
       `Gross ${fmtMoney(firm.gross)} · net ${fmtMoney(firm.net)} · VaR95 ${fmtMoney(firm.var95)}`,
     ] });
@@ -2358,6 +2504,20 @@ export class Simulation {
       mistakes.length ? `Mistakes today: ${mistakes.length} (${[...new Set(mistakes.map((x) => x.kind))].map((k) => `${mistakes.filter((x) => x.kind === k).length} ${k}`).join(', ')}); ${mistakes.filter((x) => x.caught).length} caught before any cost; cost of the rest ${fmtMoney(cost)} (paper)` : 'No mistakes recorded today',
       `${coachingDone} one-to-one coaching session${coachingDone === 1 ? '' : 's'} done today`,
     ] });
+    if (this.realMode) {
+      const w = this.work;
+      const live = w.strats.filter((s) => s.status === 'live');
+      const tested = [...w.tested.values()];
+      sections.splice(2, 0, { title: 'Strategy desk', lines: [
+        `${tested.length} set-ups tested on real Co-Invest candles, ${tested.filter((x) => x.pass).length} passed out of sample; ${w.strats.filter((s) => s.status === 'risk-review').length} with Risk, ${live.length} live, ${w.strats.filter((s) => s.status === 'retired').length} retired`,
+        live.length ? `Live: ${live.map((s) => `#${s.id} ${s.sym} ${s.r.interval} ${fmtMoney(s.fwd.pnl)}`).join(', ')}` : 'No strategy live yet: nothing has passed every test, so the capital stays in cash',
+        w.kill.on ? `Kill switch ON: ${w.kill.reason}` : `Daily loss limit ${(0.02 * 100).toFixed(0)}% of capital; gross cap 1.5×`,
+      ] });
+      sections.push({ title: 'Work', lines: [
+        ...w.objectives.map((o) => `${o.text}: ${w.objectiveProgress(o).text}`),
+        `${w.tasks.filter((t) => t.status === 'accepted' && (t.finished ?? 0) >= this.day * 1440).length} tasks completed and reviewed today; ${w.reports.filter((r) => !r.ok && r.t >= this.day * 1440).length} reported problems`,
+      ] });
+    }
     const tasks = this.employees.filter((e) => e.order?.kind === 'task');
     if (tasks.length) sections.push({ title: 'Your requests in progress', lines: tasks.map((e) => `${e.cfg.name}: ${(e.order as { text: string }).text} (due ${fmtTime(e.order!.until)})`) });
     return { title: `CEO report · Day ${this.day + 1} · ${fmtTime(m)}`, sections };

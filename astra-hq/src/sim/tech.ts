@@ -53,6 +53,11 @@ export class Tech {
   incident: Incident;
   private buildSeq = 1400;
 
+  /** Real mode: no scripted incident and no made-up commits; incidents and jobs come from what really happens. */
+  real = false;
+  /** Real feed health, set by the office from the live data service. */
+  health: { latencyMs: number; errors: number; staleSec: number; calls: number } | null = null;
+
   constructor(private seed: number, incidentStart: number) {
     this.incident = {
       id: 'INC-2041', title: 'Market data feed latency', service: 'md-feed', start: incidentStart,
@@ -90,12 +95,33 @@ export class Tech {
       }
     }
     // developers at their desks push changes now and then
+    if (this.real) return;
     for (const dev of devsAtDesk) {
       if (hashRand(this.seed, 'commit', dev, day, minute) < 1 / 55) {
         const msg = COMMITS[Math.floor(hashRand(this.seed, 'commitmsg', dev, day, minute) * COMMITS.length)];
         this.startBuild(minute, dev, `feature/${(names.get(dev) ?? 'dev').split(' ')[0].toLowerCase()}-${minute % 97}`, msg);
       }
     }
+  }
+
+  /** Real incident (e.g. the live feed stopped answering). */
+  openIncident(minute: number, title: string, detail: string) {
+    if (this.incidentActive) return;
+    this.incident = { id: `INC-${2100 + (this.buildSeq % 900)}`, title, service: 'md-feed', start: minute, gatherEnd: minute, fixAt: Infinity, resolveAt: Infinity, status: 'investigating', log: [{ t: minute, text: detail }] };
+  }
+
+  resolveIncident(minute: number, text: string) {
+    if (!this.incidentActive) return;
+    this.incident.status = 'resolved';
+    this.incident.log.push({ t: minute, text });
+  }
+
+  /** A real job run by the office (data download, backtest batch), recorded with its real outcome. */
+  recordJob(minute: number, author: string, branch: string, message: string, ok: boolean, tests = 0): Build {
+    const b: Build = { id: ++this.buildSeq, t: minute, author, branch, message, status: ok ? 'passed' : 'failed', finishAt: minute, tests };
+    this.builds.unshift(b);
+    if (this.builds.length > 40) this.builds.pop();
+    return b;
   }
 
   private startBuild(minute: number, author: string, branch: string, message: string) {

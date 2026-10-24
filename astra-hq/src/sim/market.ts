@@ -133,6 +133,19 @@ export class Market {
     this.lastMinute = startMinute;
   }
 
+  /** Real mode before the first live snapshot: no prices at all (nothing made up). */
+  clearForLive() {
+    this.liveMode = true;
+    this.shocks = [];
+    INSTRUMENTS.forEach((_, k) => {
+      this.prices[k] = 0;
+      this.prevClose[k] = 0;
+      this.open[k] = 0;
+      this.history[k] = [];
+      this.daily[k] = [];
+    });
+  }
+
   /** Switch to live prices (keyed by the instrument's current symbol). */
   applyLive(q: Map<string, LiveQuote>) {
     this.liveMode = true;
@@ -141,8 +154,8 @@ export class Market {
       const v = q.get(inst.sym);
       if (!v || !(v.px > 0)) return;
       const prev = v.px / (1 + v.change24h / 100);
-      const ratio = prev / this.daily[k][this.daily[k].length - 1];
-      this.daily[k] = this.daily[k].map((x) => x * ratio);
+      const last = this.daily[k][this.daily[k].length - 1];
+      if (last > 0) this.daily[k] = this.daily[k].map((x) => x * (prev / last));
       this.prices[k] = v.px;
       this.prevClose[k] = prev;
       this.open[k] = prev;
@@ -217,6 +230,7 @@ export class Market {
 
   change(sym: string): number {
     const k = INSTRUMENT_INDEX.get(sym) ?? 0;
+    if (!(this.prices[k] > 0) || !(this.prevClose[k] > 0)) return 0;
     return this.prices[k] / this.prevClose[k] - 1;
   }
 
@@ -229,5 +243,6 @@ export class Market {
 
 export function fmtPx(sym: string, v: number): string {
   const inst = INSTRUMENTS[INSTRUMENT_INDEX.get(sym) ?? 0];
+  if (!(v > 0)) return '—'; // no price yet (waiting for live data)
   return v.toFixed(inst.decimals);
 }

@@ -11,6 +11,7 @@ import { ACTIVITY_LABEL, type Employee, type Simulation } from '../sim/simulatio
 import { SERVICES } from '../sim/tech';
 import type { AppView, Tone, Widget } from './types';
 import { EXCHANGES, sessionStatus } from './worldMarkets';
+import { realAppView, realServerView, strategiesTable } from './realViews';
 
 const tone = (v: number): Tone | undefined => (v > 0 ? 'pos' : v < 0 ? 'neg' : undefined);
 const utilTone = (u: number): Tone | undefined => (u >= 1 ? 'crit' : u >= 0.8 ? 'warn' : undefined);
@@ -60,6 +61,7 @@ export function buildAppView(sim: Simulation, monitorId: string): AppView {
   };
   const v = base;
   const tab = st.tab;
+  if (realAppView(sim, e, v, mon.index)) return v;
   switch (st.appId) {
     case 'trade-chart': {
       const t = e ? sim.finance.traders.get(e.cfg.id) : undefined;
@@ -225,6 +227,7 @@ export function buildAppView(sim: Simulation, monitorId: string): AppView {
     }
     case 'pm-alloc': {
       const b = sim.finance.bookMetrics(bookOf(sim, e), m);
+      if (sim.realMode && tab === 1) { v.widgets.push(strategiesTable(sim, (s) => s.book === bookOf(sim, e))); break; }
       if (tab === 0) {
         v.widgets.push({ type: 'kpis', items: [
           { label: 'Capital', value: fmtMoney(b.capital, 0) },
@@ -352,6 +355,7 @@ export function buildAppView(sim: Simulation, monitorId: string): AppView {
       const firm = sim.finance.firm(m);
       if (tab === 0) {
         v.widgets.push(booksTable(sim));
+        if (sim.realMode) v.widgets.push(strategiesTable(sim));
         const series = firm.books[0].pnlSeries.map((_, i) => firm.books.reduce((s, b) => s + (b.pnlSeries[i] ?? 0), 0));
         v.widgets.push({ type: 'chart', title: 'Firm intraday P&L', series: series.slice(-300), baseline: 0 });
       } else {
@@ -518,6 +522,7 @@ export function buildPanelView(sim: Simulation, panelId: string, companyName: st
     case 'serverDisplay': {
       v.title = 'Infrastructure monitor';
       v.theme = 'terminal';
+      if (sim.realMode) { realServerView(sim, v); break; }
       if (sim.tech.incidentActive) v.banner = { text: `${sim.tech.incident.id} · ${sim.tech.incident.title} · ${sim.tech.incident.status.toUpperCase()}`, tone: 'crit' };
       else v.banner = { text: 'All services nominal', tone: 'pos' };
       v.widgets.push(servicesTable(sim));
@@ -573,6 +578,7 @@ export function buildPanelView(sim: Simulation, panelId: string, companyName: st
     case 'pmWall': {
       v.title = 'Portfolio summary';
       v.widgets.push(booksTable(sim));
+      if (sim.realMode) v.widgets.push(strategiesTable(sim, () => true, 6));
       v.widgets.push({ type: 'bars', title: 'Gross utilisation', items: sim.finance.firm(m).books.map((b) => ({ label: b.short, value: b.util.gross, max: 1.2, text: `${(b.util.gross * 100).toFixed(0)}%`, tone: utilTone(b.util.gross) })) });
       break;
     }

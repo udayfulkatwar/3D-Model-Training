@@ -1,6 +1,7 @@
 import { Canvas } from '@react-three/fiber';
 import { useEffect, useState } from 'react';
 import { connectLive, disconnectLive } from './live/feed';
+import { CandleStore } from './live/candles';
 import * as THREE from 'three';
 import { SceneRoot } from './scene/SceneRoot';
 import { PRESETS } from './scene/quality';
@@ -45,6 +46,8 @@ export function App() {
     window.addEventListener('pointerdown', once, { once: true });
     // live market prices from the viewer's Co-Invest connector (read-only), when the page runs in claude.ai
     void connectLive(getSim, (s) => useUI.getState().setLive(s));
+    // real price history for research and strategies (read-only Co-Invest candles)
+    if (!getSim().work.data) getSim().work.data = new CandleStore();
     return () => { disconnectLive(); window.removeEventListener('pointerdown', once); };
   }, []);
   if (!gl.ok) return <Fallback title="3D view unavailable" detail={gl.reason} />;

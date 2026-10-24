@@ -7,7 +7,6 @@ import { WORKSTATIONS } from '../world/furniture';
 import { roomById } from '../world/building';
 import { getSim, rebuildSim } from '../store/simInstance';
 import { useUI } from '../store/ui';
-import { SPEEDS } from '../sim/constants';
 import { setSoundEnabled } from '../audio/sound';
 import { PRESETS } from '../scene/quality';
 
@@ -43,19 +42,11 @@ function SimulationTab() {
   useUI((s) => s.simVersion);
   const settings = useUI((s) => s.settings);
   const update = useUI((s) => s.updateSettings);
-  const sim = getSim();
-  const [, force] = useState(0);
   return (
     <div>
       <div className="section">
         <h3>Clock</h3>
-        <div className="row">
-          <button className="btn" onClick={() => { sim.paused = !sim.paused; sim.version++; force((x) => x + 1); }}>{sim.paused ? 'Resume' : 'Pause'}</button>
-          {SPEEDS.map((s) => <button key={s} className={`btn ${sim.speed === s ? 'active' : ''}`} onClick={() => { sim.speed = s; sim.version++; force((x) => x + 1); }}>{s}×</button>)}
-          <button className="btn danger" onClick={() => { rebuildSim(sim.config); force((x) => x + 1); useUI.getState().showToast('Simulation reset'); }}>Reset day</button>
-        </div>
-        <label className="row"><input type="checkbox" checked={settings.realtimeClock} onChange={(e) => update({ realtimeClock: e.target.checked })} data-testid="realtime-toggle" /> Real-time clock (1 simulated minute = 1 real minute)</label>
-        <p className="small muted">One clock drives schedules, events, markets and screens. At 1× one real second is 20 simulated seconds (or one real second with the real-time clock); walking happens at real pace multiplied by the speed.</p>
+        <p className="small">The office runs on your device's real clock, 24 hours a day, and everyone stays in the office working. There is no fast-forward, pause or replay: what you see is happening now. Market prices come only from the live Co-Invest feed; before the first prices arrive the screens show "—" instead of made-up numbers.</p>
       </div>
       <div className="section">
         <h3>Display</h3>

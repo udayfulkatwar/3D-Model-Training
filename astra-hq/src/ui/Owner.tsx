@@ -92,7 +92,7 @@ function PeoplePicker({ selected, setSelected }: { selected: Set<string>; setSel
 export function OwnerPanel({ tab: initial }: { tab?: OwnerTab }) {
   useUI((s) => s.simVersion);
   const sim = getSim();
-  const [tab, setTab] = useState<OwnerTab>(initial ?? 'meeting');
+  const [tab, setTab] = useState<OwnerTab>(initial ?? (getSim().realMode ? 'work' : 'meeting'));
   const [selected, setSelected] = useState<Set<string>>(() => new Set(sim.employees.map((e) => e.cfg.id)));
   const [room, setRoom] = useState<string>('f-conf');
   const [minutes, setMinutes] = useState(30);
@@ -107,6 +107,8 @@ export function OwnerPanel({ tab: initial }: { tab?: OwnerTab }) {
   return (
     <Shell testId="owner-panel" title="Owner" sub="Call people to meetings, give instructions, and read their replies (Office Simulation)">
       <div className="tabs">
+        {sim.realMode && <button className={tab === 'work' ? 'active' : ''} onClick={() => setTab('work')} data-testid="owner-tab-work">Work board</button>}
+        {sim.realMode && <button className={tab === 'strategies' ? 'active' : ''} onClick={() => setTab('strategies')} data-testid="owner-tab-strategies">Strategies</button>}
         <button className={tab === 'meeting' ? 'active' : ''} onClick={() => setTab('meeting')} data-testid="owner-tab-meeting">Call a meeting</button>
         <button className={tab === 'requests' ? 'active' : ''} onClick={() => setTab('requests')} data-testid="owner-tab-requests">Call / send people</button>
         <button className={tab === 'training' ? 'active' : ''} onClick={() => setTab('training')} data-testid="owner-tab-training">Training</button>
@@ -114,6 +116,8 @@ export function OwnerPanel({ tab: initial }: { tab?: OwnerTab }) {
         <button className={tab === 'report' ? 'active' : ''} onClick={() => setTab('report')} data-testid="owner-tab-report">CEO report</button>
         <button className={tab === 'messages' ? 'active' : ''} onClick={() => setTab('messages')} data-testid="owner-tab-messages">Messages ({sim.ownerMessages.length})</button>
       </div>
+      {tab === 'work' && <WorkTab />}
+      {tab === 'strategies' && <StrategiesTab />}
       {tab === 'training' && <TrainingTab />}
       {tab === 'report' && <ReportTab />}
       {tab === 'workflow' && <WorkflowTab />}
@@ -300,6 +304,95 @@ function TrainingTab() {
         </div>
       </div>
     </>
+  );
+}
+
+function WorkTab() {
+  const sim = getSim();
+  const w = sim.work;
+  const ceo = sim.employees.find((e) => e.cfg.roleType === 'ceo');
+  const heads = ceo ? w.reportsOf(ceo.cfg.id) : [];
+  const row = (id: string, depth: number): React.ReactNode => {
+    const e = sim.byId.get(id)!;
+    const t = w.current(id);
+    return (
+      <div key={id}>
+        <div className="list-item" style={{ paddingLeft: 8 + depth * 18 }}>
+          <span className="dot" style={{ background: ACTIVITY_COLOR[e.activity] }} />
+          <span style={{ minWidth: 150 }}><b>{e.cfg.name}</b> <span className="muted small">{e.cfg.title}</span></span>
+          <span className="small" style={{ flex: 1 }}>{t ? `${t.title} · ${t.status === 'waiting' ? 'waiting for data' : `${Math.round(t.progress * 100)}%`}` : <span className="muted">between tasks</span>}</span>
+        </div>
+        {w.reportsOf(id).map((r) => row(r, depth + 1))}
+      </div>
+    );
+  };
+  return (
+    <div data-testid="work-board">
+      <div className="section">
+        <h3>Today's objectives (set by the CEO)</h3>
+        {!w.objectives.length && <div className="muted small">The CEO sets objectives at the start of the day.</div>}
+        {w.objectives.map((o) => { const p = w.objectiveProgress(o); return <div key={o.id} className="small"><span style={{ color: p.ok ? 'var(--pos)' : 'var(--warn)' }}>●</span> {o.text} · <b>{p.text}</b></div>; })}
+        {w.kill.on && <div className="small" style={{ color: 'var(--neg)', marginTop: 6 }}>Kill switch on: {w.kill.reason}. All strategies are flat and paused until tomorrow.</div>}
+      </div>
+      <div className="section">
+        <h3>Who is doing what (reporting lines)</h3>
+        <div className="list" style={{ maxHeight: 320, overflow: 'auto' }}>{ceo && row(ceo.cfg.id, 0)}{heads.length === 0 && <div className="muted small">No CEO in the roster.</div>}</div>
+      </div>
+      <div className="section">
+        <h3>Reports to seniors ({w.reports.length})</h3>
+        <div className="list" style={{ maxHeight: 240, overflow: 'auto' }}>
+          {w.reports.slice(0, 30).map((r) => (
+            <div className="list-item" key={r.id} style={{ alignItems: 'flex-start' }}>
+              <span className="t">{fmtTime(r.t % 1440)}</span>
+              <span style={{ flex: 1 }} className="small"><b>{sim.name(r.from)}</b> → {sim.name(r.to)}: {r.text}</span>
+              <span className="small" style={{ color: r.ok ? 'var(--pos)' : 'var(--warn)' }}>{r.ok ? 'ok' : 'issue'}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="section">
+        <h3>Problem-solving meetings</h3>
+        {sim.events.filter((ev) => ev.kind === 'workshop').map((ev) => <div key={ev.id} className="small">{fmtTime(ev.start)} {ev.title} · {ev.status}{ev.notes.find((n) => n.startsWith('Decision')) ? ` · ${ev.notes.find((n) => n.startsWith('Decision'))}` : ''}</div>)}
+        {!sim.events.some((ev) => ev.kind === 'workshop') && <div className="muted small">None today. Meetings are called when something goes wrong (failed research streaks, loss limit, data incidents).</div>}
+      </div>
+    </div>
+  );
+}
+
+function StrategiesTab() {
+  const sim = getSim();
+  const w = sim.work;
+  const tested = [...w.tested.values()].sort((a, b) => b.t - a.t);
+  const passRate = tested.length ? tested.filter((x) => x.pass).length / tested.length : 0;
+  const live = w.strats.filter((s) => s.status === 'live');
+  const fwd = live.reduce((a, s) => a + s.fwd.pnl, 0);
+  return (
+    <div data-testid="strategies-tab">
+      <div className="section">
+        <h3>Strategy desk (paper)</h3>
+        <p className="small muted">Every set-up is tested on real Co-Invest candles: parameters chosen on the first 65 % of the history, judged on the last 35 % it never saw, with fees and slippage. Passing needs out-of-sample Sharpe ≥ 1, profit factor ≥ 1.2, drawdown ≤ 12 % and a robust parameter grid; then Risk stress-tests it with double costs and the PM allocates paper capital (volatility-targeted, max 25 % per strategy, 35 % per market, 20 % cash reserve). Losers are retired; a 2 % daily loss stops everything. This raises the odds and limits losses; it does not guarantee profit.</p>
+        <div className="row small"><b>{tested.length}</b> tests · pass rate <b>{(passRate * 100).toFixed(1)}%</b> · <b>{live.length}</b> live · forward P&L <b style={{ color: fwd >= 0 ? 'var(--pos)' : 'var(--neg)' }}>{fmtMoney(fwd)}</b> · paper capital {fmtMoney(sim.finance.firm(Math.floor(sim.minute)).capital)}</div>
+      </div>
+      <div className="section">
+        <h3>Strategies</h3>
+        <table className="tbl"><thead><tr><th>#</th><th>Market</th><th>Strategy</th><th>Owner</th><th>Status</th><th>Out-of-sample</th><th>Alloc</th><th>Forward</th></tr></thead>
+          <tbody>{w.strats.slice(0, 40).map((s) => (
+            <tr key={s.id}>
+              <td>{s.id}</td><td>{s.sym} {s.r.interval}</td><td>{s.r.family}</td><td>{sim.name(s.owner)}</td><td>{s.status}</td>
+              <td>{(s.r.test.ret * 100).toFixed(2)}% · Sharpe {s.r.test.sharpe.toFixed(2)} · DD {(s.r.test.maxDD * 100).toFixed(1)}%</td>
+              <td>{fmtMoney(s.alloc)}</td><td style={{ color: s.fwd.pnl >= 0 ? 'var(--pos)' : 'var(--neg)' }}>{fmtMoney(s.fwd.pnl)} ({s.fwd.trades})</td>
+            </tr>
+          ))}</tbody>
+        </table>
+        {!w.strats.length && <div className="muted small">No strategy has passed yet. The traders keep testing.</div>}
+      </div>
+      <div className="section">
+        <h3>Latest tests</h3>
+        <div className="list" style={{ maxHeight: 260, overflow: 'auto' }}>
+          {tested.slice(0, 40).map((x, i) => <div key={i} className="small">{fmtTime(x.t % 1440)} {x.sym} {x.family} {x.interval}: Sharpe {x.sharpe.toFixed(2)} <b style={{ color: x.pass ? 'var(--pos)' : 'var(--muted)' }}>{x.pass ? 'PASS' : 'fail'}</b></div>)}
+        </div>
+      </div>
+    </div>
   );
 }
 

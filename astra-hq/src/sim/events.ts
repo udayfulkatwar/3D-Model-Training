@@ -2,7 +2,7 @@
 import type { EmployeeConfig, RoleType } from '../config/types';
 import { fmtTime } from '../util/math';
 
-export type EventKind = 'briefing' | 'standup' | 'research-review' | 'incident' | 'interview' | 'risk-review' | 'portfolio-review' | 'training' | 'owner-meeting' | 'coaching';
+export type EventKind = 'briefing' | 'standup' | 'research-review' | 'incident' | 'interview' | 'risk-review' | 'portfolio-review' | 'training' | 'owner-meeting' | 'coaching' | 'workshop';
 
 export interface OfficeEvent {
   id: string;

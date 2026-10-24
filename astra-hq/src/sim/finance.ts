@@ -3,7 +3,7 @@
 // the risk team's exposure and the CEO's firm summary at the same moment. All values are SIMULATED.
 import { hashRand } from '../util/rng';
 import type { BookId } from '../config/types';
-import { INSTRUMENTS, INSTRUMENT_INDEX, type Market } from './market';
+import { INSTRUMENTS, INSTRUMENT_INDEX, isLiveUniverse, type Market } from './market';
 import { MARKET_CLOSE, MARKET_OPEN } from './constants';
 import { shouldExit, signalAt, type TraderStrategy } from './training';
 
@@ -35,6 +35,14 @@ export const BOOKS: BookDef[] = [
 ];
 export const BOOK_INDEX = new Map(BOOKS.map((b) => [b.id, b]));
 export const FIRM_CAPITAL = BOOKS.reduce((s, b) => s + b.capital, 0);
+export function firmCapital(): number {
+  return BOOKS.reduce((s, b) => s + b.capital, 0);
+}
+/** Paper capital for the real office (split 40/30/30 across the books). */
+export function setPaperCapital(total: number) {
+  const split: Record<string, number> = { eq: 0.4, macro: 0.3, credit: 0.3 };
+  for (const b of BOOKS) b.capital = total * (split[b.id] ?? 0.3);
+}
 
 export type Side = 'BUY' | 'SELL';
 
@@ -140,8 +148,9 @@ export interface FirmMetrics {
   books: BookMetrics[];
 }
 
-function roundQty(sym: string, q: number): number {
+export function roundQty(sym: string, q: number): number {
   const inst = INSTRUMENTS[INSTRUMENT_INDEX.get(sym)!];
+  if (isLiveUniverse()) return Math.round(q * 1e4) / 1e4; // perpetuals trade in fractional sizes
   if (inst.kind === 'equity') return Math.round(q / 100) * 100;
   return Math.round(q);
 }
@@ -172,7 +181,11 @@ export class Finance {
   /** Open strategy overlay per trader and symbol. */
   overlay = new Map<string, Map<string, { pos: number; entry: number; qty: number }>>();
 
-  constructor(private seed: number, private market: Market, traders: { empId: string; bookId: BookId }[], pms: { empId: string; bookId: BookId }[]) {
+  /** Real mode: no made-up starting positions, no random trading or random confirmation breaks; markets trade 24/7. */
+  readonly real: boolean;
+
+  constructor(private seed: number, private market: Market, traders: { empId: string; bookId: BookId }[], pms: { empId: string; bookId: BookId }[], opts: { real?: boolean } = {}) {
+    this.real = !!opts.real;
     for (const p of pms) if (!this.pmByBook.has(p.bookId)) this.pmByBook.set(p.bookId, p.empId);
     for (const b of BOOKS) {
       const tr = traders.filter((t) => t.bookId === b.id);
@@ -185,7 +198,7 @@ export class Finance {
       // prior 20 days of fictional daily P&L for the performance chart
       this.daily.set(b.id, Array.from({ length: 20 }, (_, d) => (hashRand(seed, 'bookdaily', b.id, d) - 0.46) * b.capital * 0.012));
     }
-    this.seedPositions();
+    if (!this.real) this.seedPositions();
     this.newDay();
   }
 
@@ -253,7 +266,7 @@ export class Finance {
     o.filledAt = minute;
     o.fillPx = px;
     const r = hashRand(this.seed, 'confirm', o.id);
-    const isBreak = r < (this.incidentDelay ? 0.18 : 0.05);
+    const isBreak = !this.real && r < (this.incidentDelay ? 0.18 : 0.05);
     const fill: Fill = {
       id: this.nextId('T'), orderId: o.id, t: minute, traderId: t.empId, bookId: t.bookId, sym: o.sym, side: o.side,
       qty: o.qty, px, notional: o.qty * px * inst.mult, status: 'pending',
@@ -266,6 +279,36 @@ export class Finance {
     if (this.trades.length > 200) this.trades.pop();
     this.cacheMinute = -1;
     return fill;
+  }
+
+  /** Fill price adjustment for market orders: real mode charges fee + slippage like the backtests. */
+  get slip(): number {
+    return this.real ? 0.0006 : 0.0001;
+  }
+
+  /** Paper ledger for the real office (survives reloads). */
+  serialize() {
+    return {
+      v: 1,
+      traders: [...this.traders.values()].map((t) => ({ empId: t.empId, positions: [...t.positions.values()], orders: t.orders.slice(0, 20), fills: t.fills.slice(0, 20) })),
+      trades: this.trades.slice(0, 150),
+      daily: [...this.daily.entries()],
+      realizedBase: [...this.traders.values()].map((t) => [t.empId, [...t.positions.values()].reduce((a, p) => a + p.realized, 0)]),
+    };
+  }
+
+  restore(d: ReturnType<Finance['serialize']>) {
+    if (!d || d.v !== 1) return;
+    for (const x of d.traders ?? []) {
+      const t = this.traders.get(x.empId);
+      if (!t) continue;
+      t.positions = new Map(x.positions.filter((p) => INSTRUMENT_INDEX.has(p.sym)).map((p) => [p.sym, { ...p }]));
+      t.orders = x.orders ?? [];
+      t.fills = x.fills ?? [];
+    }
+    this.trades = d.trades ?? [];
+    for (const [k, v] of d.daily ?? []) this.daily.set(k, v);
+    this.cacheMinute = -1;
   }
 
   /** Create (and for market orders, fill) an order. Returns the order. */
@@ -290,14 +333,14 @@ export class Finance {
     if (type === 'LMT') o.limit = px * (side === 'BUY' ? 0.9996 : 1.0004);
     t.orders.unshift(o);
     if (t.orders.length > 30) t.orders.pop();
-    if (type === 'MKT') this.applyFill(t, o, px * (side === 'BUY' ? 1.0001 : 0.9999), minute);
+    if (type === 'MKT') this.applyFill(t, o, px * (side === 'BUY' ? 1 + this.slip : 1 - this.slip), minute);
     return o;
   }
 
   /** Seeded trading decision for a trader who is at their desk. Returns the order placed, if any. */
   traderDecision(empId: string, day: number, minute: number): Order | null {
     const t = this.traders.get(empId);
-    if (!t || minute < MARKET_OPEN || minute > MARKET_CLOSE) return null;
+    if (!t || (!this.real && (minute < MARKET_OPEN || minute > MARKET_CLOSE))) return null;
     const ds = this.derisk.get(t.bookId);
     if (ds) {
       // Execute the risk-review instruction: cut the largest positions in the book by 30%.
@@ -316,6 +359,7 @@ export class Finance {
       if (qty <= 0) return null;
       return this.placeOrder(empId, best.sym, best.qty > 0 ? 'SELL' : 'BUY', qty, 'MKT', minute, 'Risk reduction (review instruction)');
     }
+    if (this.real) return null; // real mode: only validated strategies trade (run by the strategy desk)
     const st = this.strategies.get(empId);
     if (st?.active) {
       const o = this.strategyDecision(t, st, minute);
@@ -418,7 +462,7 @@ export class Finance {
       s.push(m.pnl);
       if (s.length > 720) s.shift();
       if (m.pnl > (this.peak.get(b.id) ?? 0)) this.peak.set(b.id, m.pnl);
-      if (minute < MARKET_OPEN || minute > MARKET_CLOSE) continue;
+      if (!this.real && (minute < MARKET_OPEN || minute > MARKET_CLOSE)) continue;
       for (const metric of ['drawdown', 'gross', 'concentration'] as const) {
         const u = m.util[metric];
         if (u < 1) continue;
@@ -525,7 +569,7 @@ export class Finance {
     const books = BOOKS.map((b) => this.bookMetrics(b.id, minute));
     const pnl = books.reduce((s, b) => s + b.pnl, 0);
     return {
-      capital: FIRM_CAPITAL, nav: FIRM_CAPITAL + pnl, pnl, pnlPct: pnl / FIRM_CAPITAL,
+      capital: firmCapital(), nav: firmCapital() + pnl, pnl, pnlPct: pnl / firmCapital(),
       gross: books.reduce((s, b) => s + b.gross, 0), net: books.reduce((s, b) => s + b.net, 0),
       var95: Math.sqrt(books.reduce((s, b) => s + b.var95 * b.var95, 0)), books,
     };

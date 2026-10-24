@@ -124,6 +124,51 @@ simulated work (no AI service).
 - **Door signs**: every room door has a name plate with the room and the department working there (it follows the
   departments you set in the editor).
 
+## The real office (default)
+
+The app runs as a real office, not a simulation game:
+
+- **Real time, 24/7.** The clock is your device's clock. There is no fast-forward, pause, replay or reset. Everyone
+  stays in the office day and night and keeps working; meetings and breaks follow the real time of day.
+- **Real data only.** Prices, history and headlines come from your Co-Invest connector (read-only). Before the first
+  live prices arrive the screens show "—", not made-up numbers. Scripted events of the old demo (the 13:35 sell-off,
+  the 11:10 feed incident, random trades and confirmation breaks, the fictional interview) are gone; incidents now
+  come from the real feed (no update for 10 minutes opens one).
+- **Chain of command.** The CEO sets the day's objectives. Each senior assigns the next task to each of their people
+  (traders → their book's PM, analysts → Head of Research / Head of Risk, developers → Head of Technology, settlements →
+  Operations Manager, heads and PMs → CEO). People work at their desks, report the result to their senior, the senior
+  reviews it (accept or send back), and problems go to a meeting where a decision is taken. Work never runs out.
+- **Real work by role** (all on real data):
+  - Traders test strategy set-ups on Co-Invest candles (1h/4h/1d, up to 200 bars): 5 families × parameter grids,
+    walk-forward (choose on 65 %, judge on the unseen 35 %), with fees and slippage.
+  - Researchers write regime reports (trend, RSI, ATR from 4h candles), news briefs and peer reviews of passed strategies.
+  - Risk stress-tests every passed strategy with doubled costs and writes firm risk reports (exposure, VaR, daily loss).
+  - PMs allocate paper capital (volatility-targeted; ≤ 25 % per strategy, ≤ 35 % per market, 20 % cash) and retire losers.
+  - Technology refreshes data, checks feed health (opens/closes incidents) and self-tests the backtest engine.
+  - Operations reconciles strategy books with the ledger and reports P&L; the front office keeps bookings and minutes.
+- **Problem-solving meetings**: five failed tests in a row → a research-direction meeting picks the family/interval that
+  has done best firm-wide; a 2 % daily loss → kill switch (flatten, pause) and a risk committee; stale data → incident
+  meeting.
+- **Monitors show the work**: each person's screen shows their current task, who assigned it, progress and result,
+  plus the real data behind it (candle charts, test tables, the strategy book, feed health, real jobs).
+- **Owner → Work board / Strategies** show objectives and their progress, the reporting lines with everyone's task,
+  reports to seniors, meetings and decisions, every strategy test and the live strategies' paper P&L.
+- **Memory**: work, strategies, test history and the paper ledger are saved in the browser and restored on reload.
+
+**What "real" cannot mean here (honest limits):**
+- The office works only while the page is open in a browser (no server: the repository's rules forbid paid services).
+  For 24/7 operation keep it open on an always-on computer. When reopened, unfinished tasks resume; nothing ran while
+  it was closed and no trades were made.
+- Paper trading only. The page has no order tool for Co-Invest. Co-Invest's own paper account needs your approval for
+  every order (the connector's rule), so it cannot be traded automatically; the office keeps its own paper ledger at
+  live prices. No credentials are needed for anything the office does.
+- History is limited to 200 candles per interval from the connector, so tests are short; funding costs of perpetuals
+  are not modelled. The process maximises the odds and caps losses; it cannot guarantee profit.
+- Claude writes replies when you talk to someone or ask the CEO for an analysis (the runtime only allows Claude calls
+  on a viewer's action); the office's own decisions follow the rules above, applied to real numbers.
+
+`?office=test-sim` is the automated tests' harness (an accelerated, seeded demo day); it is not linked in the app.
+
 ## World markets screens
 
 A large *World markets* screen hangs in the reception lobby, café, trading floor, research area, risk, Conference

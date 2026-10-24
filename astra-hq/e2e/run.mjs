@@ -94,7 +94,8 @@ async function shot(name) {
 }
 
 await step('load', async () => {
-  await page.goto(base);
+  // the accelerated, seeded test harness for the legacy behaviour checks; the real office is checked further down
+  await page.goto(`${base}?office=test-sim`);
   await page.waitForFunction(() => window.__astra?.sim && document.querySelector('canvas'), null, { timeout: 60000 });
   await wait(3000);
   const txt = await page.textContent('body');
@@ -559,7 +560,18 @@ await step('live prices and Claude replies (stubbed claude.ai runtime)', async (
     window.__stubCalls = calls;
     const payload = (symbols) => ({ snapshots: symbols.map((s) => ({ symbol: s, markPx: String(100 + feeds.indexOf(s) * 50 + Math.random()), change24h: 0.5 })) });
     const mcp = {
-      callTool: async (server, tool, input) => { calls.push(`${server}/${tool}`); return { payload: tool === 'analyze_markets_batch' ? payload(input.symbols) : { currentPrice: 100, indicators: { rsi14: 55, sma: { sma20: 99, sma50: 98, sma200: 97 } } } }; },
+      callTool: async (server, tool, input) => {
+        calls.push(`${server}/${tool}`);
+        if (tool === 'show_chart') {
+          // made-up but well-formed candles: a steady trend with noise
+          const step = { '1h': 3600e3, '4h': 14400e3, '1d': 86400e3 }[input.interval];
+          const end = Math.floor(Date.now() / step) * step - step;
+          let px = 100 + feeds.indexOf(input.symbol) * 50;
+          const candles = Array.from({ length: input.limit }, (_, i) => { const o = px; px *= 1 + 0.002 + 0.006 * Math.sin(i * 1.7) ; return { timestamp: end - (input.limit - 1 - i) * step, open: String(o), high: String(Math.max(o, px) * 1.002), low: String(Math.min(o, px) * 0.998), close: String(px), volume: '10' }; });
+          return { payload: { symbol: input.symbol, interval: input.interval, candles } };
+        }
+        return { payload: tool === 'analyze_markets_batch' ? payload(input.symbols) : { currentPrice: 100, indicators: { rsi14: 55, sma: { sma20: 99, sma50: 98, sma200: 97 } } } };
+      },
       watchTool: (server, tool, input, handler) => {
         calls.push(`${server}/${tool}`);
         const fire = () => handler({ type: 'data', result: { payload: tool === 'get_news' ? { text: 'Headlines:\n1. Test headline one — Wire (https://x.test/1)\n' } : payload(input.symbols) } });
@@ -587,13 +599,45 @@ await step('live prices and Claude replies (stubbed claude.ai runtime)', async (
   await lp.goto(base);
   await lp.waitForFunction(() => window.__astra?.sim?.().live, null, { timeout: 60000 });
   const st = await lp.evaluate(() => { const s = window.__astra.sim(); return { live: s.live, syms: s.market.prices.length, nvda: s.market.price('NVDA'), chip: document.querySelector('[data-testid=live-chip]')?.textContent, calls: [...new Set(window.__stubCalls)] }; });
-  const allowed = ['Co-Invest/analyze_markets_batch', 'Co-Invest/get_news', 'Co-Invest/get_technical_indicators'];
+  const allowed = ['Co-Invest/analyze_markets_batch', 'Co-Invest/get_news', 'Co-Invest/get_technical_indicators', 'Co-Invest/show_chart'];
   check('Live mode: real instrument symbols with feed prices, LIVE chip, read-only tools only', st.live && st.nvda >= 100 && /LIVE PRICES/.test(st.chip) && st.calls.every((x) => allowed.includes(x)), JSON.stringify(st));
   await lp.evaluate(() => window.__astra.ui.getState().openPanel({ kind: 'wall', panelId: 'p-market-wall' }));
   await lp.waitForTimeout(800);
   const wall = await lp.textContent('[data-testid=wall-panel]').catch(() => '');
   check('Market wall shows live-priced instruments and headlines (paper trading tag)', /NVDA/.test(wall) && /Live prices · Paper/.test(wall) && /Test headline one/.test(wall), wall.slice(0, 140));
-  await lp.evaluate(() => { const s = window.__astra.sim(); s.speed = 5; while (s.minute < 9 * 60 + 40) s.advance(0.5); s.speed = 1; });
+  // the real office: wall clock, 24/7, no speed controls, everyone on site and working on tasks from their seniors
+  await lp.waitForFunction(() => window.__astra.sim().work.tasks.length > 25, null, { timeout: 60000 }).catch(() => {});
+  const real = await lp.evaluate(() => {
+    const s = window.__astra.sim();
+    const d = new Date();
+    return {
+      realMode: s.realMode,
+      clockOk: Math.abs(s.minute - (d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60)) < 1,
+      speedButtons: document.querySelectorAll('[data-testid^=speed-], [data-testid=pause], [data-testid=reset]').length,
+      onSite: s.employees.filter((e) => s.onSite(e)).length,
+      withTask: s.employees.filter((e) => s.work.current(e.cfg.id)).length,
+      assignedBySenior: s.work.tasks.filter((t) => t.by === s.work.managerOf(t.owner) || !s.work.managerOf(t.owner)).length === s.work.tasks.length,
+      objectives: s.work.objectives.length,
+      charts: window.__stubCalls.filter((x) => x.endsWith('show_chart')).length,
+    };
+  });
+  check('Real office: wall-clock time, no speed/pause/reset, all 30 on site, everyone working on a task from their senior', real.realMode && real.clockOk && real.speedButtons === 0 && real.onSite === 30 && real.withTask >= 25 && real.assignedBySenior && real.objectives >= 4 && real.charts > 0, JSON.stringify(real));
+  await lp.evaluate(() => window.__astra.ui.getState().openPanel({ kind: 'owner', tab: 'work' }));
+  await lp.waitForSelector('[data-testid=work-board]', { timeout: 10000 });
+  const board = await lp.textContent('[data-testid=work-board]');
+  check('Owner work board shows objectives, the reporting lines and tasks', /objectives/i.test(board) && /Alexander Reed/.test(board) && /Elena Petrova/.test(board), board.slice(0, 120));
+  await lp.screenshot({ path: path.join(out, '25-work-board.png') });
+  // test-only: run the office clock fast (a minute every 150 ms) so 35-minute research tasks finish within the test
+  await lp.evaluate(() => { const s = window.__astra.sim(); let off = 0; setInterval(() => { off += 60000; }, 150); s.clock = () => new Date(Date.now() + off); s.frameClamp = 20; });
+  await lp.waitForFunction(() => window.__astra.sim().work.tested.size > 0, null, { timeout: 240000 }).catch(() => {});
+  const res = await lp.evaluate(() => { const s = window.__astra.sim(); return { tested: s.work.tested.size, strats: s.work.strats.length }; });
+  check('Traders test strategies on (stubbed) Co-Invest candles with the walk-forward engine', res.tested > 0, JSON.stringify(res));
+  await lp.evaluate(() => window.__astra.ui.getState().openPanel({ kind: 'monitor', monitorId: 'ws-trade-02-m1' }));
+  await lp.waitForTimeout(1200);
+  const mon = await lp.textContent('[data-testid=app-view]');
+  check('A trader monitor shows the current task, who assigned it and real candles', /Current task/.test(mon) && /Assigned by/.test(mon) && /real candles|Waiting for Co-Invest/.test(mon), mon.slice(0, 160));
+  await lp.screenshot({ path: path.join(out, '26-trader-monitor.png') });
+  await lp.evaluate(() => window.__astra.ui.getState().closePanel());
   await lp.evaluate(() => window.__astra.ui.getState().openPanel({ kind: 'talk', id: 'e03' }));
   await lp.fill('[data-testid=talk-input]', 'Please go to the boardroom');
   await lp.click('[data-testid=talk-send]');
@@ -609,7 +653,7 @@ await step('touch controls (mobile emulation)', async () => {
   await m.addInitScript(() => localStorage.setItem('astra-hq:settings:v1', JSON.stringify({ graphics: 'low' })));
   const mp = await m.newPage();
   mp.on('pageerror', (e) => pageErrors.push(`[mobile] ${e.message}`));
-  await mp.goto(base);
+  await mp.goto(`${base}?office=test-sim`);
   await mp.waitForFunction(() => window.__astra?.sim, null, { timeout: 60000 });
   await mp.tap('[data-testid=enter-office]', { timeout: 90000 });
   await mp.waitForSelector('.touch-stick', { timeout: 10000 });
