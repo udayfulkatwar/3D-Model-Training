@@ -77,7 +77,8 @@ async function walkUntilStopped(key, maxMs) {
   while (Date.now() - t0 < maxMs) {
     await wait(1500);
     const p = await P();
-    if (Math.hypot(p.x - last.x, p.z - last.z) < 0.01) { if (++still >= 2) break; } else still = 0;
+    // ~1 fps under software rendering with occasional multi-second frame stalls: require 4.5 s without movement
+    if (Math.hypot(p.x - last.x, p.z - last.z) < 0.01) { if (++still >= 3) break; } else still = 0;
     last = p;
   }
   await page.keyboard.up(key);

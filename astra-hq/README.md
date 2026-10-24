@@ -124,6 +124,17 @@ simulated work (no AI service).
 - **Door signs**: every room door has a name plate with the room and the department working there (it follows the
   departments you set in the editor).
 
+## World markets screens
+
+A large *World markets* screen hangs in the reception lobby, café, trading floor, research area, risk, Conference
+Room, Boardroom, CEO office, portfolio management and staff lounge. It shows:
+
+- **Exchange clocks in real time** (your device clock and each city's time zone, daylight saving included): Sydney,
+  Tokyo, Shanghai, Hong Kong, Mumbai, Dubai, Frankfurt, London and New York, each marked OPEN / LUNCH / CLOSED with
+  the time to the next open or close. Regular weekday sessions; exchange holidays are not shown.
+- **Key markets**: index, gold, oil and crypto prices (live from Co-Invest when connected, simulated otherwise).
+- **Headlines**: live headlines from Co-Invest when connected; otherwise the office's own market news.
+
 ## Live prices, Claude replies and office workflows
 
 These features switch on only when the page is opened in claude.ai (the published artifact). Anywhere else the office

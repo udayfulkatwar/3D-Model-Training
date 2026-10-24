@@ -10,6 +10,7 @@ import { INSTRUMENTS, INSTRUMENT_INDEX, fmtPx } from '../sim/market';
 import { ACTIVITY_LABEL, type Employee, type Simulation } from '../sim/simulation';
 import { SERVICES } from '../sim/tech';
 import type { AppView, Tone, Widget } from './types';
+import { EXCHANGES, sessionStatus } from './worldMarkets';
 
 const tone = (v: number): Tone | undefined => (v > 0 ? 'pos' : v < 0 ? 'neg' : undefined);
 const utilTone = (u: number): Tone | undefined => (u >= 1 ? 'crit' : u >= 0.8 ? 'warn' : undefined);
@@ -529,6 +530,27 @@ export function buildPanelView(sim: Simulation, panelId: string, companyName: st
       v.theme = 'signage';
       for (let f = 2; f >= 0; f--) v.widgets.push({ type: 'text', title: FLOOR_NAMES[f], lines: [ROOMS.filter((r) => r.floor === f && !r.hidden).map((r) => r.name).join(' · ')] });
       v.widgets.push({ type: 'text', lines: ['Touch to open office navigation'] });
+      break;
+    }
+    case 'worldMarkets': {
+      v.title = `World markets · ${sim.live ? 'live prices' : 'simulated prices'} · exchange clocks in real time`;
+      v.layout = 'grid';
+      const now = Date.now();
+      const st = EXCHANGES.map((x) => ({ x, s: sessionStatus(x, now) }));
+      const open = st.filter((r) => r.s.state === 'open').length;
+      v.banner = { text: `${open} of ${EXCHANGES.length} major exchanges open now · crypto and Co-Invest perpetuals trade 24/7`, tone: open ? 'accent' : 'muted' };
+      v.widgets.push({ type: 'table', title: 'Exchanges (local time, regular sessions; holidays not shown)', columns: ['City', 'Exchange', 'Local', 'Status', ''], align: ['l', 'l', 'r', 'l', 'l'],
+        rows: st.map(({ x, s }) => [x.city, x.name, `${s.day} ${s.local}`, s.state === 'open' ? 'OPEN' : s.state === 'lunch' ? 'LUNCH' : 'CLOSED', s.note]),
+        tones: st.map(({ s }) => [undefined, 'muted', undefined, s.state === 'open' ? 'pos' : s.state === 'lunch' ? 'warn' : 'muted', 'muted']) });
+      const keys = [6, 8, 7, 9, 10, 11].map((k) => INSTRUMENTS[k]).filter(Boolean);
+      v.widgets.push({ type: 'table', title: sim.live ? 'Key markets (live, Co-Invest)' : 'Key markets (simulated)', columns: ['Market', 'Last', '24h / day'], align: ['l', 'r', 'r'],
+        rows: keys.map((i) => [`${i.sym} · ${i.name}`, fmtPx(i.sym, sim.market.price(i.sym)), fmtPct(sim.market.change(i.sym))]),
+        tones: keys.map((i) => [undefined, undefined, tone(sim.market.change(i.sym))]) });
+      const shock = sim.market.shocks.find((s) => m >= s.minute);
+      const heads = sim.news.length
+        ? sim.news.slice(0, 7).map((n) => `• ${n.title} — ${n.source}`)
+        : [shock ? `• ${fmtTime(shock.minute)} ${shock.label}` : '• No market-moving office news yet today', '• Live headlines appear here when the page runs in claude.ai with the Co-Invest connector.'];
+      v.widgets.push({ type: 'text', title: sim.news.length ? 'Headlines (live)' : 'Headlines', lines: heads });
       break;
     }
     case 'ceoTv': {

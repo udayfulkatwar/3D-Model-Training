@@ -79,7 +79,7 @@ export interface Seat {
 
 export type PanelKind =
   | 'roomDisplay' | 'whiteboard' | 'marketWall' | 'serverDisplay' | 'directory' | 'menuBoard'
-  | 'riskWall' | 'pmWall' | 'ceoTv' | 'floorSign' | 'logo' | 'trainingScreen';
+  | 'riskWall' | 'pmWall' | 'ceoTv' | 'floorSign' | 'logo' | 'trainingScreen' | 'worldMarkets';
 
 export interface WallPanel {
   id: string;
@@ -567,6 +567,20 @@ for (let f = 0; f < 3; f++) {
   addFurn('plant', f, 33.45, 7.2);
   panel({ id: `p-floorsign-${f}`, kind: 'floorSign', floor: f, x: 20.7, y: 1.65, z: 6.12, heading: 0, w: 1.3, h: 0.8, label: 'Floor directory sign', roomId: `${['g', 'f', 's'][f]}-corridor` });
 }
+// World markets screens: exchange clocks and sessions, key prices and headlines, in the rooms where people follow markets
+for (const [id, floor, x, y, z, heading, w, label] of [
+  ['p-world-lobby', 0, 24.2, 2.35, 19.43, PI, 2.6, 'World markets screen (reception)'],
+  ['p-world-cafe', 0, 2.0, 2.5, 8.53, 0, 1.8, 'World markets screen (café)'],
+  ['p-world-trading', 1, 0.28, 1.95, 14.0, HALF, 2.8, 'World markets screen (trading floor)'],
+  ['p-world-research', 1, 33.72, 1.85, 16.4, -HALF, 2.4, 'World markets screen (research)'],
+  ['p-world-risk', 1, 17.78, 1.85, 3.0, -HALF, 2.2, 'World markets screen (risk)'],
+  ['p-world-conf', 1, 28.7, 1.95, 0.28, 0, 2.6, 'World markets screen (conference room)'],
+  ['p-world-board', 2, 10.12, 1.95, 17.4, HALF, 2.0, 'World markets screen (boardroom)'],
+  ['p-world-ceo', 2, 3.2, 1.9, 8.53, 0, 2.4, 'World markets screen (CEO office)'],
+  ['p-world-pm', 2, 21.12, 1.9, 14.0, HALF, 2.4, 'World markets screen (portfolio management)'],
+  ['p-world-lounge', 2, 33.72, 1.85, 2.6, -HALF, 1.8, 'World markets screen (staff lounge)'],
+] as const) panel({ id, kind: 'worldMarkets', floor, x, y, z, heading, w, h: w * 0.5625, label });
+
 panel({ id: 'p-logo-f1', kind: 'logo', floor: 1, x: 14.0, y: 2.25, z: 6.09, heading: 0, w: 2.4, h: 0.6, label: 'First floor logo' });
 
 // ---------------------------------------------------------------------
