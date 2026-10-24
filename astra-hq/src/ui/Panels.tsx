@@ -25,6 +25,8 @@ function Shell({ title, sub, children, foot, narrow, testId }: { title: React.Re
             <h2>{title}</h2>
             {sub && <div className="sub">{sub}</div>}
           </div>
+          <span className="spacer" />
+          <MinimizeButton />
           <button className="btn close-btn" onClick={close} data-testid="close-panel" aria-label="Close panel">Close ✕</button>
         </div>
         <div className="panel-body">{children}</div>
@@ -36,8 +38,45 @@ function Shell({ title, sub, children, foot, narrow, testId }: { title: React.Re
 
 export function PanelHost() {
   const panel = useUI((s) => s.panel);
+  const min = useUI((s) => s.panelMin);
   if (!panel) return null;
-  return <PanelSwitch panel={panel} />;
+  // minimised panels stay mounted (a running chat or check keeps going); only a small bar is shown
+  return (
+    <>
+      <div className={min ? 'panel-hidden' : undefined}><PanelSwitch panel={panel} /></div>
+      {min && <MinimizedBar panel={panel} />}
+    </>
+  );
+}
+
+function panelTitle(p: Panel): string {
+  const sim = getSim();
+  switch (p.kind) {
+    case 'employee': return sim.name(p.id);
+    case 'talk': return `Talk: ${sim.name(p.id)}`;
+    case 'monitor': return `Monitor ${p.monitorId}`;
+    case 'wall': return 'Wall screen';
+    case 'owner': return 'Owner';
+    default: return p.kind.charAt(0).toUpperCase() + p.kind.slice(1);
+  }
+}
+
+function MinimizedBar({ panel }: { panel: Panel }) {
+  const setMin = useUI((s) => s.setPanelMin);
+  const close = useUI((s) => s.closePanel);
+  return (
+    <div className="min-bar" data-testid="min-bar">
+      <span className="small">{panelTitle(panel)}</span>
+      <button className="btn small primary" onClick={() => setMin(false)} data-testid="restore-panel">Restore ▴</button>
+      <button className="btn small" onClick={close} aria-label="Close">✕</button>
+    </div>
+  );
+}
+
+/** Minimise button shared by every panel header. */
+export function MinimizeButton() {
+  const setMin = useUI((s) => s.setPanelMin);
+  return <button className="btn" onClick={() => setMin(true)} data-testid="minimize-panel" title="Minimise: keep it running and see the office">▁ Minimise</button>;
 }
 
 function PanelSwitch({ panel }: { panel: Panel }) {

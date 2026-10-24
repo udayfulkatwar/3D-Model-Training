@@ -27,6 +27,12 @@ export interface InspectTarget { x: number; y: number; z: number; radius: number
 interface UIState {
   mode: Mode;
   panel: Panel | null;
+  /** The open panel is minimised to a small bar (it keeps running; the office is visible and controllable). */
+  panelMin: boolean;
+  setPanelMin: (on: boolean) => void;
+  /** Side cards (location, activity, minimap, occupancy) hidden for a clear view. */
+  hudHidden: boolean;
+  toggleHud: () => void;
   overviewFloor: number; // 0..2, or 3 = whole building
   followId: string | null;
   inspect: InspectTarget | null;
@@ -72,6 +78,10 @@ let toastSeq = 0;
 export const useUI = create<UIState>((set, get) => ({
   mode: 'intro',
   panel: null,
+  panelMin: false,
+  setPanelMin: (panelMin) => set({ panelMin }),
+  hudHidden: false,
+  toggleHud: () => set({ hudHidden: !get().hudHidden }),
   overviewFloor: 3,
   followId: null,
   inspect: null,
@@ -93,9 +103,9 @@ export const useUI = create<UIState>((set, get) => ({
   setMode: (mode) => set({ mode, prompt: null }),
   openPanel: (panel) => {
     if (document.pointerLockElement) document.exitPointerLock();
-    set({ panel, prompt: null });
+    set({ panel, prompt: null, panelMin: false });
   },
-  closePanel: () => set({ panel: null }),
+  closePanel: () => set({ panel: null, panelMin: false }),
   setOverviewFloor: (overviewFloor) => set({ overviewFloor }),
   follow: (followId) => set({ followId, mode: followId ? 'follow' : get().mode === 'follow' ? 'overview' : get().mode }),
   setInspect: (inspect) => set({ inspect, mode: inspect ? 'inspect' : 'overview' }),
@@ -121,7 +131,7 @@ export const useUI = create<UIState>((set, get) => ({
 /** Movement and look input are ignored while a panel is open or a text field has focus. */
 export function inputBlocked(): boolean {
   const s = useUI.getState();
-  if (s.panel) return true;
+  if (s.panel && !s.panelMin) return true;
   const a = document.activeElement as HTMLElement | null;
   if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || a.isContentEditable)) return true;
   return false;

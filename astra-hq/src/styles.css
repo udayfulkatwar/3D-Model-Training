@@ -247,3 +247,7 @@ kbd { font-family: var(--mono); font-size: 11px; background: #23262c; border: 1p
 .tbl th, .tbl td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line, rgba(255,255,255,0.08)); vertical-align: top; }
 .tbl th { color: var(--muted, #9aa0a6); font-weight: 600; }
 .section:has(> .tbl) { overflow-x: auto; }
+
+/* minimised panel: hidden but still running; a small bar restores it */
+.panel-hidden { display: none; }
+.min-bar { position: absolute; right: 12px; bottom: 40px; z-index: 31; display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 12px; background: var(--panel-solid); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); max-width: calc(100vw - 24px); }

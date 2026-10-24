@@ -6,7 +6,7 @@ import { useUI } from '../store/ui';
 export function TouchControls({ onInteract }: { onInteract: () => void }) {
   const touch = useUI((s) => s.touch);
   const mode = useUI((s) => s.mode);
-  const panel = useUI((s) => s.panel);
+  const panel = useUI((s) => (s.panelMin ? null : s.panel));
   const knob = useRef<HTMLDivElement>(null);
   const stickId = useRef<number | null>(null);
   const lookId = useRef<number | null>(null);

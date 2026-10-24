@@ -57,6 +57,7 @@ export function TopBar() {
         <button className="btn small" onClick={() => open({ kind: 'directory' })} title="Employee directory (F)">Directory</button>
         <button className="btn small" onClick={() => open({ kind: 'navigation' })} title="Floors and rooms (N)">Rooms</button>
         <button className="btn small" onClick={returnToReception} title="Return to reception">Reception</button>
+        <HudToggle />
         <button className="btn small primary" onClick={() => open({ kind: 'owner' })} title="Owner: call meetings, call people, messages (O)" data-testid="open-owner">Owner</button>
       </div>
       <span className="spacer" />
@@ -76,6 +77,12 @@ export function TopBar() {
 }
 
 export function LeftDock() {
+  const hidden = useUI((s) => s.hudHidden);
+  if (hidden) return null;
+  return <LeftDockInner />;
+}
+
+function LeftDockInner() {
   useUI((s) => s.simVersion);
   const mode = useUI((s) => s.mode);
   const overviewFloor = useUI((s) => s.overviewFloor);
@@ -136,6 +143,12 @@ export function LeftDock() {
 }
 
 export function RightDock() {
+  const hidden = useUI((s) => s.hudHidden);
+  if (hidden) return null;
+  return <RightDockInner />;
+}
+
+function RightDockInner() {
   useUI((s) => s.simVersion);
   const minimap = useUI((s) => s.settings.minimap);
   const sim = getSim();
@@ -237,12 +250,13 @@ export function useShortcuts() {
       if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT')) return;
       const ui = useUI.getState();
       if (e.code === 'Escape' && ui.panel) { ui.closePanel(); return; }
-      if (ui.panel) return;
+      if (ui.panel && !ui.panelMin) return;
       switch (e.code) {
         case 'KeyF': ui.openPanel({ kind: 'directory' }); e.preventDefault(); break;
         case 'KeyN': ui.openPanel({ kind: 'navigation' }); break;
         case 'KeyM': if (ui.mode === 'overview') enterWalk(document.querySelector('canvas'), false); else showOverview(); break;
         case 'KeyL': ui.updateSettings({ labels: !ui.settings.labels }); break;
+        case 'KeyH': ui.toggleHud(); break;
         case 'KeyO': ui.openPanel({ kind: 'owner' }); break;
         case 'KeyH': ui.openPanel({ kind: 'help' }); break;
         case 'Digit1': if (ui.mode === 'overview') ui.setOverviewFloor(0); break;
@@ -269,4 +283,11 @@ function LiveChip() {
       {live.state === 'needs-approval' && <button className="btn small" data-testid="live-allow" onClick={() => void connectLive(getSim, (s) => useUI.getState().setLive(s))}>Allow live prices</button>}
     </div>
   );
+}
+
+/** Hide or show the side cards for a clear view of the office (also the H key). */
+function HudToggle() {
+  const hidden = useUI((s) => s.hudHidden);
+  const toggle = useUI((s) => s.toggleHud);
+  return <button className={`btn small ${hidden ? 'active' : ''}`} onClick={toggle} title="Hide or show the side panels (H)" data-testid="toggle-hud">{hidden ? 'Show panels' : 'Hide panels'}</button>;
 }

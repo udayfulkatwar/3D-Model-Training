@@ -16,6 +16,7 @@ let aiDisabled = false;
 import { ACTIVITY_COLOR, ACTIVITY_LABEL } from '../sim/simulation';
 import { playSound } from '../audio/sound';
 import { goToEmployee, goToRoom } from './actions';
+import { MinimizeButton } from './Panels';
 
 export const MEETING_ROOMS = ['f-conf', 's-board', 'g-training', 'f-m1a', 'f-m1b', 'g-interview', 's-ceo', 'g-lobby'] as const;
 
@@ -43,6 +44,8 @@ function Shell({ title, sub, children, foot, testId }: { title: React.ReactNode;
       <aside className="panel" role="dialog" aria-modal="true" data-testid={testId}>
         <div className="panel-head">
           <div><h2>{title}</h2>{sub && <div className="sub">{sub}</div>}</div>
+          <span className="spacer" />
+          <MinimizeButton />
           <button className="btn close-btn" onClick={close} data-testid="close-panel">Close ✕</button>
         </div>
         <div className="panel-body">{children}</div>

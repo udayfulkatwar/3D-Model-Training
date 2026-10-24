@@ -460,6 +460,26 @@ await step('training and CEO report', async () => {
   await page.click('[data-testid=close-panel]');
 });
 
+await step('minimise panels and hide side panels', async () => {
+  await A(() => window.__astra.ui.getState().openPanel({ kind: 'owner', tab: 'messages' }));
+  await page.waitForSelector('[data-testid=minimize-panel]');
+  await page.click('[data-testid=minimize-panel]');
+  await wait(400);
+  const m = await A(() => ({ bar: !!document.querySelector('[data-testid=min-bar]'), panelVisible: !!document.querySelector('[data-testid=owner-panel]')?.offsetParent, open: !!window.__astra.ui.getState().panel }));
+  check('Minimise keeps the panel open but out of the way (small bar)', m.bar && !m.panelVisible && m.open, JSON.stringify(m));
+  await page.click('[data-testid=restore-panel]');
+  await wait(400);
+  check('Restore brings the panel back', await A(() => !!document.querySelector('[data-testid=owner-panel]')?.offsetParent));
+  await page.click('[data-testid=close-panel]');
+  await page.click('[data-testid=toggle-hud]');
+  await wait(400);
+  const hidden = await A(() => !document.querySelector('.left-dock') && !document.querySelector('.right-dock'));
+  await page.click('[data-testid=toggle-hud]');
+  await wait(400);
+  const shown = await A(() => !!document.querySelector('.left-dock') && !!document.querySelector('.right-dock'));
+  check('Hide panels clears the side cards and shows them again', hidden && shown);
+});
+
 await step('configuration editor persistence', async () => {
   await A(() => window.__astra.ui.getState().openPanel({ kind: 'settings', tab: 'editor' }));
   await page.click('[data-testid=settings-tab-editor]');

@@ -6,6 +6,7 @@ import { parseConfigJson, validateConfig } from '../config/validate';
 import { WORKSTATIONS } from '../world/furniture';
 import { roomById } from '../world/building';
 import { getSim, rebuildSim } from '../store/simInstance';
+import { MinimizeButton } from './Panels';
 import { useUI } from '../store/ui';
 import { setSoundEnabled } from '../audio/sound';
 import { PRESETS } from '../scene/quality';
@@ -20,6 +21,8 @@ export function SettingsPanel({ tab: initial }: { tab?: Tab }) {
       <aside className="panel" role="dialog" aria-modal="true" aria-label="Settings" data-testid="settings-panel">
         <div className="panel-head">
           <div><h2>Settings</h2><div className="sub">Saved in this browser (localStorage)</div></div>
+          <span className="spacer" />
+          <MinimizeButton />
           <button className="btn close-btn" onClick={close} data-testid="close-panel">Close ✕</button>
         </div>
         <div className="panel-body">
