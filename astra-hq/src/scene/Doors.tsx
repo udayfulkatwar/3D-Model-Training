@@ -11,7 +11,7 @@ import { vis } from './visibility';
 
 const LEAF_H = 2.2;
 
-function leafGeometry(w: number, glass: boolean, handleSide: 1 | -1): Map<MatKey, THREE.BufferGeometry> {
+function leafGeometry(w: number, glass: boolean, handleSide: 1 | -1, vision = true): Map<MatKey, THREE.BufferGeometry> {
   // leaf extends along +X from the hinge (local origin)
   const b = new GeoBuilder();
   if (glass) {
@@ -24,7 +24,7 @@ function leafGeometry(w: number, glass: boolean, handleSide: 1 | -1): Map<MatKey
     b.box('steel', w - 0.12, 1.05, -0.05 * handleSide, 0.03, 0.9, 0.03);
   } else {
     b.box('walnut', w / 2, LEAF_H / 2, 0, w - 0.01, LEAF_H, 0.045);
-    b.box('glass', w / 2, 1.55, 0.0, 0.14, 0.9, 0.05);
+    if (vision) b.box('glass', w / 2, 1.55, 0.0, 0.14, 0.9, 0.05);
     for (const s of [1, -1]) {
       b.box('steel', w - 0.1, 1.05, s * 0.045, 0.14, 0.02, 0.02);
       b.box('steel', w - 0.04, 1.05, s * 0.035, 0.02, 0.02, 0.03);
@@ -39,9 +39,9 @@ export function Doors() {
   const mats = materials();
   const geos = useMemo(() => {
     const cache = new Map<string, Map<MatKey, THREE.BufferGeometry>>();
-    const get = (w: number, glass: boolean) => {
-      const k = `${w.toFixed(2)}-${glass}`;
-      if (!cache.has(k)) cache.set(k, leafGeometry(w, glass, 1));
+    const get = (w: number, glass: boolean, vision = true) => {
+      const k = `${w.toFixed(2)}-${glass}-${vision}`;
+      if (!cache.has(k)) cache.set(k, leafGeometry(w, glass, 1, vision));
       return cache.get(k)!;
     };
     return { get, cache };
@@ -53,7 +53,7 @@ export function Doors() {
       const base = d.floor * FLOOR_H;
       const mk = (hingeX: number, w: number, hingeSide: 1 | -1, slide: boolean) => {
         const g = new THREE.Group();
-        const geo = geos.get(w, d.glass);
+        const geo = geos.get(w, d.glass, !d.plate);
         for (const [k, gg] of geo) {
           const m = new THREE.Mesh(gg, mats[k]);
           m.userData = { interact: 'door', id: d.id };
@@ -63,6 +63,7 @@ export function Doors() {
         }
         // hinge side -1 mirrors the leaf so it extends towards -X from its hinge
         if (hingeSide === -1) g.scale.x = -1;
+        if (d.plate) g.add(namePlate(d.plate.title, d.plate.sub, w, d.at > 7 ? -1 : 1));
         g.position.set(hingeX, base, d.at);
         out.push({ door: d, group: g, hingeSide, slide });
         return g;
@@ -100,6 +101,45 @@ export function Doors() {
   });
 
   return <group name="doors">{leaves.map((l, i) => <primitive key={i} object={l.group} />)}</group>;
+}
+
+/** Brass name plate screwed to the corridor face of a door leaf, at eye height (moves with the door). */
+function namePlate(title: string, sub: string, leafW: number, face: 1 | -1): THREE.Mesh {
+  const c = document.createElement('canvas');
+  c.width = 640;
+  c.height = 240;
+  const g = c.getContext('2d')!;
+  const grad = g.createLinearGradient(0, 0, 640, 240);
+  grad.addColorStop(0, '#d9b872');
+  grad.addColorStop(0.5, '#f0d89a');
+  grad.addColorStop(1, '#b8924c');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 640, 240);
+  g.strokeStyle = '#7a5a25';
+  g.lineWidth = 6;
+  g.strokeRect(14, 14, 612, 212);
+  g.fillStyle = '#6b4f1f';
+  for (const [x, y] of [[34, 34], [606, 34], [34, 206], [606, 206]]) { g.beginPath(); g.arc(x, y, 7, 0, Math.PI * 2); g.fill(); }
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillStyle = '#2b2112';
+  let fs = 64;
+  g.font = `600 ${fs}px Georgia, "Times New Roman", serif`;
+  while (g.measureText(title.toUpperCase()).width > 540 && fs > 30) { fs -= 2; g.font = `600 ${fs}px Georgia, "Times New Roman", serif`; }
+  g.fillText(title.toUpperCase(), 320, 100);
+  g.fillRect(200, 142, 240, 3);
+  g.font = 'italic 500 36px Georgia, "Times New Roman", serif';
+  g.fillText(sub, 320, 180);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  const pw = Math.min(0.6, leafW - 0.2);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(pw, pw * 0.375), new THREE.MeshStandardMaterial({ map: tex, metalness: 0.55, roughness: 0.35, emissive: '#ffffff', emissiveMap: tex, emissiveIntensity: 0.15 }));
+  // centred on the leaf, clear of the handle, just proud of the leaf surface on the corridor side
+  m.position.set(leafW / 2, 1.5, face * 0.026);
+  if (face === -1) m.rotation.y = Math.PI;
+  m.userData = { doorPlate: title };
+  return m;
 }
 
 function easeInOut(t: number) {

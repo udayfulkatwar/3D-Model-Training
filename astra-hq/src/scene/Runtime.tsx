@@ -55,6 +55,7 @@ export function SimDriver() {
 
 export function StatsProbe() {
   const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
   const frames = useRef(0);
   const t = useRef(0);
   const last = useRef({ calls: 0, triangles: 0 });
@@ -82,8 +83,8 @@ export function StatsProbe() {
   });
   useEffect(() => {
     const w = window as unknown as { __astra?: Record<string, unknown> };
-    w.__astra = { ...(w.__astra ?? {}), gl };
-  }, [gl]);
+    w.__astra = { ...(w.__astra ?? {}), gl, scene };
+  }, [gl, scene]);
   return null;
 }
 

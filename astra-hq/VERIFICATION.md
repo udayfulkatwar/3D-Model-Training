@@ -22,8 +22,8 @@ real touch hardware. No frame-rate claim is made for real hardware.
 |---|---|
 | `npm install` | OK, 0 vulnerabilities reported |
 | `npm run build` | OK. Chunks (gzip): app 89 kB, react 64 kB, three + r3f 272 kB, post-processing 156 kB (lazy, High preset only), CSS 4 kB |
-| `npm test` | **80/80 passed** (11 files) |
-| `npm run e2e` | **76/76 passed** (viewport 960×570, Low preset for responsiveness under software rendering) |
+| `npm test` | **82/82 passed** (11 files) |
+| `npm run e2e` | **77/77 passed** (viewport 960×570, Low preset for responsiveness under software rendering) |
 
 ### Unit tests (`tests/`)
 
@@ -75,7 +75,9 @@ real touch hardware. No frame-rate claim is made for real hardware.
 
 ### Browser acceptance (`e2e/run.mjs`)
 
-All 76 checks passed, including:
+All 77 checks passed, including:
+
+- Chairman's Office (second floor, east of Portfolio Management): the door carries the brass plate "Uday Fulkatwar · Chairman · ASTRA" on the leaf itself, with no sign above that door; all 22 rooms reachable.
 
 - Loads with *Office Simulation* / *Simulated Data* labels; 30 employees; Enter Office → walkthrough (pointer lock was granted in headless Chromium); spawn at reception.
 - The day starts with an empty building; the real-time clock option runs 1 simulated minute per real minute; by 07:50 staff have badged in at the entrance and reached their floors, some by lift (screenshot `19-morning-arrivals.png`).

@@ -1,4 +1,4 @@
-// Name plates above every room door on the corridor side: room name plus the department that works there.
+// Name plates above every room door (doors with their own plate on the leaf are skipped) on the corridor side: room name plus the department that works there.
 // The department is taken from the people whose desks are in the room, so editor changes show up here.
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo } from 'react';
@@ -54,7 +54,7 @@ export function DoorSigns({ sim, version }: { sim: Simulation; version: string }
   const signs = useMemo(() => {
     const list: Sign[] = [];
     for (const d of DOORS) {
-      if (d.kind === 'auto' || d.kind === 'elevator' || d.axis !== 'x') continue;
+      if (d.kind === 'auto' || d.kind === 'elevator' || d.axis !== 'x' || d.plate) continue;
       const stair = d.id.endsWith('-stair');
       const room = stair ? null : roomBehind(d) ?? null;
       if (!stair && !room) continue;

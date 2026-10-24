@@ -550,14 +550,30 @@ panel({ id: 'p-wb-s-board', kind: 'whiteboard', floor: 2, x: 20.9, y: 1.45, z: 1
 panel({ id: 'p-logo-board', kind: 'logo', floor: 2, x: 20.9, y: 2.2, z: 16.2, heading: -HALF, w: 1.8, h: 0.5, label: 'Boardroom logo' });
 
 // Portfolio management ---------------------------------------------------------
-for (let i = 0; i < 3; i++) {
-  workstation({ id: `ws-pm-${String(i + 1).padStart(2, '0')}`, kind: 'pm', label: `PM Desk ${i + 1}`, floor: 2, x: 23.6 + i * 2.4, z: 11.4, rot: 0, w: 1.8, monitors: 2 });
+for (const [i, x] of [22.5, 24.5, 27.3].entries()) {
+  workstation({ id: `ws-pm-${String(i + 1).padStart(2, '0')}`, kind: 'pm', label: `PM Desk ${i + 1}`, floor: 2, x, z: 11.4, rot: 0, w: 1.8, monitors: 2 });
 }
-meetingTable('s-pm-table', 2, 27.0, 16.3, 2.0, 1.0, true, 2, false);
-ceilingFreeBookshelf(2, 33.6, 16.0, -HALF, 2.0);
+meetingTable('s-pm-table', 2, 24.7, 16.3, 2.0, 1.0, true, 2, false);
+ceilingFreeBookshelf(2, 28.0, 17.2, -HALF, 2.0);
 addFurn('plantTall', 2, 21.6, 18.9);
-addFurn('plant', 2, 33.4, 9.0);
-panel({ id: 'p-pm-wall', kind: 'pmWall', floor: 2, x: 33.78, y: 1.75, z: 12.2, heading: -HALF, w: 2.0, h: 1.12, label: 'Portfolio summary display', roomId: 's-pm' });
+addFurn('plant', 2, 27.9, 18.9);
+panel({ id: 'p-pm-wall', kind: 'pmWall', floor: 2, x: 28.3, y: 1.75, z: 14.2, heading: -HALF, w: 2.0, h: 1.12, label: 'Portfolio summary display', roomId: 's-pm' });
+
+// Chairman's office (Uday Fulkatwar) ---------------------------------------------
+addFurn('deskExec', 2, 31.1, 15.4, 0, 2.0, 0.95, 0.76);
+chairSeat('chair-exec-s1', 'chairExec', 2, 31.1, 16.3, PI, 'meeting');
+addFurn('credenza', 2, 31.1, 19.1, PI, 2.4, 0.5, 0.7);
+chairSeat('chair-guest-s1', 'chairMeeting', 2, 30.5, 14.25, 0, 'meeting');
+chairSeat('chair-guest-s2', 'chairMeeting', 2, 31.7, 14.25, 0, 'meeting');
+addFurn('sofa', 2, 33.2, 11.3, -HALF, 2.2, 0.9, 0.8);
+sofaSeat('chair-sofa-s1', 2, 33.15, 10.7, -HALF);
+sofaSeat('chair-sofa-s2', 2, 33.15, 11.9, -HALF);
+addFurn('coffeeTable', 2, 32.0, 11.3, HALF, 1.1, 0.55, 0.4);
+addFurn('rug', 2, 32.1, 11.3, 0, 2.6, 3.0, 0.01, { noCollide: true, variant: 1 });
+ceilingFreeBookshelf(2, 28.8, 15.4, HALF, 2.2);
+addFurn('plantTall', 2, 28.9, 18.9);
+addFurn('plantTall', 2, 33.4, 18.9);
+addFurn('coatStand', 2, 28.9, 9.0);
 
 // =====================================================================
 // CORRIDORS & CORE (every floor)
@@ -578,6 +594,7 @@ for (const [id, floor, x, y, z, heading, w, label] of [
   ['p-world-board', 2, 10.12, 1.95, 17.4, HALF, 2.0, 'World markets screen (boardroom)'],
   ['p-world-ceo', 2, 3.2, 1.9, 8.53, 0, 2.4, 'World markets screen (CEO office)'],
   ['p-world-pm', 2, 21.12, 1.9, 14.0, HALF, 2.4, 'World markets screen (portfolio management)'],
+  ['p-world-chair', 2, 33.72, 1.9, 15.4, -HALF, 2.0, "World markets screen (chairman's office)"],
   ['p-world-lounge', 2, 33.72, 1.85, 2.6, -HALF, 1.8, 'World markets screen (staff lounge)'],
 ] as const) panel({ id, kind: 'worldMarkets', floor, x, y, z, heading, w, h: w * 0.5625, label });
 

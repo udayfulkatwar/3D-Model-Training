@@ -549,6 +549,18 @@ await step('room accessibility in browser', async () => {
   check(`Every room has a valid standing spot (${rooms.length} rooms)`, bad.length === 0, bad.join(' '));
 });
 
+await step("chairman's office", async () => {
+  await teleport(2, 29.4, 6.3, Math.PI, 0.02);
+  await wait(1500);
+  const plate = await A(() => { let hit = null; window.__astra.scene?.traverse((o) => { if (o.userData?.doorPlate) hit = o.userData.doorPlate; }); return hit; });
+  const signAbove = await A(() => { let hit = false; window.__astra.scene?.traverse((o) => { if (o.userData?.doorSign === 's-d-chair') hit = true; }); return hit; });
+  check('Chairman door carries the Uday Fulkatwar plate on the door, no sign above it', plate === 'Uday Fulkatwar' && !signAbove, `plate=${plate} above=${signAbove}`);
+  await shot('30-chairman-door');
+  await teleport(2, 29.2, 9.3, Math.PI * 1.08, -0.08);
+  await wait(1200);
+  await shot('31-chairman-office');
+});
+
 await step('performance probe (software renderer)', async () => {
   const stats = {};
   for (const preset of ['low', 'medium', 'high']) {

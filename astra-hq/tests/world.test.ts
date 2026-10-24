@@ -144,3 +144,20 @@ describe('player movement', () => {
     expect(p.z).toBeGreaterThan(4.3);
   });
 });
+
+describe("chairman's office", () => {
+  it('has its own room and door with the name plate on the door leaf', () => {
+    const room = ROOMS.find((r) => r.id === 's-chair')!;
+    expect(room.name).toBe("Chairman's Office");
+    expect(roomAt(2, room.entry.x, room.entry.z)?.id).toBe('s-chair');
+    const d = DOORS.find((x) => x.id === 's-d-chair')!;
+    expect(d.plate).toEqual({ title: 'Uday Fulkatwar', sub: 'Chairman · ASTRA' });
+    expect(d.center).toBeGreaterThan(room.rect.x0);
+    expect(d.center).toBeLessThan(room.rect.x1);
+    expect(FURNITURE.some((f) => f.type === 'deskExec' && roomAt(2, f.x, f.z)?.id === 's-chair')).toBe(true);
+  });
+  it('can be walked to from the lobby', () => {
+    const room = ROOMS.find((r) => r.id === 's-chair')!;
+    expect(findPath(LOBBY, { floor: 2, ...room.entry })).not.toBeNull();
+  });
+});
