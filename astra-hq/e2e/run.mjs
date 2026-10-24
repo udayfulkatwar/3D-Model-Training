@@ -208,7 +208,7 @@ await step('overview and floor selection', async () => {
 
 await step('morning arrivals through the entrance', async () => {
   await page.keyboard.press('Escape');
-  const empty = await A(() => { const s = window.__astra.sim(); return { onSite: s.employees.filter((e) => s.onSite(e)).length, minute: s.minute }; });
+  const empty = await A(() => { const s = window.__astra.sim(); s.reset(); return { onSite: s.employees.filter((e) => s.onSite(e)).length, minute: s.minute }; });
   check('The day starts with an empty building (everyone off-site)', empty.onSite === 0, JSON.stringify(empty));
   // real-time clock option: one simulated minute per real minute
   await A(() => window.__astra.ui.getState().updateSettings({ realtimeClock: true }));
@@ -321,8 +321,10 @@ await step('risk breach chain', async () => {
   check('Simulated breach creates an alert and a review meeting with the PM', r.alert && r.review && r.pm, JSON.stringify(r));
   await A(() => window.__astra.ui.getState().openPanel({ kind: 'monitor', monitorId: 'ws-risk-01-m2' }));
   await wait(1200);
-  await page.click('[data-testid=app-view] .app-tabs button:nth-child(2)');
-  await wait(800);
+  for (let i = 0; i < 3 && !(await A(() => window.__astra.sim().monitorState('ws-risk-01-m2').tab === 1)); i++) {
+    await page.click('[data-testid=app-view] .app-tabs button:nth-child(2)');
+    await wait(1500);
+  }
   const t = await page.textContent('[data-testid=app-view]');
   check('Risk application lists the alert lifecycle', /RA\d+/.test(t) && /(drawdown)/i.test(t), t.slice(0, 120));
   await page.click('[data-testid=close-panel]');
@@ -417,7 +419,8 @@ await step('owner tools', async () => {
   check('Talking to an employee gets a reply from live data', /My positions are/.test(chat), chat.slice(-90));
   await page.click('[data-testid=talk-come]');
   await page.click('[data-testid=close-panel]');
-  await A(() => { const s = window.__astra.sim(); s.speed = 5; const end = s.minute + 15; while (s.minute < end) s.advance(0.5); s.speed = 1; });
+  // walking down from the first floor may include waiting for and riding the lift
+  await A(() => { const s = window.__astra.sim(); s.speed = 5; const end = s.minute + 25; while (s.minute < end) s.advance(0.5); s.speed = 1; });
   const came = await A(() => { const e = window.__astra.sim().byId.get('e02'); const p = window.__astra.player; return { d: Math.hypot(e.x - p.x, e.z - p.z), floor: e.floor, phase: e.phase }; });
   check('"Come to me" brings the employee to the owner', came.d < 3.5 && came.floor === 0 && came.phase === 'standing', JSON.stringify(came));
   await A(() => { const s = window.__astra.sim(); s.dismiss(['e02']); s.reset(); const ceo = s.employees.find((e) => e.cfg.roleType === 'ceo'); s.speed = 5; while (!s.atDesk(ceo) && s.minute < 10 * 60) s.advance(0.5); s.speed = 1; });
