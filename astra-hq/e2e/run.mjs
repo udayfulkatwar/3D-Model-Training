@@ -559,6 +559,23 @@ await step("chairman's office", async () => {
   await teleport(2, 29.2, 9.3, Math.PI * 1.08, -0.08);
   await wait(1200);
   await shot('31-chairman-office');
+  // the Chairman's PC on the desk opens the console with access to the whole office
+  await teleport(2, 31.1, 16.75, 0, -0.42);
+  await wait(1200);
+  await shot('32-chairman-pc');
+  await useWhenPrompt(/Chairman's PC/);
+  await page.waitForSelector('[data-testid="office-tab"]', { timeout: 20000 });
+  const counts = await page.evaluate(() => ({ people: document.querySelectorAll('[data-testid^="office-person-"]').length, screens: document.querySelectorAll('[data-testid^="office-screen-"]').length, displays: document.querySelectorAll('[data-testid^="office-display-"]').length }));
+  const staff = await A(() => window.__astra.sim().employees.length);
+  check("Chairman's PC opens a console listing every person, their screens and every display", counts.people === staff && counts.screens >= staff && counts.displays > 20, JSON.stringify(counts));
+  await shot('33-chairman-pc-console');
+  await page.locator('[data-testid^="office-screen-"]').first().click();
+  await page.waitForSelector('[data-testid="back-to-pc"]', { timeout: 10000 });
+  const onMonitor = await A(() => window.__astra.ui.getState().panel?.kind);
+  await page.click('[data-testid="back-to-pc"]');
+  await page.waitForSelector('[data-testid="office-tab"]', { timeout: 10000 });
+  check("A staff screen opened from the Chairman's PC, with a way back to the console", onMonitor === 'monitor', `panel=${onMonitor}`);
+  await A(() => window.__astra.ui.getState().closePanel());
 });
 
 await step('performance probe (software renderer)', async () => {

@@ -79,7 +79,7 @@ export interface Seat {
 
 export type PanelKind =
   | 'roomDisplay' | 'whiteboard' | 'marketWall' | 'serverDisplay' | 'directory' | 'menuBoard'
-  | 'riskWall' | 'pmWall' | 'ceoTv' | 'floorSign' | 'logo' | 'trainingScreen' | 'worldMarkets';
+  | 'riskWall' | 'pmWall' | 'ceoTv' | 'floorSign' | 'logo' | 'trainingScreen' | 'worldMarkets' | 'chairmanPc';
 
 export interface WallPanel {
   id: string;
@@ -563,6 +563,9 @@ panel({ id: 'p-pm-wall', kind: 'pmWall', floor: 2, x: 28.3, y: 1.75, z: 14.2, he
 addFurn('deskExec', 2, 31.1, 15.4, 0, 2.0, 0.95, 0.76);
 chairSeat('chair-exec-s1', 'chairExec', 2, 31.1, 16.3, PI, 'meeting');
 addFurn('credenza', 2, 31.1, 19.1, PI, 2.4, 0.5, 0.7);
+// Chairman's PC: two screens on the desk facing the chair; using it opens the console with access to the whole office
+panel({ id: 'p-chair-pc-1', kind: 'chairmanPc', floor: 2, x: 30.76, y: 1.1, z: 15.06, heading: 0.12, w: 0.64, h: 0.38, label: "Chairman's PC (screen 1)", roomId: 's-chair' });
+panel({ id: 'p-chair-pc-2', kind: 'chairmanPc', floor: 2, x: 31.44, y: 1.1, z: 15.06, heading: -0.12, w: 0.64, h: 0.38, label: "Chairman's PC (screen 2)", roomId: 's-chair' });
 chairSeat('chair-guest-s1', 'chairMeeting', 2, 30.5, 14.25, 0, 'meeting');
 chairSeat('chair-guest-s2', 'chairMeeting', 2, 31.7, 14.25, 0, 'meeting');
 addFurn('sofa', 2, 33.2, 11.3, -HALF, 2.2, 0.9, 0.8);

@@ -40,6 +40,22 @@ function coffeeMachineGeometry() {
   return b.build();
 }
 
+/** Monitor bodies, stands, keyboard and mouse of the Chairman's PC (the screens themselves are wall panels). */
+function chairmanPcGeometry() {
+  const b = new GeoBuilder();
+  const base = 2 * FLOOR_H + 0.76;
+  for (const p of PANELS.filter((x) => x.kind === 'chairmanPc')) {
+    const y = 2 * FLOOR_H + p.y;
+    const bx = p.x - Math.sin(p.heading) * 0.025, bz = p.z - Math.cos(p.heading) * 0.025;
+    b.box('blackMetal', bx, y, bz, p.w + 0.03, p.h + 0.03, 0.035, p.heading);
+    b.box('blackMetal', p.x - Math.sin(p.heading) * 0.08, base + 0.13, p.z - Math.cos(p.heading) * 0.08, 0.05, 0.26, 0.03, p.heading);
+    b.box('blackMetal', p.x - Math.sin(p.heading) * 0.06, base + 0.008, p.z - Math.cos(p.heading) * 0.06, 0.24, 0.016, 0.18, p.heading);
+  }
+  b.box('plasticDark', 31.1, base + 0.012, 15.62, 0.44, 0.02, 0.14);
+  b.box('plasticDark', 31.5, base + 0.014, 15.64, 0.06, 0.025, 0.1);
+  return b.build();
+}
+
 export function HitVolumes() {
   const mats = materials();
   const coffee = useMemo(coffeeMachineGeometry, []);
@@ -48,6 +64,8 @@ export function HitVolumes() {
   const invisible = useMemo(() => new THREE.MeshBasicMaterial({ visible: false }), []);
   useEffect(() => () => { for (const g of coffee.values()) g.dispose(); boxGeo.dispose(); invisible.dispose(); }, [coffee, boxGeo, invisible]);
   const ceo = WS_INDEX.get('ws-ceo')!;
+  const pc = useMemo(chairmanPcGeometry, []);
+  useEffect(() => () => { for (const g of pc.values()) g.dispose(); }, [pc]);
   return (
     <group name="hit-volumes">
       {seatBoxes.map((s) => (
@@ -61,6 +79,7 @@ export function HitVolumes() {
       <mesh position={[ceo.x, 2 * FLOOR_H + 0.8, ceo.z]} material={invisible} userData={{ interact: 'ceoDesk', floor: 2 }}>
         <boxGeometry args={[ceo.deskW, 0.15, ceo.deskD]} />
       </mesh>
+      {[...pc.entries()].map(([k, g]) => <mesh key={k} geometry={g} material={mats[k]} castShadow userData={{ interact: 'wall', id: 'p-chair-pc-1', floor: 2 }} />)}
     </group>
   );
 }
@@ -98,6 +117,7 @@ export function describeHit(h: Hit): string | null {
       const p = PANELS.find((x) => x.id === h.id);
       if (!p || p.kind === 'logo') return null;
       if (p.kind === 'directory') return 'Open office directory & navigation';
+      if (p.kind === 'chairmanPc') return "Use Chairman's PC · access to every screen, person and control";
       return `View ${p.label}`;
     }
     case 'door': {
@@ -136,6 +156,7 @@ export function activateHit(h: Hit) {
       const p = PANELS.find((x) => x.id === h.id);
       if (!p || p.kind === 'logo') return;
       if (p.kind === 'directory') ui.openPanel({ kind: 'navigation' });
+      else if (p.kind === 'chairmanPc') ui.openPanel({ kind: 'owner', tab: 'office', pc: true });
       else ui.openPanel({ kind: 'wall', panelId: p.id });
       playSound('click');
       break;

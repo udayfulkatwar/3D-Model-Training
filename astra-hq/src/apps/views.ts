@@ -558,6 +558,28 @@ export function buildPanelView(sim: Simulation, panelId: string, companyName: st
       v.widgets.push({ type: 'text', title: sim.news.length ? 'Headlines (live)' : 'Headlines', lines: heads });
       break;
     }
+    case 'chairmanPc': {
+      if (p.id.endsWith('-1')) {
+        v.title = `${companyName} · Chairman's PC · Uday Fulkatwar`;
+        const firm = sim.finance.firm(m);
+        const inside = sim.floorOccupancy().reduce((a, b) => a + b, 0);
+        v.widgets.push({ type: 'kpis', items: [
+          { label: sim.realMode ? 'NAV (paper)' : 'NAV (sim)', value: fmtMoney(firm.nav, 2) },
+          { label: 'Day P&L', value: fmtMoney(firm.pnl), tone: tone(firm.pnl) },
+          { label: 'People in', value: `${inside}/${sim.employees.length}` },
+          { label: 'Live data', value: sim.live ? 'connected' : 'not connected', tone: sim.live ? 'pos' : 'warn' },
+        ] });
+        v.widgets.push({ type: 'table', title: 'Everyone right now', columns: ['Name', 'Where', 'Doing'], align: ['l', 'l', 'l'],
+          rows: sim.employees.map((e) => { const t = sim.realMode ? sim.work.current(e.cfg.id) : undefined; return [e.cfg.name, sim.roomName(e), t ? t.title : ACTIVITY_LABEL[e.activity]]; }) });
+      } else {
+        v.title = 'Desk, risk and headlines';
+        if (sim.realMode) v.widgets.push(strategiesTable(sim, () => true, 8));
+        else v.widgets.push(booksTable(sim));
+        v.widgets.push(alertsWidget(sim));
+        v.widgets.push({ type: 'text', title: sim.news.length ? 'Headlines (live)' : 'Headlines', lines: sim.news.length ? sim.news.slice(0, 5).map((n) => `• ${n.title}`) : ['Waiting for Co-Invest headlines…'] });
+      }
+      break;
+    }
     case 'ceoTv': {
       v.title = `${companyName} · Company overview`;
       const firm = sim.finance.firm(m);

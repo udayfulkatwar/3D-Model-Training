@@ -26,6 +26,7 @@ function Shell({ title, sub, children, foot, narrow, testId }: { title: React.Re
             {sub && <div className="sub">{sub}</div>}
           </div>
           <span className="spacer" />
+          <BackToPc />
           <MinimizeButton />
           <button className="btn close-btn" onClick={close} data-testid="close-panel" aria-label="Close panel">Close ✕</button>
         </div>
@@ -74,6 +75,13 @@ function MinimizedBar({ panel }: { panel: Panel }) {
 }
 
 /** Minimise button shared by every panel header. */
+/** Shown on any screen opened from the Chairman's PC console: returns to the console. */
+export function BackToPc() {
+  const fromPc = useUI((s) => s.fromPc);
+  if (!fromPc) return null;
+  return <button className="btn" data-testid="back-to-pc" onClick={() => useUI.getState().openPanel({ kind: 'owner', tab: 'office', pc: true })}>‹ Chairman's PC</button>;
+}
+
 export function MinimizeButton() {
   const setMin = useUI((s) => s.setPanelMin);
   return <button className="btn" onClick={() => setMin(true)} data-testid="minimize-panel" title="Minimise: keep it running and see the office">▁ Minimise</button>;
@@ -91,7 +99,7 @@ function PanelSwitch({ panel }: { panel: Panel }) {
     case 'coffee': return <CoffeePanel where={panel.where} drink={panel.drink} />;
     case 'help': return <HelpPanel />;
     case 'log': return <LogPanel />;
-    case 'owner': return <OwnerPanel tab={panel.tab} />;
+    case 'owner': return <OwnerPanel key={`${panel.pc ? 'pc' : 'owner'}-${panel.tab ?? ''}`} tab={panel.tab} pc={panel.pc} />;
     case 'talk': return <TalkPanel id={panel.id} />;
   }
 }

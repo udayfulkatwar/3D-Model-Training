@@ -6,7 +6,7 @@ import { loadSettings, saveSettings, type Settings } from '../config/storage';
 
 export type Mode = 'intro' | 'walk' | 'overview' | 'follow' | 'inspect' | 'seated';
 
-export type OwnerTab = 'work' | 'strategies' | 'system' | 'meeting' | 'requests' | 'training' | 'workflow' | 'report' | 'messages';
+export type OwnerTab = 'office' | 'work' | 'strategies' | 'system' | 'meeting' | 'requests' | 'training' | 'workflow' | 'report' | 'messages';
 
 export type Panel =
   | { kind: 'employee'; id: string }
@@ -19,7 +19,7 @@ export type Panel =
   | { kind: 'coffee'; where: 'cafe' | 'lounge'; drink: string }
   | { kind: 'help' }
   | { kind: 'log' }
-  | { kind: 'owner'; tab?: OwnerTab }
+  | { kind: 'owner'; tab?: OwnerTab; pc?: boolean }
   | { kind: 'talk'; id: string };
 
 export interface InspectTarget { x: number; y: number; z: number; radius: number; label: string }
@@ -55,6 +55,9 @@ interface UIState {
   setMode: (m: Mode) => void;
   openPanel: (p: Panel) => void;
   closePanel: () => void;
+  /** The open panel was opened from the Chairman's PC console (shows a way back to it). */
+  fromPc: boolean;
+  openFromPc: (p: Panel) => void;
   setOverviewFloor: (f: number) => void;
   follow: (id: string | null) => void;
   setInspect: (t: InspectTarget | null) => void;
@@ -103,8 +106,10 @@ export const useUI = create<UIState>((set, get) => ({
   setMode: (mode) => set({ mode, prompt: null }),
   openPanel: (panel) => {
     if (document.pointerLockElement) document.exitPointerLock();
-    set({ panel, prompt: null, panelMin: false });
+    set({ panel, prompt: null, panelMin: false, fromPc: false });
   },
+  fromPc: false,
+  openFromPc: (panel) => set({ panel, prompt: null, panelMin: false, fromPc: true }),
   closePanel: () => set({ panel: null, panelMin: false }),
   setOverviewFloor: (overviewFloor) => set({ overviewFloor }),
   follow: (followId) => set({ followId, mode: followId ? 'follow' : get().mode === 'follow' ? 'overview' : get().mode }),

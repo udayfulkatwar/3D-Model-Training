@@ -161,3 +161,12 @@ describe("chairman's office", () => {
     expect(findPath(LOBBY, { floor: 2, ...room.entry })).not.toBeNull();
   });
 });
+
+describe("chairman's PC", () => {
+  it('stands on the desk in the chairman office', async () => {
+    const { PANELS } = await import('../src/world/furniture');
+    const pcs = PANELS.filter((p) => p.kind === 'chairmanPc');
+    expect(pcs.length).toBe(2);
+    for (const p of pcs) expect(p.roomId).toBe('s-chair');
+  });
+});

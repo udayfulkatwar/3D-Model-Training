@@ -1,7 +1,7 @@
 // Owner tools: call meetings with anyone, give individual instructions, and talk to every employee.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FLOOR_NAMES, ROOMS, roomById } from '../world/building';
-import { SEATS } from '../world/furniture';
+import { PANELS, SEATS } from '../world/furniture';
 import { fmtMoney, fmtTime } from '../util/math';
 import { getSim } from '../store/simInstance';
 import { player } from '../store/player';
@@ -16,7 +16,7 @@ let aiDisabled = false;
 import { ACTIVITY_COLOR, ACTIVITY_LABEL } from '../sim/simulation';
 import { playSound } from '../audio/sound';
 import { goToEmployee, goToRoom } from './actions';
-import { MinimizeButton } from './Panels';
+import { BackToPc, MinimizeButton } from './Panels';
 
 export const MEETING_ROOMS = ['f-conf', 's-board', 'g-training', 'f-m1a', 'f-m1b', 'g-interview', 's-ceo', 'g-lobby'] as const;
 
@@ -45,6 +45,7 @@ function Shell({ title, sub, children, foot, testId }: { title: React.ReactNode;
         <div className="panel-head">
           <div><h2>{title}</h2>{sub && <div className="sub">{sub}</div>}</div>
           <span className="spacer" />
+          <BackToPc />
           <MinimizeButton />
           <button className="btn close-btn" onClick={close} data-testid="close-panel">Close ✕</button>
         </div>
@@ -93,7 +94,7 @@ function PeoplePicker({ selected, setSelected }: { selected: Set<string>; setSel
   );
 }
 
-export function OwnerPanel({ tab: initial }: { tab?: OwnerTab }) {
+export function OwnerPanel({ tab: initial, pc }: { tab?: OwnerTab; pc?: boolean }) {
   useUI((s) => s.simVersion);
   const sim = getSim();
   const [tab, setTab] = useState<OwnerTab>(initial ?? (getSim().realMode ? 'work' : 'meeting'));
@@ -109,8 +110,9 @@ export function OwnerPanel({ tab: initial }: { tab?: OwnerTab }) {
   const c = capacity(room);
   const over = ids.length > c.seats + c.stand;
   return (
-    <Shell testId="owner-panel" title="Owner" sub={sim.realMode ? 'Your firm: work, strategies, meetings, instructions and reports' : 'Call people to meetings, give instructions, and read their replies (Office Simulation)'}>
+    <Shell testId="owner-panel" title={pc ? "Chairman's PC · Uday Fulkatwar" : 'Owner'} sub={pc ? 'Full access: every screen and display in the office, every person, and all owner controls' : sim.realMode ? 'Your firm: work, strategies, meetings, instructions and reports' : 'Call people to meetings, give instructions, and read their replies (Office Simulation)'}>
       <div className="tabs">
+        <button className={tab === 'office' ? 'active' : ''} onClick={() => setTab('office')} data-testid="owner-tab-office">Whole office</button>
         {sim.realMode && <button className={tab === 'work' ? 'active' : ''} onClick={() => setTab('work')} data-testid="owner-tab-work">Work board</button>}
         {sim.realMode && <button className={tab === 'strategies' ? 'active' : ''} onClick={() => setTab('strategies')} data-testid="owner-tab-strategies">Strategies</button>}
         <button className={tab === 'meeting' ? 'active' : ''} onClick={() => setTab('meeting')} data-testid="owner-tab-meeting">Call a meeting</button>
@@ -121,6 +123,7 @@ export function OwnerPanel({ tab: initial }: { tab?: OwnerTab }) {
         <button className={tab === 'messages' ? 'active' : ''} onClick={() => setTab('messages')} data-testid="owner-tab-messages">Messages ({sim.ownerMessages.length})</button>
         <button className={tab === 'system' ? 'active' : ''} onClick={() => setTab('system')} data-testid="owner-tab-system">System check</button>
       </div>
+      {tab === 'office' && <OfficeTab />}
       {tab === 'work' && <WorkTab />}
       {tab === 'system' && <SystemTab />}
       {tab === 'strategies' && <StrategiesTab />}
@@ -341,6 +344,63 @@ function SystemTab() {
           {busy && <div className="small muted" style={{ marginTop: 6 }}>Running… (Claude may ask you to allow it first)</div>}
         </div>
       )}
+    </div>
+  );
+}
+
+/** Everything in the office from one place: each person's screens, every room and wall display, talk, find or locate. */
+function OfficeTab() {
+  const sim = getSim();
+  const [q, setQ] = useState('');
+  const ui = useUI.getState();
+  const match = (s: string) => !q || s.toLowerCase().includes(q.toLowerCase());
+  const people = sim.employees.filter((e) => match(`${e.cfg.name} ${e.cfg.title} ${e.cfg.department}`));
+  const displays = PANELS.filter((p) => p.kind !== 'logo' && p.kind !== 'chairmanPc' && match(`${p.label} ${roomById(p.roomId)?.name ?? ''}`));
+  const rooms = ROOMS.filter((r) => !r.hidden && match(r.name));
+  return (
+    <div data-testid="office-tab">
+      <div className="section">
+        <input placeholder="Search people, screens, rooms…" value={q} onChange={(e) => setQ(e.target.value)} data-testid="office-search" style={{ width: '100%' }} />
+        <div className="small muted" style={{ marginTop: 4 }}>View-only access to every screen; instructions to people go through Talk, Call a meeting or Call / send people. Paper trading only: nothing here can place a real order.</div>
+      </div>
+      <div className="section">
+        <h3>People and their screens ({people.length})</h3>
+        {people.map((e) => {
+          const t = sim.realMode ? sim.work.current(e.cfg.id) : undefined;
+          return (
+            <div key={e.cfg.id} className="list-item" data-testid={`office-person-${e.cfg.id}`}>
+              <span className="dot" style={{ background: ACTIVITY_COLOR[e.activity] }} />
+              <span style={{ minWidth: 150 }}><b>{e.cfg.name}</b> <span className="muted small">{e.cfg.title}</span></span>
+              <span className="small" style={{ flex: 1 }}>{sim.roomName(e)} · {t ? t.title : ACTIVITY_LABEL[e.activity]}</span>
+              {e.ws.monitors.map((m, i) => <button key={m.id} className="btn small" data-testid={`office-screen-${m.id}`} onClick={() => ui.openFromPc({ kind: 'monitor', monitorId: m.id })}>Screen {i + 1}</button>)}
+              <button className="btn small" onClick={() => ui.openFromPc({ kind: 'employee', id: e.cfg.id })}>Profile</button>
+              <button className="btn small" onClick={() => ui.openFromPc({ kind: 'talk', id: e.cfg.id })}>Talk</button>
+              <button className="btn small" onClick={() => goToEmployee(e.cfg.id)}>Find</button>
+            </div>
+          );
+        })}
+      </div>
+      <div className="section">
+        <h3>Room and wall displays ({displays.length})</h3>
+        {displays.map((p) => (
+          <div key={p.id} className="list-item">
+            <span style={{ flex: 1 }}>{p.label} <span className="muted small">· {roomById(p.roomId)?.name ?? ''} · {FLOOR_NAMES[p.floor]}</span></span>
+            <button className="btn small" data-testid={`office-display-${p.id}`} onClick={() => p.kind === 'directory' ? ui.openFromPc({ kind: 'navigation' }) : ui.openFromPc({ kind: 'wall', panelId: p.id })}>Open</button>
+          </div>
+        ))}
+      </div>
+      <div className="section">
+        <h3>Rooms</h3>
+        <div className="row wrap">{rooms.map((r) => <button key={r.id} className="btn small" onClick={() => goToRoom(r.id)}>{r.name}</button>)}</div>
+      </div>
+      <div className="section">
+        <h3>Office records</h3>
+        <div className="row wrap">
+          <button className="btn small" onClick={() => ui.openFromPc({ kind: 'directory' })}>Staff directory</button>
+          <button className="btn small" onClick={() => ui.openFromPc({ kind: 'log' })}>Full activity log</button>
+          <button className="btn small" onClick={() => ui.openFromPc({ kind: 'settings', tab: 'about' })}>Settings</button>
+        </div>
+      </div>
     </div>
   );
 }
