@@ -6,7 +6,7 @@ import { loadSettings, saveSettings, type Settings } from '../config/storage';
 
 export type Mode = 'intro' | 'walk' | 'overview' | 'follow' | 'inspect' | 'seated';
 
-export type OwnerTab = 'work' | 'strategies' | 'meeting' | 'requests' | 'training' | 'workflow' | 'report' | 'messages';
+export type OwnerTab = 'work' | 'strategies' | 'system' | 'meeting' | 'requests' | 'training' | 'workflow' | 'report' | 'messages';
 
 export type Panel =
   | { kind: 'employee'; id: string }

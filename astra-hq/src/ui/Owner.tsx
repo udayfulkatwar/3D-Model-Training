@@ -8,6 +8,7 @@ import { player } from '../store/player';
 import { useUI, type OwnerTab } from '../store/ui';
 import { CURRICULA, PASS_MARK, TRAIN_DAYS, VALID_DAYS, certified, describeStrategy } from '../sim/training';
 import { fetchIndicators } from '../live/feed';
+import { runSystemCheck, type CheckResult } from '../live/systemCheck';
 import { PERMANENT, askEmployee, ceoAnalysis, errorCopy, getSample, type SampleError } from '../ai/brain';
 
 /** Set once Claude turned out to be unavailable for this view (permanent codes): scripted replies from then on. */
@@ -115,8 +116,10 @@ export function OwnerPanel({ tab: initial }: { tab?: OwnerTab }) {
         <button className={tab === 'workflow' ? 'active' : ''} onClick={() => setTab('workflow')} data-testid="owner-tab-workflow">Workflow</button>
         <button className={tab === 'report' ? 'active' : ''} onClick={() => setTab('report')} data-testid="owner-tab-report">CEO report</button>
         <button className={tab === 'messages' ? 'active' : ''} onClick={() => setTab('messages')} data-testid="owner-tab-messages">Messages ({sim.ownerMessages.length})</button>
+        <button className={tab === 'system' ? 'active' : ''} onClick={() => setTab('system')} data-testid="owner-tab-system">System check</button>
       </div>
       {tab === 'work' && <WorkTab />}
+      {tab === 'system' && <SystemTab />}
       {tab === 'strategies' && <StrategiesTab />}
       {tab === 'training' && <TrainingTab />}
       {tab === 'report' && <ReportTab />}
@@ -304,6 +307,38 @@ function TrainingTab() {
         </div>
       </div>
     </>
+  );
+}
+
+function SystemTab() {
+  const [results, setResults] = useState<CheckResult[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  return (
+    <div data-testid="system-check">
+      <div className="section">
+        <h3>System check</h3>
+        <p className="small muted">Runs real calls from this page: Co-Invest live prices, price history and headlines (read-only), then a short Claude reply and a Claude tool call. Each Claude step uses a tiny amount of your Claude plan. Run it after opening the office in claude.ai.</p>
+        <button className="btn primary" disabled={busy} data-testid="run-system-check" onClick={async () => {
+          setBusy(true);
+          setResults([]);
+          const r = await runSystemCheck(setResults);
+          setBusy(false);
+          const ok = r.filter((x) => x.ok).length;
+          useUI.getState().showToast(`System check: ${ok}/${r.length} passed`);
+        }}>{busy ? 'Checking…' : 'Run system check'}</button>
+      </div>
+      {results && (
+        <div className="section">
+          <table className="tbl" data-testid="system-results">
+            <thead><tr><th>Check</th><th>Result</th><th>Details</th><th>Time</th></tr></thead>
+            <tbody>{results.map((r) => (
+              <tr key={r.name}><td>{r.name}</td><td style={{ color: r.ok ? 'var(--pos)' : 'var(--neg)' }}>{r.ok ? 'PASS' : 'FAIL'}</td><td>{r.detail}</td><td>{r.ms ? `${r.ms} ms` : ''}</td></tr>
+            ))}</tbody>
+          </table>
+          {busy && <div className="small muted" style={{ marginTop: 6 }}>Running… (Claude may ask you to allow it first)</div>}
+        </div>
+      )}
+    </div>
   );
 }
 

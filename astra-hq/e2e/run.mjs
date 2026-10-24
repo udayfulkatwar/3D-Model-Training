@@ -578,6 +578,9 @@ await step('live prices and Claude replies (stubbed claude.ai runtime)', async (
     const sample = async (turns, opts) => {
       const last = Array.isArray(turns) ? turns[turns.length - 1].content : turns;
       let text = 'Stub reply from Claude.';
+      if (/CLAUDE OK/.test(last)) text = 'CLAUDE OK';
+      const ping = opts?.tools?.find((x) => x.name === 'ping');
+      if (ping) { await ping.execute({}, { signal: new AbortController().signal }); text = 'DONE'; }
       if (/boardroom/i.test(last) && opts?.tools) {
         const t = opts.tools.find((x) => x.name === 'go_to_room');
         await t.execute({ room: 'Boardroom' }, { signal: new AbortController().signal });
@@ -640,6 +643,11 @@ await step('live prices and Claude replies (stubbed claude.ai runtime)', async (
   const talk = await lp.evaluate(() => { const e = window.__astra.sim().byId.get('e03'); return { reply: e.chat[e.chat.length - 1].text, order: e.order?.kind, room: e.order?.roomId }; });
   check('Claude reply is shown and its tool call acts in the office (sent to the Boardroom)', talk.reply === 'Going to the Boardroom now.' && talk.order === 'room' && talk.room === 's-board', JSON.stringify(talk));
   await lp.screenshot({ path: path.join(out, '22-live-talk.png') });
+  await lp.evaluate(() => window.__astra.ui.getState().openPanel({ kind: 'owner', tab: 'system' }));
+  await lp.click('[data-testid=run-system-check]');
+  await lp.waitForFunction(() => document.querySelectorAll('[data-testid=system-results] tbody tr').length >= 7, null, { timeout: 30000 }).catch(() => {});
+  const sys = await lp.textContent('[data-testid=system-results]').catch(() => '');
+  check('System check runs every live connection (stubbed runtime: all pass)', (sys.match(/PASS/g) ?? []).length === 7 && !/FAIL/.test(sys), sys.slice(0, 200));
   await c.close();
 });
 
