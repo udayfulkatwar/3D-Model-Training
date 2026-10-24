@@ -74,6 +74,17 @@ Status legend: **Done** = implemented and covered by an automated check (unit or
 | CEO stands to greet the owner and sits after the owner sits | Done | owner.test.ts; browser check; screenshot 17 |
 | Room name + department plate above every room door | Done (manual) | screenshot 15 |
 
+### Training and paper trading (added later)
+| Feature | Status | Evidence |
+|---|---|---|
+| Strategy lab: grid backtest on 28 practice sessions, validation on 8 unseen sessions, only validated strategies trade (paper) | Done | training.test.ts; browser check; screenshot 20 |
+| Training Room sessions per department (≤12, no double booking, traders after the close), assessments, skill effects | Done | training.test.ts |
+| CEO report (paper account, books, traders, risk, ops, tech, research, people, training) and 17:20 end-of-day report | Done | training.test.ts; browser check; screenshot 21 |
+| Training saved locally, survives reloads; role changes clear the record | Done | training.test.ts |
+
+Limitations: no real money or market data (by design and by the repository rules); non-trader "skill" is a modelled
+score that changes simulated output, not learning; strategy results apply to the fictional market model only.
+
 Limitation: replies are scripted from keywords and live data, not free conversation; anything unrecognised is acknowledged and can be assigned as a task.
 
 ### 7. Performance

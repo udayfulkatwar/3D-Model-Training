@@ -434,6 +434,28 @@ await step('owner tools', async () => {
   await A(() => window.__astra.sim().playerStand());
 });
 
+await step('training and CEO report', async () => {
+  await A(() => { const s = window.__astra.sim(); s.speed = 5; while (s.minute < 9 * 60 + 40) s.advance(0.5); s.speed = 1; });
+  await page.keyboard.press('Escape');
+  await A(() => window.__astra.ui.getState().openPanel({ kind: 'owner', tab: 'training' }));
+  await page.waitForSelector('[data-testid=start-training]');
+  await page.click('[data-testid=start-training]');
+  const note = await page.textContent('[data-testid=training-note]');
+  check('Owner starts the training programme (strategy lab + Training Room sessions)', /10 traders started the strategy lab/.test(note) && /session/.test(note), note);
+  await A(() => { const s = window.__astra.sim(); s.speed = 5; const end = s.minute + 45; while (s.minute < end) s.advance(0.5); s.speed = 1; });
+  await wait(1500);
+  const table = await page.textContent('[data-testid=strategy-table]');
+  const st = await A(() => { const s = window.__astra.sim(); const r = [...s.training.values()].filter((x) => x.strategy); return { trained: r.length, live: r.filter((x) => x.strategy.active).length, saved: !!localStorage.getItem('astra-hq:training:v1') }; });
+  check('Every trader backtested and validated a strategy; only validated ones go live', st.trained === 10 && /Live|Rejected/.test(table) && st.saved, JSON.stringify(st));
+  await shot('20-training');
+  await page.click('[data-testid=owner-tab-report]');
+  await wait(800);
+  const rep = await page.textContent('[data-testid=ceo-report]');
+  check('CEO report shows paper account, books, risk, ops, tech, people and training', ['Paper trading account', 'Books', 'Risk', 'Operations', 'Technology', 'People', 'Training'].every((t) => rep.includes(t)), rep.slice(0, 120));
+  await shot('21-ceo-report');
+  await page.click('[data-testid=close-panel]');
+});
+
 await step('configuration editor persistence', async () => {
   await A(() => window.__astra.ui.getState().openPanel({ kind: 'settings', tab: 'editor' }));
   await page.click('[data-testid=settings-tab-editor]');

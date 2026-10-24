@@ -1,10 +1,12 @@
 // The single Simulation instance shared by the 3D scene and the UI panels.
-import { loadConfig } from '../config/storage';
+import { loadConfig, loadTraining, saveTraining } from '../config/storage';
 import type { OfficeConfig } from '../config/types';
 import { Simulation } from '../sim/simulation';
 
 const loaded = loadConfig();
 let sim = new Simulation(loaded.config);
+sim.loadTraining(loadTraining());
+sim.onTrainingChange = saveTraining;
 export const startupWarning = loaded.warning;
 
 export function getSim(): Simulation {

@@ -2,10 +2,13 @@
 // storage may be unavailable (private mode, blocked site data) and the app must still work.
 import { defaultConfig } from './defaults';
 import type { OfficeConfig } from './types';
+import { ROLE_TYPES } from './types';
+import type { TrainingRecord } from '../sim/training';
 import { validateConfig } from './validate';
 
 const CONFIG_KEY = 'astra-hq:config:v1';
 const SETTINGS_KEY = 'astra-hq:settings:v1';
+const TRAINING_KEY = 'astra-hq:training:v1';
 
 export type GraphicsPreset = 'low' | 'medium' | 'high';
 export type LightingMode = 'auto' | 'day' | 'night';
@@ -98,4 +101,30 @@ export function saveSettings(s: Settings): boolean {
 
 export function exportConfigJson(c: OfficeConfig): string {
   return JSON.stringify(c, null, 2);
+}
+
+/** Training results (skills, modules, traders' strategies) so trained staff stay trained across reloads. */
+export function loadTraining(): TrainingRecord[] {
+  const raw = read(TRAINING_KEY);
+  if (!raw) return [];
+  try {
+    const data = JSON.parse(raw) as unknown;
+    if (!Array.isArray(data)) return [];
+    return data.filter((r): r is TrainingRecord => !!r && typeof r === 'object' && typeof r.empId === 'string' && (ROLE_TYPES as readonly string[]).includes(r.role) &&
+      typeof r.skill === 'number' && r.skill >= 0 && r.skill <= 100 && Array.isArray(r.modules));
+  } catch {
+    return [];
+  }
+}
+
+export function saveTraining(records: TrainingRecord[]): boolean {
+  return write(TRAINING_KEY, JSON.stringify(records));
+}
+
+export function clearTraining() {
+  try {
+    localStorage.removeItem(TRAINING_KEY);
+  } catch {
+    /* storage unavailable */
+  }
 }

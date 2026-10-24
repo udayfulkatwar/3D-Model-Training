@@ -103,6 +103,7 @@ function EmployeePanel({ id }: { id: string }) {
               <dt>Department</dt><dd>{e.cfg.department}</dd>
               <dt>Workstation</dt><dd>{e.ws.label} ({e.ws.id}) · {roomById(e.ws.roomId)?.name}</dd>
               <dt>Monitors</dt><dd>{e.ws.monitors.map((m) => m.id).join(', ')}</dd>
+              <dt>Training</dt><dd data-testid="emp-training">{(() => { const r = sim.trainingRecord(e.cfg.id); const n = r.modules.filter((m) => m.passed).length; return `Skill ${r.skill}/100 · ${n} module${n === 1 ? '' : 's'} passed${r.strategy ? ` · strategy ${r.strategy.active ? 'live' : 'rejected'}` : ''}`; })()}</dd>
               <dt>Hours today</dt><dd data-testid="emp-hours">{e.badge.in !== null ? `Badged in ${fmtTime(e.badge.in)}` : `Due in ${fmtTime(e.hours.arrive)}`}{e.badge.out !== null ? ` · left ${fmtTime(e.badge.out)}` : ` · usually leaves ~${fmtTime(e.hours.leave)}`}</dd>
               <dt>Seat</dt><dd>{e.seatId ?? '-'} {e.intent.kind === 'event' && e.intent.remote ? '(attending remotely)' : ''}</dd>
             </dl>

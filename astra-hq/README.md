@@ -124,11 +124,36 @@ simulated work (no AI service).
 - **Door signs**: every room door has a name plate with the room and the department working there (it follows the
   departments you set in the editor).
 
+## Training and paper trading
+
+Owner → **Training** starts the *ASTRA Academy*. Everything is paper trading: simulated money on fictional
+instruments, no broker, no real orders.
+
+- **Traders: strategy lab.** Each trader backtests 48 intraday strategies (momentum and mean reversion; look-back
+  10/20/40 min, entry 1-2.5σ, stop 0.3/0.6%) on 28 practice sessions of the symbols they cover, picks the best by
+  risk-adjusted return (Sharpe, after costs), then checks it on 8 sessions it has never seen. Only strategies that
+  also hold up on the unseen sessions trade live (a 25 % overlay on core positions, flat before the close). Rejected
+  strategies are reported honestly and those traders keep turnover low. The practice tape comes from the same market
+  model as the office (the fictional instruments have mild intraday trending or mean-reverting behaviour), so some
+  strategies pass and some do not; nothing guarantees a profit.
+- **Everyone else: Training Room sessions.** Each department gets 40-minute sessions (12 seats) for the next module of
+  its curriculum (e.g. Risk: VaR and limits, stress testing, breach escalation). Traders' classroom modules are after
+  the market close. An assessment (pass mark 70 %) raises skill with diminishing returns; failed or missed modules are
+  rebooked. Skill changes simulated output: research writing speed, ops break resolution, café service, how fast the
+  technology team fixes the feed incident.
+- Results (skills, modules, strategies) are saved in the browser and survive reloads and resets; changing someone's
+  role in the editor clears their record.
+
+**CEO reporting.** Owner → **CEO report** (or ask the CEO for "the report") gives the paper account (capital, NAV,
+today's and recent P&L, gross/net, VaR), each book, best and weakest traders, live strategies, risk alerts,
+operations, technology, research, attendance and training progress, all from the live simulated state. The CEO also
+sends an end-of-day report to your inbox at 17:20.
+
 ## Project layout
 
 ```
 src/world/    building, furnishing plan, walkable surfaces, colliders, nav grid (A*), doors/lift state
-src/sim/      clock, market, finance/risk, tech, events, schedules, employee state machine, apps registry
+src/sim/      clock, market, finance/risk, tech, events, schedules, training (backtests, curricula), employee state machine, apps registry
 src/apps/     AppView builders, canvas renderer (in-world screens), HTML renderer (panels)
 src/scene/    three.js / React Three Fiber scene: floors, props, people, screens, doors, lift, camera, lighting
 src/ui/       HUD, minimap, panels, directory, settings & office editor, touch controls

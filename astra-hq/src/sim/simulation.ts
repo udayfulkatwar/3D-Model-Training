@@ -10,12 +10,13 @@ import { findPath, nearestWalkable, type Waypoint } from '../world/nav';
 import { fmtMoney, fmtTime } from '../util/math';
 import { hashRand } from '../util/rng';
 import { APPS, appFor, type AppId } from './apps';
-import { DAY_END, DAY_START, REALTIME_MIN_PER_SEC, SIM_MIN_PER_REAL_SEC, WALK_SPEED, type Speed } from './constants';
+import { DAY_END, DAY_START, MARKET_CLOSE, REALTIME_MIN_PER_SEC, SIM_MIN_PER_REAL_SEC, WALK_SPEED, type Speed } from './constants';
 import { BOOKABLE_FOR_REVIEW, INCIDENT_START, SHOCK_MINUTE, scheduledEvents, type OfficeEvent } from './events';
-import { BOOK_INDEX, Finance, type RiskAlert } from './finance';
+import { BOOK_INDEX, BOOKS, FIRM_CAPITAL, Finance, type RiskAlert } from './finance';
 import { INSTRUMENTS, Market, fmtPx } from './market';
 import { buildSchedule, workingHours, type Block } from './schedule';
 import { Tech } from './tech';
+import { CURRICULA, STRATEGY_GRID, TRAIN_DAYS, VALID_DAYS, baseSkill, certified, completeModule, describeStrategy, newRecord, practiceTape, skillFactor, trainStrategy, type TrainingRecord } from './training';
 
 export type Activity = 'working' | 'reviewing' | 'walking' | 'meeting' | 'cafe' | 'returning' | 'discussing' | 'investigating' | 'break' | 'away';
 export const ACTIVITIES: Activity[] = ['working', 'reviewing', 'walking', 'meeting', 'cafe', 'returning', 'discussing', 'investigating', 'break', 'away'];
@@ -52,7 +53,7 @@ export type Intent =
 export type OwnerOrder =
   | { id: number; kind: 'come'; floor: number; x: number; z: number; heading: number; until: number; place: string }
   | { id: number; kind: 'room'; roomId: string; until: number }
-  | { id: number; kind: 'task'; text: string; until: number; started: number };
+  | { id: number; kind: 'task'; text: string; until: number; started: number; training?: boolean };
 
 export interface ChatLine { t: number; day: number; from: 'owner' | 'employee'; text: string }
 export interface OwnerMessage { id: number; t: number; day: number; empId: string; name: string; text: string }
@@ -169,6 +170,14 @@ export class Simulation {
   private ceoGreetArmed = true;
   /** Clock runs at real time (1 simulated minute per real minute) instead of the 20× office clock. */
   realtime = false;
+  /** Training records (skills, modules passed, traders' strategies). Survive resets and reloads. */
+  training = new Map<string, TrainingRecord>();
+  /** Training cohorts waiting for a Training Room slot. */
+  academyQueue: string[][] = [];
+  /** Called after training results change (the app saves them locally). */
+  onTrainingChange?: (records: TrainingRecord[]) => void;
+  private academySeq = 1;
+  private eodSentDay = -1;
 
   constructor(config: OfficeConfig) {
     this.config = config;
@@ -203,6 +212,9 @@ export class Simulation {
     this.employees = emps.map((cfg, index) => this.makeEmployee(cfg, index));
     this.byId = new Map(this.employees.map((e) => [e.cfg.id, e]));
     for (const e of this.employees) this.wsOwner.set(e.ws.id, e.cfg.id);
+    this.academyQueue = [];
+    this.eodSentDay = -1;
+    this.applyTraining();
     this.startDay();
     this.initMonitors();
   }
@@ -240,6 +252,8 @@ export class Simulation {
       e.badge = { in: null, out: null };
       this.pushHistory(e, `Day ${this.day + 1}: due in at ${fmtTime(e.hours.arrive)}`);
     }
+    this.applyTechSkill();
+    if (this.academyQueue.length) this.scheduleCohorts();
     this.addLog(`Simulated day ${this.day + 1} begins. ${this.events.length} meetings scheduled.`, 'office');
   }
 
@@ -375,6 +389,9 @@ export class Simulation {
     this.market.feedDelayed = this.tech.incidentActive;
     this.finance.incidentDelay = this.tech.incidentActive;
     this.updateEvents(m);
+    // traders in the strategy lab replay practice sessions (built a little at a time)
+    if (this.employees.some((e) => e.order?.kind === 'task' && e.order.training)) practiceTape(this.seed).step(2);
+    if (m === 17 * 60 + 20 && this.eodSentDay !== this.day) this.sendEndOfDayReport();
     for (const e of this.employees) this.decide(e, m);
     this.updateDeskWork(m);
     this.updateCafe(m);
@@ -410,6 +427,7 @@ export class Simulation {
   }
 
   private onEventEnd(ev: OfficeEvent, m: number) {
+    if (ev.academy) this.finishAcademySession(ev, m);
     if (ev.kind === 'risk-review' && ev.alertId) {
       const a = this.finance.alerts.find((x) => x.id === ev.alertId);
       if (a && a.status !== 'resolved') {
@@ -1232,13 +1250,13 @@ export class Simulation {
           break;
         }
         case 'researcher':
-          if (e.activity === 'working') e.work.words += 8 + Math.floor(hashRand(this.seed, 'w', e.cfg.id, m) * 14);
+          if (e.activity === 'working') e.work.words += Math.round((8 + Math.floor(hashRand(this.seed, 'w', e.cfg.id, m) * 14)) * skillFactor(this.skillOf(e.cfg.id)));
           break;
         case 'tech':
           if (e.activity === 'working') e.work.line = 20 + ((e.work.line + 1 + Math.floor(hashRand(this.seed, 'l', e.cfg.id, m) * 3)) % 260);
           break;
         case 'ops':
-          if (e.activity === 'working' && hashRand(this.seed, 'recon', e.cfg.id, m) < 0.18) {
+          if (e.activity === 'working' && hashRand(this.seed, 'recon', e.cfg.id, m) < 0.18 * skillFactor(this.skillOf(e.cfg.id))) {
             const f = this.finance.resolveBreak(e.cfg.id, m);
             if (f) e.lastAction = { t: m, text: `Resolved break on ${f.id} (${f.sym} ${f.side} ${f.qty.toLocaleString()})` };
           }
@@ -1319,7 +1337,8 @@ export class Simulation {
     for (const o of this.cafeOrders) {
       if (o.status === 'queued' && coordPresent && !this.cafeOrders.some((x) => x.status === 'preparing')) {
         o.status = 'preparing';
-        o.readyAt = m + 2;
+        const barista = this.employees.find((x) => x.cfg.roleType === 'coordinator');
+        o.readyAt = m + (barista && this.skillOf(barista.cfg.id) >= 75 ? 1 : 2);
       } else if (o.status === 'preparing' && m >= o.readyAt) {
         o.status = 'ready';
       }
@@ -1456,7 +1475,9 @@ export class Simulation {
     const o = e.order;
     if (!o) return;
     e.order = null;
-    if (o.kind === 'task') {
+    if (o.kind === 'task' && o.training) {
+      this.runStrategyLab(e, m);
+    } else if (o.kind === 'task') {
       this.ownerMessage(e, `Done: ${o.text}. I've filed it and I'm back on my regular work.`);
       this.pushHistory(e, `Completed the owner's request: ${o.text}`);
       this.addLog(`${e.cfg.name} completed a task for the owner: ${o.text}`, 'office');
@@ -1624,6 +1645,8 @@ export class Simulation {
       if (has('where are you', 'location', 'where r u')) return `I'm not in the building. ${back}`;
       if (has('status', 'update', 'working on', 'doing', 'progress', 'how is', "how's", 'how are')) return `${back} Before I left: ${this.statusLine(e)}`;
     }
+    if (e.cfg.roleType === 'ceo' && has('report', 'data', 'summary', 'numbers', 'brief', 'overview', 'everything', 'office')) return this.ceoBrief();
+    if (has('training', 'trained', 'skill', 'course', 'academy', 'strategy')) return this.trainingLine(e);
     if (has('thank', 'well done', 'good job', 'great work', 'appreciate')) return `Thank you, that means a lot. ${e.cfg.roleType === 'trader' ? 'The desk will be glad to hear it.' : 'I will pass it on to the team.'}`;
     if (has('where are you', 'location', 'where r u')) return `I'm in the ${this.roomName(e)} on the ${['ground', 'first', 'second'][Math.max(0, Math.min(2, e.floor))]} floor.`;
     if (has('p&l', 'pnl', 'profit', 'money', 'perform', 'return', 'loss')) {
@@ -1655,6 +1678,16 @@ export class Simulation {
       return b ? `My next ${b.kind === 'lunch' ? 'lunch' : 'coffee break'} is at ${fmtTime(b.start)}. Happy to grab something for you.` : 'I already had my breaks today, thanks.';
     }
     return `Understood, ${first} here: I've noted "${q.length > 80 ? `${q.slice(0, 80)}…` : q}". Tell me if you want me to act on it now; you can also assign it as a task.`;
+  }
+
+  trainingLine(e: Employee): string {
+    const r = this.trainingRecord(e.cfg.id);
+    const done = r.modules.filter((x) => x.passed).map((x) => x.title);
+    const next = CURRICULA[r.role].find((m) => !r.modules.some((x) => x.id === m.id && x.passed));
+    const strat = r.strategy ? ` Strategy lab: ${r.strategy.verdict}` : '';
+    const lab = e.order?.kind === 'task' && e.order.training ? ` I'm in the strategy lab now; results by ${fmtTime(e.order.until)}.` : '';
+    const booked = this.events.find((ev) => ev.academy && ev.status === 'scheduled' && ev.attendeeIds.includes(e.cfg.id));
+    return `Skill ${r.skill}/100. ${done.length ? `Passed: ${done.join('; ')}.` : 'No modules passed yet.'} ${next ? `Next: ${next.title}${booked ? ` (${fmtTime(booked.start)}, Training Room)` : ''}.` : 'Fully certified.'}${strat}${lab}`;
   }
 
   private statusLine(e: Employee): string {
@@ -1722,6 +1755,238 @@ export class Simulation {
     e.blendTo = { x: seat.x, y: seat.y, z: seat.z, h: seat.heading };
     e.at = seat;
     if (ownerSeated) this.pushHistory(e, 'Sat down after the owner took a seat');
+  }
+
+  // ------------------------------------------------------------------ training (ASTRA Academy)
+  skillOf(id: string): number {
+    return this.training.get(id)?.skill ?? baseSkill(this.seed, id);
+  }
+
+  trainingRecord(id: string): TrainingRecord {
+    let r = this.training.get(id);
+    const e = this.byId.get(id);
+    if (!r && e) {
+      r = newRecord(this.seed, id, e.cfg.roleType);
+      this.training.set(id, r);
+    }
+    return r!;
+  }
+
+  /** Load saved records (from a previous session); records whose role no longer matches are dropped. */
+  loadTraining(records: TrainingRecord[]) {
+    this.training.clear();
+    for (const r of records) this.training.set(r.empId, r);
+    this.applyTraining();
+    this.applyTechSkill();
+    this.version++;
+  }
+
+  /** Bring finance in line with the training records (trained strategies, role changes from the editor). */
+  private applyTraining() {
+    for (const [id, r] of [...this.training]) {
+      const e = this.byId.get(id);
+      if (!e || e.cfg.roleType !== r.role) this.training.delete(id);
+    }
+    this.finance.strategies.clear();
+    for (const r of this.training.values()) {
+      const t = this.finance.traders.get(r.empId);
+      // a strategy is tied to the symbols it was trained on; a new desk means training again
+      if (t && r.strategy && r.strategy.symbols.join() === t.coverage.join()) this.finance.strategies.set(r.empId, { s: r.strategy.strategy, active: r.strategy.active });
+    }
+  }
+
+  /** Better-trained technologists find and fix the feed incident faster. */
+  private applyTechSkill() {
+    const techs = this.employees.filter((e) => e.cfg.roleType === 'tech');
+    const inc = this.tech?.incident;
+    if (!techs.length || !inc || inc.status !== 'scheduled') return;
+    const avg = techs.reduce((a, e) => a + this.skillOf(e.cfg.id), 0) / techs.length;
+    inc.fixAt = inc.start + Math.max(16, Math.round(32 - (avg - 50) * 0.3));
+    inc.resolveAt = inc.fixAt + 8;
+  }
+
+  private trainingChanged() {
+    this.version++;
+    this.onTrainingChange?.([...this.training.values()]);
+  }
+
+  /** Next module taught in the Training Room (a trader's strategy module is done in the strategy lab). */
+  private classroomModule(r: TrainingRecord): { id: string; title: string } | null {
+    return CURRICULA[r.role].find((m) => !(r.role === 'trader' && m.id === 'strat') && !r.modules.some((x) => x.id === m.id && x.passed)) ?? null;
+  }
+
+  private inAcademy(id: string): boolean {
+    return this.academyQueue.some((c) => c.includes(id)) || this.events.some((ev) => ev.academy && (ev.status === 'scheduled' || ev.status === 'in-progress') && ev.attendeeIds.includes(id));
+  }
+
+  /**
+   * Start (or continue) the training programme: traders run the strategy lab at their desks; every
+   * department gets Training Room sessions for its next module (traders after the market close).
+   */
+  startTrainingProgramme(): { lab: number; sessions: OfficeEvent[]; waiting: number; certified: number } {
+    const m = Math.floor(this.minute);
+    let lab = 0;
+    for (const e of this.employees) {
+      const rec = this.trainingRecord(e.cfg.id);
+      if (e.cfg.roleType !== 'trader' || rec.modules.some((x) => x.id === 'strat' && x.passed)) continue;
+      if (e.order?.kind === 'task' && e.order.training) continue;
+      const t = this.finance.traders.get(e.cfg.id);
+      if (!t) continue;
+      e.order = { id: this.ownerSeq++, kind: 'task', text: `Strategy lab: backtest and validate a strategy for ${t.coverage.join(', ')}`, until: this.minute + 40, started: this.minute, training: true };
+      this.pushHistory(e, 'Training: strategy lab (backtesting at my desk)');
+      this.ownerMessage(e, `Starting the strategy lab: I'll backtest ${STRATEGY_GRID.length} strategies on ${TRAIN_DAYS} practice sessions of ${t.coverage.join(' and ')}, then check the best one on ${VALID_DAYS} sessions it has never seen. Results by ${fmtTime(this.minute + 40)}.`);
+      this.decide(e, m);
+      lab++;
+    }
+    const groups = new Map<string, string[]>();
+    for (const e of this.employees) {
+      const rec = this.trainingRecord(e.cfg.id);
+      if (!this.classroomModule(rec) || this.inAcademy(e.cfg.id)) continue;
+      const key = e.cfg.roleType === 'trader' ? 'Trading' : e.cfg.department;
+      groups.set(key, [...(groups.get(key) ?? []), e.cfg.id]);
+    }
+    for (const ids of groups.values()) for (let i = 0; i < ids.length; i += 12) this.academyQueue.push(ids.slice(i, i + 12));
+    const before = this.events.length;
+    this.scheduleCohorts();
+    const sessions = this.events.slice(before).length ? this.events.filter((ev) => ev.academy && ev.status === 'scheduled') : [];
+    this.addLog(`Owner started the training programme: ${lab} traders in the strategy lab, ${sessions.length} Training Room sessions booked`, 'office');
+    this.trainingChanged();
+    return { lab, sessions, waiting: this.academyQueue.length, certified: [...this.training.values()].filter(certified).length };
+  }
+
+  /** Book Training Room slots (40 min) for waiting cohorts, avoiding the room's and attendees' other meetings. */
+  private scheduleCohorts() {
+    let cursor = Math.ceil((Math.floor(this.minute) + 10) / 5) * 5;
+    const keep: string[][] = [];
+    for (const cohort of this.academyQueue) {
+      const traders = cohort.every((id) => this.byId.get(id)?.cfg.roleType === 'trader');
+      let start = Math.max(cursor, traders ? MARKET_CLOSE + 5 : cursor);
+      for (let tries = 0; tries < 60; tries++) {
+        const end = start + 40;
+        const clash = this.events.some((ev) => ev.status !== 'cancelled' && ev.status !== 'completed' && start < ev.end + 5 && end + 5 > ev.start && (ev.roomId === 'g-training' || ev.attendeeIds.some((id) => cohort.includes(id))));
+        if (!clash) break;
+        start += 15;
+      }
+      if (start + 40 > 18 * 60 + 45) { keep.push(cohort); continue; } // too late today: first thing tomorrow
+      const recs = cohort.map((id) => this.trainingRecord(id));
+      const modules = [...new Set(recs.map((r) => this.classroomModule(r)?.title).filter((x): x is string => !!x))];
+      const dept = traders ? 'Trading' : this.byId.get(cohort[0])!.cfg.department;
+      this.events.push({
+        id: `d${this.day}-academy-${this.academySeq++}`, kind: 'training', title: `ASTRA Academy: ${dept}`, roomId: 'g-training',
+        start, end: start + 40, attendeeIds: cohort, status: 'scheduled', agenda: modules, notes: [], academy: true, dynamic: true,
+      });
+      this.addLog(`Training booked ${fmtTime(start)}: ${dept} (${modules.join('; ')})`, 'event');
+      cursor = start + 45;
+    }
+    this.academyQueue = keep;
+    this.events.sort((a, b) => a.start - b.start);
+    this.version++;
+  }
+
+  private finishAcademySession(ev: OfficeEvent, m: number) {
+    const present = new Set(this.presentAttendees(ev).map((e) => e.cfg.id));
+    const remote = new Set(this.remoteAttendees(ev).map((e) => e.cfg.id));
+    const lines: string[] = [];
+    let passed = 0;
+    let sat = 0;
+    const missed: string[] = [];
+    for (const id of ev.attendeeIds) {
+      const rec = this.trainingRecord(id);
+      const mod = this.classroomModule(rec);
+      if (!mod) continue;
+      if (!present.has(id) && !remote.has(id)) { missed.push(id); continue; }
+      const r = completeModule(this.seed, rec, mod, this.day, m, present.has(id) ? 8 : 0);
+      sat++;
+      if (r.passed) passed++;
+      const e = this.byId.get(id)!;
+      lines.push(`${e.cfg.name.split(' ')[0]} ${r.score}% ${r.passed ? 'pass' : 'retake'}`);
+      this.pushHistory(e, `Training: "${mod.title}" ${r.score}% (${r.passed ? 'passed' : 'to retake'})`);
+    }
+    if (missed.length) this.academyQueue.push(missed);
+    ev.notes.push(`${fmtTime(m)} Assessment: ${lines.join(', ')}`);
+    const ceo = this.employees.find((x) => x.cfg.roleType === 'ceo');
+    const reporter = ceo ?? this.byId.get(ev.attendeeIds[0]);
+    if (reporter && sat) this.ownerMessage(reporter, `Training update: ${ev.title.replace('ASTRA Academy: ', '')} finished "${ev.agenda.join('; ')}". ${passed}/${sat} passed${passed < sat ? '; the others retake it next session' : ''}.${missed.length ? ` ${missed.length} missed it and are rebooked.` : ''}`);
+    this.addLog(`${ev.title}: ${passed}/${sat} passed`, 'event');
+    this.applyTechSkill();
+    this.trainingChanged();
+    if (this.academyQueue.length) this.scheduleCohorts();
+  }
+
+  private runStrategyLab(e: Employee, m: number) {
+    const t = this.finance.traders.get(e.cfg.id);
+    if (!t) return;
+    const res = trainStrategy(this.seed, t.coverage);
+    const rec = this.trainingRecord(e.cfg.id);
+    rec.strategy = res;
+    completeModule(this.seed, rec, CURRICULA.trader[0], this.day, m, 20);
+    this.finance.strategies.set(e.cfg.id, { s: res.strategy, active: res.active });
+    this.pushHistory(e, `Training: strategy lab finished (${res.active ? 'strategy live' : 'no reliable edge found'})`);
+    this.addLog(`${e.cfg.name} finished the strategy lab: ${res.active ? describeStrategy(res.strategy) + ' is live (paper)' : 'no strategy passed validation'}`, 'trade');
+    this.ownerMessage(e, `Strategy lab done. In-sample best: Sharpe ${res.train.sharpe.toFixed(2)}, ${res.train.trades} trades over ${TRAIN_DAYS} sessions. ${res.verdict}`);
+    this.trainingChanged();
+  }
+
+  // ------------------------------------------------------------------ CEO reporting
+  /** Everything the owner asks the CEO for, from the live simulated state (paper money). */
+  ceoReport(): { title: string; sections: { title: string; lines: string[] }[] } {
+    const m = Math.floor(this.minute);
+    const firm = this.finance.firm(m);
+    const pct = (x: number) => `${(x * 100).toFixed(2)}%`;
+    const sections: { title: string; lines: string[] }[] = [];
+    const last5 = BOOKS.reduce((a, b) => a + (this.finance.daily.get(b.id) ?? []).slice(-5).reduce((x, y) => x + y, 0), 0);
+    sections.push({ title: 'Paper trading account', lines: [
+      `Paper capital ${fmtMoney(FIRM_CAPITAL)} · NAV ${fmtMoney(firm.nav)} (simulated money, no real orders)`,
+      `Today ${fmtMoney(firm.pnl)} (${pct(firm.pnlPct)}) · last 5 sessions ${fmtMoney(last5)}`,
+      `Gross ${fmtMoney(firm.gross)} · net ${fmtMoney(firm.net)} · VaR95 ${fmtMoney(firm.var95)}`,
+    ] });
+    sections.push({ title: 'Books', lines: firm.books.map((b) => `${b.name} (${this.name(this.finance.pmByBook.get(b.id) ?? '')}): ${fmtMoney(b.pnl)} (${pct(b.pnlPct)}), gross ${fmtMoney(b.gross)}, drawdown limit used ${(b.util.drawdown * 100).toFixed(0)}%`) });
+    const traders = [...this.finance.traders.values()].map((t) => ({ id: t.empId, pnl: this.finance.traderPnl(t.empId), fills: t.orders.filter((o) => o.status === 'filled').length })).sort((a, b) => b.pnl - a.pnl);
+    const live = [...this.finance.strategies.entries()].filter(([, v]) => v.active).map(([id]) => this.name(id).split(' ')[0]);
+    sections.push({ title: 'Traders', lines: [
+      ...traders.slice(0, 3).map((t, i) => `${i + 1}. ${this.name(t.id)} ${fmtMoney(t.pnl)} (${t.fills} fills)`),
+      ...traders.slice(-2).map((t) => `Weakest: ${this.name(t.id)} ${fmtMoney(t.pnl)} (${t.fills} fills)`),
+      live.length ? `Trained strategies live: ${live.join(', ')}` : 'No trained strategies live yet',
+    ] });
+    const open = this.finance.openAlerts();
+    const closedToday = this.finance.alerts.filter((a) => a.status === 'resolved').length;
+    sections.push({ title: 'Risk', lines: [open.length ? `${open.length} open: ${open.map((a) => `${BOOK_INDEX.get(a.bookId)?.short} ${a.metric} (${a.status})`).join(', ')}` : 'No open limit alerts', `${closedToday} alert${closedToday === 1 ? '' : 's'} closed today`] });
+    const tr = this.finance.trades;
+    sections.push({ title: 'Operations', lines: [`${tr.length} trades today: ${tr.filter((x) => x.status === 'matched').length} matched, ${tr.filter((x) => x.status === 'pending').length} pending, ${tr.filter((x) => x.status === 'break').length} breaks open, ${tr.filter((x) => x.status === 'resolved').length} breaks fixed`] });
+    const inc = this.tech.incident;
+    sections.push({ title: 'Technology', lines: [`Feed incident ${inc.id}: ${inc.status}`, `${this.tech.builds.filter((b) => b.status === 'passed').length} builds passed, ${this.tech.builds.filter((b) => b.status === 'failed').length} failed`] });
+    sections.push({ title: 'Research', lines: this.employees.filter((e) => e.cfg.roleType === 'researcher').map((e) => `${e.cfg.name}: ${e.work.title} (${e.work.words.toLocaleString()} words)`) });
+    const onSite = this.employees.filter((e) => this.onSite(e));
+    const late = this.employees.filter((e) => e.badge.in !== null && e.badge.in > e.hours.arrive + 15).length;
+    const counts = this.activityCounts();
+    sections.push({ title: 'People', lines: [`${onSite.length}/${this.employees.length} in the building · ${counts.meeting} in meetings · ${counts.cafe + counts.break} on breaks · ${counts.away} out of office`, `${this.employees.filter((e) => e.badge.in !== null).length} badged in today${late ? `, ${late} late` : ''}`] });
+    const recs = this.employees.map((e) => this.trainingRecord(e.cfg.id));
+    const avg = recs.reduce((a, r) => a + r.skill, 0) / Math.max(1, recs.length);
+    const today = recs.reduce((a, r) => a + r.modules.filter((x) => x.day === this.day && x.passed).length, 0);
+    const notLive = recs.filter((r) => r.strategy && !r.strategy.active).length;
+    const sessions = this.events.filter((ev) => ev.academy && ev.status !== 'completed' && ev.status !== 'cancelled');
+    sections.push({ title: 'Training', lines: [
+      `${recs.filter(certified).length}/${recs.length} fully certified · average skill ${avg.toFixed(0)}/100 · ${today} modules passed today`,
+      `${recs.filter((r) => r.strategy).length} traders through the strategy lab: ${recs.filter((r) => r.strategy?.active).length} strategies live, ${notLive} rejected on unseen data`,
+      sessions.length ? `Next session: ${sessions[0].title} at ${fmtTime(sessions[0].start)}${this.academyQueue.length ? ` (+${this.academyQueue.length} cohorts waiting)` : ''}` : this.academyQueue.length ? `${this.academyQueue.length} cohorts waiting for tomorrow` : 'No sessions booked',
+    ] });
+    const tasks = this.employees.filter((e) => e.order?.kind === 'task');
+    if (tasks.length) sections.push({ title: 'Your requests in progress', lines: tasks.map((e) => `${e.cfg.name}: ${(e.order as { text: string }).text} (due ${fmtTime(e.order!.until)})`) });
+    return { title: `CEO report · Day ${this.day + 1} · ${fmtTime(m)}`, sections };
+  }
+
+  /** Short spoken/written version of the report. */
+  ceoBrief(): string {
+    const r = this.ceoReport();
+    const pick = (title: string, n = 1) => r.sections.find((s) => s.title === title)?.lines.slice(0, n).join('; ') ?? '';
+    return [`Paper account: ${pick('Paper trading account', 2)}.`, `Risk: ${pick('Risk')}.`, `Ops: ${pick('Operations')}.`, `Tech: ${pick('Technology')}.`, `People: ${pick('People')}.`, `Training: ${pick('Training', 2)}.`, 'The full report is under Owner → CEO report.'].join(' ');
+  }
+
+  private sendEndOfDayReport() {
+    const ceo = this.employees.find((x) => x.cfg.roleType === 'ceo');
+    if (!ceo) return;
+    this.eodSentDay = this.day;
+    this.ownerMessage(ceo, `End-of-day report. ${this.ceoBrief()}`);
   }
 
   // ------------------------------------------------------------------ player seat

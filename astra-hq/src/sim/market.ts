@@ -37,6 +37,14 @@ export const INSTRUMENTS: Instrument[] = [
 export const INSTRUMENT_INDEX = new Map(INSTRUMENTS.map((i, k) => [i.sym, k]));
 const SECTORS = [...new Set(INSTRUMENTS.map((i) => i.sector))];
 const MINUTES_PER_DAY = 510; // 08:30-17:00 trading session
+/**
+ * Mild intraday persistence of each fictional instrument's own moves (positive = trends, negative = mean
+ * reverts). Real markets show weak effects like this; they are what the traders' training can find.
+ */
+export const PERSISTENCE: Record<string, number> = {
+  AURX: 0.12, ORBL: 0.14, MRDN: -0.12, KSTL: -0.1, VNTA: 0.08, HLNE: 0.1,
+  SX5F: 0.06, TY10: -0.1, EURS: -0.08, CRDX: 0.12, HLN31: -0.12, KST29: -0.12,
+};
 
 export interface Shock {
   minute: number; // sim minute of day when it starts
@@ -58,6 +66,8 @@ export class Market {
   day = 0;
   shocks: Shock[] = [];
   feedDelayed = false;
+  /** Previous minute's idiosyncratic shock per instrument (for the persistence term). */
+  private lastIdio: number[] = INSTRUMENTS.map(() => 0);
 
   constructor(private seed: number, startMinute: number) {
     this.prices = INSTRUMENTS.map((i) => i.px0);
@@ -109,7 +119,9 @@ export class Market {
     INSTRUMENTS.forEach((inst, k) => {
       const sigma = (inst.vol / Math.sqrt(MINUTES_PER_DAY)) * session;
       const beta = inst.kind === 'bond' || (inst.kind === 'future' && inst.sector === 'Rates') ? -0.2 : inst.kind === 'fx' ? 0.1 : 0.55;
-      const z = beta * mkt + 0.45 * sector[SECTORS.indexOf(inst.sector)] + 0.7 * g('idio', k);
+      const idio = g('idio', k) + (PERSISTENCE[inst.sym] ?? 0) * this.lastIdio[k];
+      this.lastIdio[k] = idio;
+      const z = beta * mkt + 0.45 * sector[SECTORS.indexOf(inst.sector)] + 0.7 * idio;
       let r = sigma * z;
       for (const s of this.shocks) {
         if (m >= s.minute && m < s.minute + s.duration && s.moves[inst.sym]) r += Math.log(1 + s.moves[inst.sym]) / s.duration;

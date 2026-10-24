@@ -5,6 +5,7 @@ import { hashRand } from '../util/rng';
 import type { BookId } from '../config/types';
 import { INSTRUMENTS, INSTRUMENT_INDEX, type Market } from './market';
 import { MARKET_CLOSE, MARKET_OPEN } from './constants';
+import { shouldExit, signalAt, type TraderStrategy } from './training';
 
 export interface BookDef {
   id: BookId;
@@ -156,6 +157,10 @@ export class Finance {
   private metricsCache = new Map<BookId, BookMetrics>();
   private cacheMinute = -1;
   incidentDelay = false;
+  /** Strategies from the traders' training: active ones trade an intraday overlay on top of core positions. */
+  strategies = new Map<string, { s: TraderStrategy; active: boolean }>();
+  /** Open strategy overlay per trader and symbol. */
+  overlay = new Map<string, Map<string, { pos: number; entry: number; qty: number }>>();
 
   constructor(private seed: number, private market: Market, traders: { empId: string; bookId: BookId }[], pms: { empId: string; bookId: BookId }[]) {
     for (const p of pms) if (!this.pmByBook.has(p.bookId)) this.pmByBook.set(p.bookId, p.empId);
@@ -207,6 +212,7 @@ export class Finance {
       t.reduced.clear();
     }
     this.trades = [];
+    this.overlay.clear();
     this.alerts = this.alerts.filter((a) => a.status !== 'resolved');
     this.derisk.clear();
     this.cacheMinute = -1;
@@ -287,8 +293,14 @@ export class Finance {
       if (qty <= 0) return null;
       return this.placeOrder(empId, best.sym, best.qty > 0 ? 'SELL' : 'BUY', qty, 'MKT', minute, 'Risk reduction (review instruction)');
     }
+    const st = this.strategies.get(empId);
+    if (st?.active) {
+      const o = this.strategyDecision(t, st.s, minute);
+      if (o) return o;
+    }
+    // core-position maintenance; after training without a proven edge, turnover is kept low
     const r = hashRand(this.seed, 'trade', empId, day, minute);
-    if (r > 1 / 16) return null;
+    if (r > (st ? (st.active ? 1 / 45 : 1 / 90) : 1 / 16)) return null;
     const sym = t.coverage[Math.floor(hashRand(this.seed, 'tsym', empId, day, minute) * t.coverage.length)];
     const book = BOOK_INDEX.get(t.bookId)!;
     const base = book.base[sym] ?? 10e6;
@@ -307,6 +319,39 @@ export class Finance {
     if (qty <= 0) return null;
     const type = hashRand(this.seed, 'ttype', empId, day, minute) < 0.7 ? 'MKT' : 'LMT';
     return this.placeOrder(empId, sym, side, qty, type, minute, side === (base >= 0 ? 'BUY' : 'SELL') ? 'Adding to position' : 'Trimming position');
+  }
+
+  /** Trade the trained strategy: one overlay unit (25% of the symbol's core size) per signal. */
+  private strategyDecision(t: TraderState, s: TraderStrategy, minute: number): Order | null {
+    const book = BOOK_INDEX.get(t.bookId)!;
+    let ov = this.overlay.get(t.empId);
+    if (!ov) { ov = new Map(); this.overlay.set(t.empId, ov); }
+    const closing = minute >= MARKET_CLOSE - 5;
+    for (const sym of t.coverage) {
+      const base = book.base[sym];
+      if (!base) continue;
+      const inst = INSTRUMENTS[INSTRUMENT_INDEX.get(sym)!];
+      const px = this.market.price(sym);
+      const cur = ov.get(sym) ?? { pos: 0, entry: px, qty: 0 };
+      const series = this.market.series(sym, s.lookback + 1);
+      const sg = series.length > s.lookback ? signalAt(s, series, series.length - 1) : null;
+      if (!sg) continue;
+      let want = cur.pos;
+      const exit = cur.pos !== 0 && (closing || shouldExit(s, cur.pos, sg.z, px, cur.entry));
+      if (exit) want = 0;
+      else if (cur.pos === 0 && !closing && sg.sig !== 0) want = sg.sig;
+      if (want === cur.pos) continue;
+      if (want === 0) {
+        ov.set(sym, { pos: 0, entry: px, qty: 0 });
+        const stop = (px / cur.entry - 1) * cur.pos < -s.stopPct;
+        return this.placeOrder(t.empId, sym, cur.pos > 0 ? 'SELL' : 'BUY', cur.qty, 'MKT', minute, closing ? 'Strategy: flat before the close' : stop ? 'Strategy: stop loss' : 'Strategy: signal faded, exit');
+      }
+      const qty = roundQty(sym, (Math.abs(base) * 0.25) / (px * inst.mult));
+      if (qty <= 0) continue;
+      ov.set(sym, { pos: want, entry: px, qty });
+      return this.placeOrder(t.empId, sym, want > 0 ? 'BUY' : 'SELL', qty, 'MKT', minute, `Strategy: ${s.kind === 'momentum' ? 'momentum' : 'mean-reversion'} signal z=${sg.z.toFixed(2)} (trained)`);
+    }
+    return null;
   }
 
   /** Per-minute processing: limit fills/expiry, confirmations, P&L series, limit checks. */

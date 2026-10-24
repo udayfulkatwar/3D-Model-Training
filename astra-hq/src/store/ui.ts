@@ -5,6 +5,8 @@ import { loadSettings, saveSettings, type Settings } from '../config/storage';
 
 export type Mode = 'intro' | 'walk' | 'overview' | 'follow' | 'inspect' | 'seated';
 
+export type OwnerTab = 'meeting' | 'requests' | 'training' | 'report' | 'messages';
+
 export type Panel =
   | { kind: 'employee'; id: string }
   | { kind: 'monitor'; monitorId: string }
@@ -16,7 +18,7 @@ export type Panel =
   | { kind: 'coffee'; where: 'cafe' | 'lounge'; drink: string }
   | { kind: 'help' }
   | { kind: 'log' }
-  | { kind: 'owner'; tab?: 'meeting' | 'requests' | 'messages' }
+  | { kind: 'owner'; tab?: OwnerTab }
   | { kind: 'talk'; id: string };
 
 export interface InspectTarget { x: number; y: number; z: number; radius: number; label: string }

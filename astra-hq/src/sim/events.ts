@@ -21,6 +21,8 @@ export interface OfficeEvent {
   dynamic?: boolean;
   alertId?: string;
   remoteNote?: string;
+  /** A training session of the ASTRA Academy (completes each attendee's next module). */
+  academy?: boolean;
 }
 
 const t = (h: number, m: number) => h * 60 + m;

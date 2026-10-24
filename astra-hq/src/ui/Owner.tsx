@@ -5,7 +5,8 @@ import { SEATS } from '../world/furniture';
 import { fmtTime } from '../util/math';
 import { getSim } from '../store/simInstance';
 import { player } from '../store/player';
-import { useUI } from '../store/ui';
+import { useUI, type OwnerTab } from '../store/ui';
+import { CURRICULA, PASS_MARK, TRAIN_DAYS, VALID_DAYS, certified, describeStrategy } from '../sim/training';
 import { ACTIVITY_COLOR, ACTIVITY_LABEL } from '../sim/simulation';
 import { playSound } from '../audio/sound';
 import { goToEmployee, goToRoom } from './actions';
@@ -83,10 +84,10 @@ function PeoplePicker({ selected, setSelected }: { selected: Set<string>; setSel
   );
 }
 
-export function OwnerPanel({ tab: initial }: { tab?: 'meeting' | 'requests' | 'messages' }) {
+export function OwnerPanel({ tab: initial }: { tab?: OwnerTab }) {
   useUI((s) => s.simVersion);
   const sim = getSim();
-  const [tab, setTab] = useState(initial ?? 'meeting');
+  const [tab, setTab] = useState<OwnerTab>(initial ?? 'meeting');
   const [selected, setSelected] = useState<Set<string>>(() => new Set(sim.employees.map((e) => e.cfg.id)));
   const [room, setRoom] = useState<string>('f-conf');
   const [minutes, setMinutes] = useState(30);
@@ -103,9 +104,13 @@ export function OwnerPanel({ tab: initial }: { tab?: 'meeting' | 'requests' | 'm
       <div className="tabs">
         <button className={tab === 'meeting' ? 'active' : ''} onClick={() => setTab('meeting')} data-testid="owner-tab-meeting">Call a meeting</button>
         <button className={tab === 'requests' ? 'active' : ''} onClick={() => setTab('requests')} data-testid="owner-tab-requests">Call / send people</button>
+        <button className={tab === 'training' ? 'active' : ''} onClick={() => setTab('training')} data-testid="owner-tab-training">Training</button>
+        <button className={tab === 'report' ? 'active' : ''} onClick={() => setTab('report')} data-testid="owner-tab-report">CEO report</button>
         <button className={tab === 'messages' ? 'active' : ''} onClick={() => setTab('messages')} data-testid="owner-tab-messages">Messages ({sim.ownerMessages.length})</button>
       </div>
-      {tab !== 'messages' && <div className="section"><h3>Who</h3><PeoplePicker selected={selected} setSelected={setSelected} /></div>}
+      {tab === 'training' && <TrainingTab />}
+      {tab === 'report' && <ReportTab />}
+      {(tab === 'meeting' || tab === 'requests') && <div className="section"><h3>Who</h3><PeoplePicker selected={selected} setSelected={setSelected} /></div>}
       {tab === 'meeting' && (
         <>
           <div className="section">
@@ -197,7 +202,110 @@ export function OwnerPanel({ tab: initial }: { tab?: 'meeting' | 'requests' | 'm
   );
 }
 
-const QUICK = ['Hello!', 'Give me a status update', 'How is your P&L?', 'Any risk alerts?', 'Any problems or blockers?', "What's your next meeting?", 'Great work, thank you'];
+const QUICK = ['Hello!', 'Give me a status update', 'How is your P&L?', 'Any risk alerts?', 'Any problems or blockers?', "What's your next meeting?", 'How is your training going?', 'Great work, thank you'];
+
+function TrainingTab() {
+  const sim = getSim();
+  const [note, setNote] = useState<string | null>(null);
+  const recs = sim.employees.map((e) => ({ e, r: sim.trainingRecord(e.cfg.id) }));
+  const sessions = sim.events.filter((ev) => ev.academy);
+  const nCert = recs.filter((x) => certified(x.r)).length;
+  const avg = recs.reduce((a, x) => a + x.r.skill, 0) / Math.max(1, recs.length);
+  const inLab = sim.employees.filter((e) => e.order?.kind === 'task' && e.order.training);
+  return (
+    <>
+      <div className="section">
+        <h3>ASTRA Academy</h3>
+        <p className="small muted">
+          Traders run a strategy lab: {TRAIN_DAYS} practice sessions to pick a strategy, {VALID_DAYS} unseen sessions to check it. Only strategies that hold up
+          on the unseen sessions trade (paper money). Other departments attend 40-minute Training Room sessions (12 seats); passing a module (≥{PASS_MARK}%)
+          raises their skill, which speeds up their simulated work. Results are saved in this browser.
+        </p>
+        <div className="row">
+          <button className="btn primary" data-testid="start-training" onClick={() => {
+            const r = sim.startTrainingProgramme();
+            playSound('ui');
+            setNote(r.lab || r.sessions.length || r.waiting
+              ? `${r.lab} traders started the strategy lab. ${r.sessions.length} Training Room session${r.sessions.length === 1 ? '' : 's'} booked${r.waiting ? `, ${r.waiting} cohort${r.waiting === 1 ? '' : 's'} first thing tomorrow` : ''}.`
+              : 'Nothing to schedule: everyone is certified or already booked.');
+          }}>{nCert === recs.length ? 'Everyone is certified' : 'Start / continue training'}</button>
+          <button className="btn" onClick={() => goToRoom('g-training')}>Go to the Training Room</button>
+        </div>
+        {note && <div className="ok-box" style={{ marginTop: 8 }} data-testid="training-note">{note}</div>}
+        <div className="small" style={{ marginTop: 8 }} data-testid="training-summary">{nCert}/{recs.length} certified · average skill {avg.toFixed(0)}/100 · {inLab.length} in the strategy lab now</div>
+      </div>
+      {!!sessions.length && (
+        <div className="section">
+          <h3>Sessions today</h3>
+          <div className="list">
+            {sessions.map((ev) => (
+              <div className="list-item" key={ev.id}>
+                <div style={{ flex: 1 }}>
+                  <div>{ev.title} <span className="muted small">· {fmtTime(ev.start)}-{fmtTime(ev.end)} · {ev.status}</span></div>
+                  <div className="small muted">{ev.agenda.join('; ')} · {ev.attendeeIds.length} people{ev.status === 'in-progress' ? ` · ${sim.presentAttendees(ev).length} in the room` : ''}</div>
+                  {ev.notes.filter((n) => n.includes('Assessment')).map((n) => <div className="small" key={n}>{n}</div>)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <div className="section">
+        <h3>Trader strategies (paper)</h3>
+        <table className="tbl" data-testid="strategy-table">
+          <thead><tr><th>Trader</th><th>Symbols</th><th>Strategy</th><th>In-sample Sharpe</th><th>Unseen Sharpe</th><th>Status</th></tr></thead>
+          <tbody>
+            {recs.filter((x) => x.e.cfg.roleType === 'trader').map(({ e, r }) => (
+              <tr key={e.cfg.id}>
+                <td>{e.cfg.name}</td>
+                <td>{sim.finance.traders.get(e.cfg.id)?.coverage.join(', ')}</td>
+                <td>{r.strategy ? describeStrategy(r.strategy.strategy) : e.order?.kind === 'task' && e.order.training ? `In the lab (until ${fmtTime(e.order.until)})` : 'Not trained'}</td>
+                <td>{r.strategy ? r.strategy.train.sharpe.toFixed(2) : '-'}</td>
+                <td>{r.strategy ? r.strategy.valid.sharpe.toFixed(2) : '-'}</td>
+                <td style={{ color: r.strategy ? (r.strategy.active ? 'var(--pos)' : 'var(--warn)') : undefined }}>{r.strategy ? (r.strategy.active ? 'Live' : 'Rejected') : '-'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="section">
+        <h3>Everyone</h3>
+        <div className="list" style={{ maxHeight: 260, overflow: 'auto' }}>
+          {recs.map(({ e, r }) => {
+            const total = CURRICULA[r.role].length;
+            const passed = CURRICULA[r.role].filter((m) => r.modules.some((x) => x.id === m.id && x.passed)).length;
+            return (
+              <div className="list-item" key={e.cfg.id}>
+                <span style={{ flex: 1 }}>{e.cfg.name} <span className="muted small">· {e.cfg.department}</span></span>
+                <span className="small">{passed}/{total} modules</span>
+                <span className="small" style={{ width: 90, textAlign: 'right' }}>skill {r.skill}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ReportTab() {
+  const sim = getSim();
+  const r = sim.ceoReport();
+  return (
+    <div data-testid="ceo-report">
+      <div className="section">
+        <h3>{r.title}</h3>
+        <p className="small muted">Prepared by {sim.employees.find((e) => e.cfg.roleType === 'ceo')?.cfg.name ?? 'the CEO'} from the live office state. Paper trading only: simulated money, fictional instruments.</p>
+      </div>
+      {r.sections.map((s) => (
+        <div className="section" key={s.title}>
+          <h3>{s.title}</h3>
+          {s.lines.map((l, i) => <div className="small" key={i}>{l}</div>)}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function TalkPanel({ id }: { id: string }) {
   useUI((s) => s.simVersion);

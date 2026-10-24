@@ -241,3 +241,9 @@ kbd { font-family: var(--mono); font-size: 11px; background: #23262c; border: 1p
 .bubble.owner { align-self: flex-end; background: var(--gold-soft); border: 1px solid rgba(208, 171, 98, 0.45); }
 .bubble.employee { align-self: flex-start; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line); }
 .history .t { font-family: var(--mono); color: var(--muted); margin-right: 6px; }
+
+/* compact data table in panels (training) */
+.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tbl th, .tbl td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line, rgba(255,255,255,0.08)); vertical-align: top; }
+.tbl th { color: var(--muted, #9aa0a6); font-weight: 600; }
+.section:has(> .tbl) { overflow-x: auto; }
