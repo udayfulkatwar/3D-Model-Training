@@ -453,6 +453,10 @@ await step('training and CEO report', async () => {
   const rep = await page.textContent('[data-testid=ceo-report]');
   check('CEO report shows paper account, books, risk, ops, tech, people and training', ['Paper trading account', 'Books', 'Risk', 'Operations', 'Technology', 'People', 'Training'].every((t) => rep.includes(t)), rep.slice(0, 120));
   await shot('21-ceo-report');
+  await page.click('[data-testid=owner-tab-workflow]');
+  await wait(800);
+  const wf = await page.textContent('[data-testid=workflow]');
+  check('Workflow tab shows the research → PM → trader → risk → ops chain, tickets and mistakes', /How work flows/.test(wf) && /Tickets/.test(wf) && /Mistakes/.test(wf) && rep.includes('Workflow and mistakes'), wf.slice(0, 100));
   await page.click('[data-testid=close-panel]');
 });
 
@@ -539,6 +543,62 @@ await step('performance probe (software renderer)', async () => {
 
  // park the desktop page so software rendering does not starve the mobile page
 await page.goto('about:blank').catch(() => {});
+
+await step('live prices and Claude replies (stubbed claude.ai runtime)', async () => {
+  // A stand-in for the claude.ai runtime: made-up quotes in the Co-Invest payload shape and a fake Claude
+  // that uses one page tool. Proves the page wiring; real data/Claude only exist inside claude.ai.
+  const c = await browser.newContext({ viewport: { width: 960, height: 570 } });
+  await c.addInitScript(() => {
+    localStorage.setItem('astra-hq:settings:v1', JSON.stringify({ graphics: 'low' }));
+    const feeds = ['xyz:NVDA', 'xyz:MU', 'xyz:AAPL', 'xyz:TSLA', 'xyz:SNDK', 'xyz:SKHX', 'xyz:SP500', 'xyz:GOLD', 'xyz:XYZ100', 'xyz:CL', 'BTC', 'ETH'];
+    const calls = [];
+    window.__stubCalls = calls;
+    const payload = (symbols) => ({ snapshots: symbols.map((s) => ({ symbol: s, markPx: String(100 + feeds.indexOf(s) * 50 + Math.random()), change24h: 0.5 })) });
+    const mcp = {
+      callTool: async (server, tool, input) => { calls.push(`${server}/${tool}`); return { payload: tool === 'analyze_markets_batch' ? payload(input.symbols) : { currentPrice: 100, indicators: { rsi14: 55, sma: { sma20: 99, sma50: 98, sma200: 97 } } } }; },
+      watchTool: (server, tool, input, handler) => {
+        calls.push(`${server}/${tool}`);
+        const fire = () => handler({ type: 'data', result: { payload: tool === 'get_news' ? { text: 'Headlines:\n1. Test headline one — Wire (https://x.test/1)\n' } : payload(input.symbols) } });
+        setTimeout(fire, 50);
+        const t = setInterval(fire, 2000);
+        return () => clearInterval(t);
+      },
+    };
+    const sample = async (turns, opts) => {
+      const last = Array.isArray(turns) ? turns[turns.length - 1].content : turns;
+      let text = 'Stub reply from Claude.';
+      if (/boardroom/i.test(last) && opts?.tools) {
+        const t = opts.tools.find((x) => x.name === 'go_to_room');
+        await t.execute({ room: 'Boardroom' }, { signal: new AbortController().signal });
+        text = 'Going to the Boardroom now.';
+      }
+      opts?.onText?.({ text, delta: text });
+      return { text, truncated: false, modelTierApplied: 'quick' };
+    };
+    sample.limits = async () => ({ maxPromptBytes: 262144, tools: { maxCount: 8 } });
+    window.claude = { use: async (n) => (n === 'mcp' ? mcp : n === 'sample' ? sample : null) };
+  });
+  const lp = await c.newPage();
+  lp.on('pageerror', (e) => pageErrors.push(`[live] ${e.message}`));
+  await lp.goto(base);
+  await lp.waitForFunction(() => window.__astra?.sim?.().live, null, { timeout: 60000 });
+  const st = await lp.evaluate(() => { const s = window.__astra.sim(); return { live: s.live, syms: s.market.prices.length, nvda: s.market.price('NVDA'), chip: document.querySelector('[data-testid=live-chip]')?.textContent, calls: [...new Set(window.__stubCalls)] }; });
+  const allowed = ['Co-Invest/analyze_markets_batch', 'Co-Invest/get_news', 'Co-Invest/get_technical_indicators'];
+  check('Live mode: real instrument symbols with feed prices, LIVE chip, read-only tools only', st.live && st.nvda >= 100 && /LIVE PRICES/.test(st.chip) && st.calls.every((x) => allowed.includes(x)), JSON.stringify(st));
+  await lp.evaluate(() => window.__astra.ui.getState().openPanel({ kind: 'wall', panelId: 'p-market-wall' }));
+  await lp.waitForTimeout(800);
+  const wall = await lp.textContent('[data-testid=wall-panel]').catch(() => '');
+  check('Market wall shows live-priced instruments and headlines (paper trading tag)', /NVDA/.test(wall) && /Live prices · Paper/.test(wall) && /Test headline one/.test(wall), wall.slice(0, 140));
+  await lp.evaluate(() => { const s = window.__astra.sim(); s.speed = 5; while (s.minute < 9 * 60 + 40) s.advance(0.5); s.speed = 1; });
+  await lp.evaluate(() => window.__astra.ui.getState().openPanel({ kind: 'talk', id: 'e03' }));
+  await lp.fill('[data-testid=talk-input]', 'Please go to the boardroom');
+  await lp.click('[data-testid=talk-send]');
+  await lp.waitForFunction(() => window.__astra.sim().byId.get('e03').chat.length >= 2, null, { timeout: 20000 });
+  const talk = await lp.evaluate(() => { const e = window.__astra.sim().byId.get('e03'); return { reply: e.chat[e.chat.length - 1].text, order: e.order?.kind, room: e.order?.roomId }; });
+  check('Claude reply is shown and its tool call acts in the office (sent to the Boardroom)', talk.reply === 'Going to the Boardroom now.' && talk.order === 'room' && talk.room === 's-board', JSON.stringify(talk));
+  await lp.screenshot({ path: path.join(out, '22-live-talk.png') });
+  await c.close();
+});
 
 await step('touch controls (mobile emulation)', async () => {
   const m = await browser.newContext({ viewport: { width: 412, height: 860 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });

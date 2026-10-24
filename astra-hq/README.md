@@ -124,6 +124,34 @@ simulated work (no AI service).
 - **Door signs**: every room door has a name plate with the room and the department working there (it follows the
   departments you set in the editor).
 
+## Live prices, Claude replies and office workflows
+
+These features switch on only when the page is opened in claude.ai (the published artifact). Anywhere else the office
+runs fully offline on the simulated market with scripted replies.
+
+- **Live prices (read-only).** With your **Co-Invest** connector the page reads `analyze_markets_batch` (prices and
+  24 h change every 30 s), `get_news` (headlines every 5 min) and, when you start training, `get_technical_indicators`.
+  The 12 instrument slots become real markets (NVDA, MU, AAPL, TSLA, SNDK, SK hynix, S&P 500, gold, NASDAQ 100, WTI,
+  BTC, ETH) and the credit book becomes *Digital Assets*; the day restarts with positions sized at live prices. No order
+  tool is declared, so the page **cannot** place trades on Co-Invest; all trading is paper inside the office. The top-bar
+  chip shows LIVE / stale / off and how to fix a missing or denied connector.
+- **Claude as the employees' brain.** Talk replies are written by Claude from each person's live briefing (activity,
+  positions, orders, meetings, training, CEO report), in the language you write in. Claude can act through page tools:
+  take on a task, go to a room, come to you, go back to work; the CEO can also call meetings and start training.
+  *CEO report → Ask the CEO for an analysis* writes a management briefing with recommendations. Uses your Claude plan;
+  claude.ai asks once. Falls back to scripted replies if unavailable.
+- **Live strategy lab.** With live data the lab reads each symbol's regime (price vs 50/200-hour averages, RSI) and
+  starts a **forward test** at 10 % size on live prices (paper). After 8 round trips a profitable strategy is promoted to
+  full size and a losing one is suspended and reported. Nothing guarantees a profit; losing strategies are cut, not hidden.
+- **Workflow.** Researchers publish notes → the PM of the book approves or rejects the idea → the covering trader
+  executes it (paper) → every order passes a risk pre-trade check → Operations confirms trades and fixes breaks. Idea
+  results are tracked (Owner → Workflow).
+- **Mistakes and coaching.** Traders occasionally key a 10× order size (less often with more skill): the risk
+  pre-trade check blocks most; the rest are spotted and unwound, with the cost booked. Builds fail, people arrive late
+  (and miss the start of meetings). Work mistakes lead to a 15-minute one-to-one with the manager (trader → PM,
+  developer → tech lead, others → CEO) that raises the person's skill. The CEO report summarises ideas, mistakes,
+  costs and coaching.
+
 ## Training and paper trading
 
 Owner → **Training** starts the *ASTRA Academy*. Everything is paper trading: simulated money on fictional
@@ -167,4 +195,4 @@ e2e/          playwright-core browser acceptance script and screenshots
 - [CONFIGURATION.md](CONFIGURATION.md) — editor, JSON format, role types, workstation IDs
 - [VERIFICATION.md](VERIFICATION.md) — test results, tested environment, measured numbers
 - [PROJECT_STATUS.md](PROJECT_STATUS.md) — feature checklist and known limitations
-- [ATTRIBUTION.md](ATTRIBUTION.md) — assets (all procedural) and dependency licences
+- [ATTRIBUTION.md](ATTRIBUTION.md) — assets (all procedural) and dependency licences; live data comes from the viewer's own Co-Invest connector at run time (nothing bundled)

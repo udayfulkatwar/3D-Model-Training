@@ -73,7 +73,7 @@ export function drawAppView(g: CanvasRenderingContext2D, v: AppView, W: number, 
     tx += tw + 4;
   });
   g.font = `600 ${Math.round(fs * 0.72)}px ${FONT}`;
-  const sim = 'SIMULATED';
+  const sim = (v.dataTag ?? 'Simulated Data').toUpperCase();
   const sw = g.measureText(sim).width + fs * 0.6;
   g.fillStyle = p.warn;
   g.globalAlpha = 0.85;

@@ -1,3 +1,4 @@
+import type { LiveStatus } from '../live/feed';
 // UI state (zustand). Simulation state lives in the Simulation object; this store only holds what
 // React needs to render menus, panels and HUD.
 import { create } from 'zustand';
@@ -5,7 +6,7 @@ import { loadSettings, saveSettings, type Settings } from '../config/storage';
 
 export type Mode = 'intro' | 'walk' | 'overview' | 'follow' | 'inspect' | 'seated';
 
-export type OwnerTab = 'meeting' | 'requests' | 'training' | 'report' | 'messages';
+export type OwnerTab = 'meeting' | 'requests' | 'training' | 'workflow' | 'report' | 'messages';
 
 export type Panel =
   | { kind: 'employee'; id: string }
@@ -35,6 +36,9 @@ interface UIState {
   prompt: string | null;
   toast: { text: string; id: number } | null;
   simVersion: number;
+  /** Live market data status (Co-Invest, read-only). */
+  live: LiveStatus;
+  setLive: (s: LiveStatus) => void;
   fps: number;
   renderStats: { calls: number; triangles: number; textures: number; geometries: number };
   playerFloor: number;
@@ -77,6 +81,8 @@ export const useUI = create<UIState>((set, get) => ({
   prompt: null,
   toast: null,
   simVersion: 0,
+  live: { state: 'off', message: 'Simulated market (live data not connected).' },
+  setLive: (live) => set({ live }),
   fps: 0,
   renderStats: { calls: 0, triangles: 0, textures: 0, geometries: 0 },
   playerFloor: 0,

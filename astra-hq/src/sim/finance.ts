@@ -51,6 +51,8 @@ export interface Order {
   type: 'MKT' | 'LMT';
   limit?: number;
   status: 'working' | 'filled' | 'cancelled';
+  /** Set when the quantity was keyed wrong (fat finger). */
+  error?: boolean;
   filledAt?: number;
   fillPx?: number;
   reason: string;
@@ -158,7 +160,15 @@ export class Finance {
   private cacheMinute = -1;
   incidentDelay = false;
   /** Strategies from the traders' training: active ones trade an intraday overlay on top of core positions. */
-  strategies = new Map<string, { s: TraderStrategy; active: boolean }>();
+  strategies = new Map<string, { s: TraderStrategy; active: boolean; size: number; forward: { trades: number; wins: number; pnl: number }; promote: boolean }>();
+  /** Promotions and suspensions decided by the forward-test rules, for the office to report. */
+  strategyEvents: { empId: string; kind: 'promoted' | 'suspended'; trades: number; pnl: number }[] = [];
+  /** Human error model: chance that a trader keys a 10× quantity (set by the office from skill). */
+  fatFinger?: (empId: string, orderId: string) => boolean;
+  /** Pre-trade risk check: true if an oversized order is caught and blocked. */
+  preTradeCatch?: (empId: string, orderId: string) => boolean;
+  /** Keying errors for the office to follow up (blocked, or filled and needing correction). */
+  errorEvents: { empId: string; orderId: string; sym: string; side: Side; excess: number; px: number; blocked: boolean; t: number }[] = [];
   /** Open strategy overlay per trader and symbol. */
   overlay = new Map<string, Map<string, { pos: number; entry: number; qty: number }>>();
 
@@ -264,6 +274,19 @@ export class Finance {
     if (!t || qty <= 0) return null;
     const px = this.market.price(sym);
     const o: Order = { id: this.nextId('O'), t: minute, traderId: empId, bookId: t.bookId, sym, side, qty, type, status: 'working', reason };
+    if (!reason.startsWith('Error correction') && this.fatFinger?.(empId, o.id)) {
+      o.error = true;
+      o.qty = qty * 10;
+      if (this.preTradeCatch?.(empId, o.id)) {
+        o.status = 'cancelled';
+        o.reason = `Blocked by risk pre-trade check: ${o.qty.toLocaleString()} is 10× the intended size (${reason})`;
+        t.orders.unshift(o);
+        if (t.orders.length > 30) t.orders.pop();
+        this.errorEvents.push({ empId, orderId: o.id, sym, side, excess: o.qty - qty, px, blocked: true, t: minute });
+        return o;
+      }
+      this.errorEvents.push({ empId, orderId: o.id, sym, side, excess: o.qty - qty, px, blocked: false, t: minute });
+    }
     if (type === 'LMT') o.limit = px * (side === 'BUY' ? 0.9996 : 1.0004);
     t.orders.unshift(o);
     if (t.orders.length > 30) t.orders.pop();
@@ -295,7 +318,7 @@ export class Finance {
     }
     const st = this.strategies.get(empId);
     if (st?.active) {
-      const o = this.strategyDecision(t, st.s, minute);
+      const o = this.strategyDecision(t, st, minute);
       if (o) return o;
     }
     // core-position maintenance; after training without a proven edge, turnover is kept low
@@ -322,7 +345,8 @@ export class Finance {
   }
 
   /** Trade the trained strategy: one overlay unit (25% of the symbol's core size) per signal. */
-  private strategyDecision(t: TraderState, s: TraderStrategy, minute: number): Order | null {
+  private strategyDecision(t: TraderState, st: { s: TraderStrategy; active: boolean; size: number; forward: { trades: number; wins: number; pnl: number }; promote: boolean }, minute: number): Order | null {
+    const s = st.s;
     const book = BOOK_INDEX.get(t.bookId)!;
     let ov = this.overlay.get(t.empId);
     if (!ov) { ov = new Map(); this.overlay.set(t.empId, ov); }
@@ -344,14 +368,33 @@ export class Finance {
       if (want === 0) {
         ov.set(sym, { pos: 0, entry: px, qty: 0 });
         const stop = (px / cur.entry - 1) * cur.pos < -s.stopPct;
+        this.recordRoundTrip(t.empId, st, (px - cur.entry) * cur.pos * cur.qty * inst.mult);
         return this.placeOrder(t.empId, sym, cur.pos > 0 ? 'SELL' : 'BUY', cur.qty, 'MKT', minute, closing ? 'Strategy: flat before the close' : stop ? 'Strategy: stop loss' : 'Strategy: signal faded, exit');
       }
-      const qty = roundQty(sym, (Math.abs(base) * 0.25) / (px * inst.mult));
+      const qty = roundQty(sym, (Math.abs(base) * st.size) / (px * inst.mult));
       if (qty <= 0) continue;
       ov.set(sym, { pos: want, entry: px, qty });
       return this.placeOrder(t.empId, sym, want > 0 ? 'BUY' : 'SELL', qty, 'MKT', minute, `Strategy: ${s.kind === 'momentum' ? 'momentum' : 'mean-reversion'} signal z=${sg.z.toFixed(2)} (trained)`);
     }
     return null;
+  }
+
+  /**
+   * Forward-test discipline on every live strategy: after 8 round trips a losing strategy is suspended;
+   * a winning forward test is promoted from 10% to the full 25% overlay.
+   */
+  private recordRoundTrip(empId: string, st: { active: boolean; size: number; forward: { trades: number; wins: number; pnl: number }; promote: boolean }, pnl: number) {
+    st.forward.trades++;
+    st.forward.pnl += pnl;
+    if (pnl > 0) st.forward.wins++;
+    if (st.forward.trades < 8) return;
+    if (st.forward.pnl < 0) {
+      st.active = false;
+      this.strategyEvents.push({ empId, kind: 'suspended', trades: st.forward.trades, pnl: st.forward.pnl });
+    } else if (st.promote && st.size < 0.25) {
+      st.size = 0.25;
+      this.strategyEvents.push({ empId, kind: 'promoted', trades: st.forward.trades, pnl: st.forward.pnl });
+    }
   }
 
   /** Per-minute processing: limit fills/expiry, confirmations, P&L series, limit checks. */

@@ -2,11 +2,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FLOOR_NAMES, ROOMS, roomById } from '../world/building';
 import { SEATS } from '../world/furniture';
-import { fmtTime } from '../util/math';
+import { fmtMoney, fmtTime } from '../util/math';
 import { getSim } from '../store/simInstance';
 import { player } from '../store/player';
 import { useUI, type OwnerTab } from '../store/ui';
 import { CURRICULA, PASS_MARK, TRAIN_DAYS, VALID_DAYS, certified, describeStrategy } from '../sim/training';
+import { fetchIndicators } from '../live/feed';
+import { PERMANENT, askEmployee, ceoAnalysis, errorCopy, getSample, type SampleError } from '../ai/brain';
+
+/** Set once Claude turned out to be unavailable for this view (permanent codes): scripted replies from then on. */
+let aiDisabled = false;
 import { ACTIVITY_COLOR, ACTIVITY_LABEL } from '../sim/simulation';
 import { playSound } from '../audio/sound';
 import { goToEmployee, goToRoom } from './actions';
@@ -105,11 +110,13 @@ export function OwnerPanel({ tab: initial }: { tab?: OwnerTab }) {
         <button className={tab === 'meeting' ? 'active' : ''} onClick={() => setTab('meeting')} data-testid="owner-tab-meeting">Call a meeting</button>
         <button className={tab === 'requests' ? 'active' : ''} onClick={() => setTab('requests')} data-testid="owner-tab-requests">Call / send people</button>
         <button className={tab === 'training' ? 'active' : ''} onClick={() => setTab('training')} data-testid="owner-tab-training">Training</button>
+        <button className={tab === 'workflow' ? 'active' : ''} onClick={() => setTab('workflow')} data-testid="owner-tab-workflow">Workflow</button>
         <button className={tab === 'report' ? 'active' : ''} onClick={() => setTab('report')} data-testid="owner-tab-report">CEO report</button>
         <button className={tab === 'messages' ? 'active' : ''} onClick={() => setTab('messages')} data-testid="owner-tab-messages">Messages ({sim.ownerMessages.length})</button>
       </div>
       {tab === 'training' && <TrainingTab />}
       {tab === 'report' && <ReportTab />}
+      {tab === 'workflow' && <WorkflowTab />}
       {(tab === 'meeting' || tab === 'requests') && <div className="section"><h3>Who</h3><PeoplePicker selected={selected} setSelected={setSelected} /></div>}
       {tab === 'meeting' && (
         <>
@@ -207,6 +214,7 @@ const QUICK = ['Hello!', 'Give me a status update', 'How is your P&L?', 'Any ris
 function TrainingTab() {
   const sim = getSim();
   const [note, setNote] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const recs = sim.employees.map((e) => ({ e, r: sim.trainingRecord(e.cfg.id) }));
   const sessions = sim.events.filter((ev) => ev.academy);
   const nCert = recs.filter((x) => certified(x.r)).length;
@@ -222,7 +230,14 @@ function TrainingTab() {
           raises their skill, which speeds up their simulated work. Results are saved in this browser.
         </p>
         <div className="row">
-          <button className="btn primary" data-testid="start-training" onClick={() => {
+          <button className="btn primary" data-testid="start-training" disabled={busy} onClick={async () => {
+            if (sim.live) {
+              setBusy(true);
+              setNote('Reading live indicators (RSI, 20/50/200-hour averages) from Co-Invest for the strategy lab…');
+              const n = await fetchIndicators(sim);
+              setBusy(false);
+              if (!n) setNote('Could not read live indicators; traders will hold core positions until they can.');
+            }
             const r = sim.startTrainingProgramme();
             playSound('ui');
             setNote(r.lab || r.sessions.length || r.waiting
@@ -253,16 +268,16 @@ function TrainingTab() {
       <div className="section">
         <h3>Trader strategies (paper)</h3>
         <table className="tbl" data-testid="strategy-table">
-          <thead><tr><th>Trader</th><th>Symbols</th><th>Strategy</th><th>In-sample Sharpe</th><th>Unseen Sharpe</th><th>Status</th></tr></thead>
+          <thead><tr><th>Trader</th><th>Symbols</th><th>Strategy</th><th>Test</th><th>Live paper result</th><th>Status</th></tr></thead>
           <tbody>
             {recs.filter((x) => x.e.cfg.roleType === 'trader').map(({ e, r }) => (
               <tr key={e.cfg.id}>
                 <td>{e.cfg.name}</td>
                 <td>{sim.finance.traders.get(e.cfg.id)?.coverage.join(', ')}</td>
                 <td>{r.strategy ? describeStrategy(r.strategy.strategy) : e.order?.kind === 'task' && e.order.training ? `In the lab (until ${fmtTime(e.order.until)})` : 'Not trained'}</td>
-                <td>{r.strategy ? r.strategy.train.sharpe.toFixed(2) : '-'}</td>
-                <td>{r.strategy ? r.strategy.valid.sharpe.toFixed(2) : '-'}</td>
-                <td style={{ color: r.strategy ? (r.strategy.active ? 'var(--pos)' : 'var(--warn)') : undefined }}>{r.strategy ? (r.strategy.active ? 'Live' : 'Rejected') : '-'}</td>
+                <td>{!r.strategy ? '-' : r.strategy.mode === 'forward' ? 'Live regime read' : `Sharpe ${r.strategy.train.sharpe.toFixed(2)} in-sample / ${r.strategy.valid.sharpe.toFixed(2)} unseen`}</td>
+                <td>{(() => { const f = sim.finance.strategies.get(e.cfg.id)?.forward ?? r.strategy?.forward; return f && f.trades ? `${f.trades} trades, ${f.wins} wins, ${fmtMoney(f.pnl)}` : '-'; })()}</td>
+                <td style={{ color: r.strategy ? (r.strategy.active ? 'var(--pos)' : 'var(--warn)') : undefined }}>{!r.strategy ? '-' : r.strategy.active ? (sim.finance.strategies.get(e.cfg.id)?.size ?? 0.25) < 0.25 ? 'Forward test (10%)' : 'Live' : r.strategy.forward?.trades ? 'Suspended' : 'Rejected'}</td>
               </tr>
             ))}
           </tbody>
@@ -288,14 +303,83 @@ function TrainingTab() {
   );
 }
 
+const TICKET_KIND: Record<string, string> = { idea: 'Research idea', 'error-trade': 'Error trade', 'build-fix': 'Build fix' };
+
+function WorkflowTab() {
+  const sim = getSim();
+  const name = (id: string) => sim.byId.get(id)?.cfg.name ?? id;
+  const coaching = sim.employees.flatMap((e) => (sim.training.get(e.cfg.id)?.coaching ?? []).map((c) => ({ e, c }))).reverse();
+  return (
+    <div data-testid="workflow">
+      <div className="section">
+        <h3>How work flows</h3>
+        <p className="small muted">Researchers publish notes → the PM of the book approves or rejects the idea → the covering trader executes it (paper) → the risk pre-trade check screens every order → Operations confirms and fixes breaks. Mistakes happen (wrong order size, failed builds, late arrivals); each is caught or corrected, and work mistakes lead to a one-to-one with the manager.</p>
+      </div>
+      <div className="section">
+        <h3>Tickets ({sim.tickets.length})</h3>
+        {!sim.tickets.length && <div className="muted small">Nothing yet. Ideas appear as researchers finish notes; errors when they happen.</div>}
+        <div className="list" style={{ maxHeight: 300, overflow: 'auto' }}>
+          {sim.tickets.slice(0, 40).map((k) => (
+            <div className="list-item" key={k.id} style={{ alignItems: 'flex-start' }}>
+              <span className="t">D{k.day + 1} {fmtTime(k.t)}</span>
+              <div style={{ flex: 1 }}>
+                <div><b>{TICKET_KIND[k.kind]}</b> #{k.id}: {k.title} <span className="chip small">{k.status}</span>{k.result !== undefined && <span style={{ color: k.result >= 0 ? 'var(--pos)' : 'var(--neg)' }}> {(k.result * 100).toFixed(2)}%</span>}</div>
+                <div className="small muted">{name(k.from)} → {name(k.to)} · {k.log[k.log.length - 1].text}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="section">
+        <h3>Mistakes ({sim.mistakes.length})</h3>
+        {!sim.mistakes.length && <div className="muted small">None so far today.</div>}
+        <div className="list" style={{ maxHeight: 220, overflow: 'auto' }}>
+          {sim.mistakes.slice(0, 30).map((x) => (
+            <div className="list-item" key={x.id}>
+              <span className="t">D{x.day + 1} {fmtTime(x.t)}</span>
+              <span style={{ flex: 1 }}><b>{name(x.empId)}</b>: {x.text}</span>
+              <span className="small" style={{ color: x.caught ? 'var(--pos)' : 'var(--neg)' }}>{x.caught ? 'caught' : `cost ${fmtMoney(x.cost)}`}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="section">
+        <h3>Coaching</h3>
+        {!coaching.length && <div className="muted small">No coaching needed yet.</div>}
+        {coaching.slice(0, 20).map(({ e, c }, i) => <div className="small" key={i}>{e.cfg.name}: {c.text} · <b>{c.status}</b></div>)}
+      </div>
+    </div>
+  );
+}
+
 function ReportTab() {
   const sim = getSim();
   const r = sim.ceoReport();
+  const [analysis, setAnalysis] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [canAi, setCanAi] = useState(false);
+  useEffect(() => { void getSample().then((s) => setCanAi(!!s && !aiDisabled)); }, []);
   return (
     <div data-testid="ceo-report">
       <div className="section">
         <h3>{r.title}</h3>
-        <p className="small muted">Prepared by {sim.employees.find((e) => e.cfg.roleType === 'ceo')?.cfg.name ?? 'the CEO'} from the live office state. Paper trading only: simulated money, fictional instruments.</p>
+        <p className="small muted">Prepared by {sim.employees.find((e) => e.cfg.roleType === 'ceo')?.cfg.name ?? 'the CEO'} from the live office state. {sim.live ? 'Prices are live (Co-Invest, read-only); all trading is paper.' : 'Paper trading only: simulated money, fictional instruments.'}</p>
+        {canAi && (
+          <button className="btn primary" disabled={busy} data-testid="ceo-analysis" onClick={async () => {
+            setBusy(true);
+            setAnalysis('');
+            try {
+              setAnalysis(await ceoAnalysis(sim, { onText: setAnalysis }));
+            } catch (err) {
+              const code = (err as SampleError)?.code ?? 'upstream_error';
+              if (PERMANENT.has(code)) { aiDisabled = true; setCanAi(false); }
+              setAnalysis(`${(err as SampleError)?.text ?? ''}${errorCopy(code) ? `\n(${errorCopy(code)})` : ''}` || null);
+            } finally {
+              setBusy(false);
+            }
+          }}>{busy ? 'The CEO is writing…' : 'Ask the CEO for an analysis (Claude)'}</button>
+        )}
+        {analysis !== null && <div className="ok-box" style={{ marginTop: 8, whiteSpace: 'pre-wrap' }}>{analysis || 'Thinking…'}</div>}
       </div>
       {r.sections.map((s) => (
         <div className="section" key={s.title}>
@@ -315,20 +399,53 @@ export function TalkPanel({ id }: { id: string }) {
   const [task, setTask] = useState('');
   const [room, setRoom] = useState<string>('s-ceo');
   const [, force] = useState(0);
+  const [pending, setPending] = useState<string | null>(null);
+  const [aiNote, setAiNote] = useState<string | null>(null);
+  const [ai, setAi] = useState<boolean | null>(aiDisabled ? false : null);
+  const ctl = useRef<AbortController | null>(null);
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => {
     sim.setTalking(id);
-    return () => sim.setTalking(null);
+    let live = true;
+    void getSample().then((s) => { if (live) setAi(!!s && !aiDisabled); });
+    return () => { live = false; ctl.current?.abort(); sim.setTalking(null); };
   }, [sim, id]);
-  useEffect(() => { end.current?.scrollIntoView({ block: 'end' }); }, [e?.chat.length]);
+  useEffect(() => { end.current?.scrollIntoView({ block: 'end' }); }, [e?.chat.length, pending]);
   if (!e) return <Shell title="Employee not found"><p>This employee no longer exists.</p></Shell>;
   const mode = sim.talkMode(id);
-  const say = (t: string) => {
-    if (!t.trim()) return;
-    sim.talk(id, t);
+  const say = async (t: string) => {
+    if (!t.trim() || pending !== null) return;
     playSound('click');
     setText('');
-    force((x) => x + 1);
+    setAiNote(null);
+    const useAi = !aiDisabled && !!(await getSample());
+    if (!useAi) {
+      sim.talk(id, t);
+      force((x) => x + 1);
+      return;
+    }
+    sim.ownerSaid(id, t);
+    setPending('');
+    const c = new AbortController();
+    ctl.current = c;
+    try {
+      const reply = await askEmployee(sim, id, t, { onText: (x) => setPending(x), signal: c.signal, ownerSpot });
+      sim.employeeSays(id, reply);
+    } catch (err) {
+      const code = (err as SampleError)?.code ?? 'upstream_error';
+      if (PERMANENT.has(code)) {
+        aiDisabled = true;
+        setAi(false);
+        sim.employeeSays(id, sim.scriptedReply(id, t));
+      } else if (code !== 'cancelled') {
+        if ((err as SampleError).text) sim.employeeSays(id, `${(err as SampleError).text} …`);
+        setAiNote(errorCopy(code));
+      }
+    } finally {
+      if (ctl.current === c) ctl.current = null;
+      setPending(null);
+      force((x) => x + 1);
+    }
   };
   return (
     <Shell
@@ -350,18 +467,20 @@ export function TalkPanel({ id }: { id: string }) {
       }
     >
       <div className="chat" data-testid="chat">
-        {!e.chat.length && <div className="muted small">{mode === 'in person' ? `${e.cfg.name.split(' ')[0]} turns to you.` : `You call ${e.cfg.name.split(' ')[0]} on the internal line.`} Ask anything, or use the suggestions below. Replies come from their simulated work (scripted locally, no AI service).</div>}
+        {!e.chat.length && <div className="muted small">{mode === 'in person' ? `${e.cfg.name.split(' ')[0]} turns to you.` : `You call ${e.cfg.name.split(' ')[0]} on the internal line.`} Ask anything in Hindi or English, or give an instruction. {ai ? 'Replies are written by Claude from their live work data (uses your Claude plan) and they can act on your instructions.' : 'Replies come from their live work data (scripted).'}</div>}
         {e.chat.map((c, i) => (
           <div key={i} className={`bubble ${c.from}`}>
             <span className="t">{fmtTime(c.t)}</span> {c.text}
           </div>
         ))}
+        {pending !== null && <div className="bubble employee" data-testid="pending-reply">{pending || 'Thinking…'} <button className="btn small" onClick={() => ctl.current?.abort()}>Stop</button></div>}
+        {aiNote && <div className="small" style={{ color: 'var(--warn)' }}>{aiNote}</div>}
         <div ref={end} />
       </div>
       <div className="row" style={{ margin: '10px 0' }}>
-        {QUICK.map((q) => <button key={q} className="btn small" onClick={() => say(q)}>{q}</button>)}
+        {(e.cfg.roleType === 'ceo' ? ['Give me the full report', 'What should we improve?', ...QUICK] : QUICK).map((q) => <button key={q} className="btn small" disabled={pending !== null} onClick={() => void say(q)}>{q}</button>)}
       </div>
-      <form className="row" onSubmit={(ev) => { ev.preventDefault(); say(text); }}>
+      <form className="row" onSubmit={(ev) => { ev.preventDefault(); void say(text); }}>
         <input type="text" value={text} onChange={(ev) => setText(ev.target.value)} placeholder={`Message ${e.cfg.name.split(' ')[0]}…`} maxLength={300} style={{ flex: 1 }} data-testid="talk-input" aria-label="Message" autoFocus />
         <button className="btn primary" type="submit" data-testid="talk-send">Send</button>
       </form>

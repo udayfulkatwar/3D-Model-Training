@@ -84,7 +84,7 @@ export function buildSchedule(seed: number, day: number, emp: EmployeeConfig, in
  * When an employee arrives at and leaves the building. Briefing attendees are in before it starts;
  * nobody leaves before their last meeting or break is over.
  */
-export function workingHours(seed: number, day: number, emp: EmployeeConfig, events: OfficeEvent[], blocks: Block[]): { arrive: number; leave: number } {
+export function workingHours(seed: number, day: number, emp: EmployeeConfig, events: OfficeEvent[], blocks: Block[]): { arrive: number; leave: number; late: number } {
   const r = (key: string) => hashRand(seed, 'hours', key, emp.id, day);
   let arrive: number;
   switch (emp.roleType) {
@@ -100,10 +100,13 @@ export function workingHours(seed: number, day: number, emp: EmployeeConfig, eve
   const mine = events.filter((e) => e.attendeeIds.includes(emp.id));
   const first = mine.length ? Math.min(...mine.map((e) => e.start)) : Infinity;
   arrive = Math.min(arrive, first - 20);
+  // now and then someone is held up on the way in (traffic, a late train) and arrives late
+  const late = r('late') < 0.07 ? Math.round(15 + r('lateBy') * 25) : 0;
+  arrive += late;
   let leave = (emp.roleType === 'trader' ? H(17, 10) : emp.roleType === 'coordinator' ? H(17, 30) : H(17, 30)) + r('l') * 90;
   const lastBusy = Math.max(0, ...mine.map((e) => e.end), ...blocks.map((b) => b.end));
   leave = Math.max(leave, lastBusy + 10);
-  return { arrive: Math.round(arrive), leave: Math.round(Math.min(leave, H(19, 10))) };
+  return { arrive: Math.round(arrive), leave: Math.round(Math.min(leave, H(19, 10))), late };
 }
 
 function discussionPartners(emp: EmployeeConfig, all: EmployeeConfig[]): EmployeeConfig[] {

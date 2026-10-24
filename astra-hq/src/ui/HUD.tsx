@@ -8,6 +8,7 @@ import { SPEEDS } from '../sim/constants';
 import { setSoundEnabled, playSound } from '../audio/sound';
 import { enterWalk } from '../scene/CameraController';
 import { Minimap } from './Minimap';
+import { connectLive } from '../live/feed';
 import { returnToReception, showOverview } from './actions';
 
 function Logo() {
@@ -58,6 +59,7 @@ export function TopBar() {
         ))}
         <button className="btn small" data-testid="reset" title="Restart the simulated day" onClick={() => { if (window.confirm('Restart the simulated day? Employee positions, markets and events reset (your office configuration is kept).')) { rebuildSim(sim.config); rerender(); useUI.getState().showToast('Simulation reset'); } }}>Reset</button>
       </div>
+      <LiveChip />
       <div className="bar-group secondary">
         <button className={`btn small ${mode === 'walk' || mode === 'seated' ? 'active' : ''}`} onClick={() => enterWalk(document.querySelector('canvas'), false)} title="First-person walkthrough">Walk</button>
         <button className={`btn small ${mode === 'overview' ? 'active' : ''}`} onClick={() => showOverview()} title="Building overview">Overview</button>
@@ -199,7 +201,7 @@ export function CenterOverlays() {
       {toastVisible && toast && <div className="toast" key={toast.id} data-testid="toast">{toast.text}</div>}
       {fade > 0 && <div className="fade" style={{ opacity: fade }} />}
       {showFps && <div className="fps" data-testid="fps">{fps} fps · {stats.calls} draw calls · {(stats.triangles / 1000).toFixed(0)}k tris · {stats.textures} textures</div>}
-      <div className="disclaimer">Office Simulation · fictional people · Simulated Data</div>
+      <div className="disclaimer">Office Simulation · fictional people · {getSim().live ? 'live prices (Co-Invest), paper trading only' : 'Simulated Data'}</div>
     </>
   );
 }
@@ -259,4 +261,19 @@ export function useShortcuts() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+}
+
+/** Live data status: green when Co-Invest prices are flowing; explains how to fix it otherwise. */
+function LiveChip() {
+  const live = useUI((s) => s.live);
+  useUI((s) => s.simVersion);
+  const color = live.state === 'live' ? 'var(--pos)' : live.state === 'stale' || live.state === 'connecting' ? 'var(--warn)' : live.state === 'off' ? 'var(--muted)' : 'var(--neg)';
+  const label = live.state === 'live' ? 'LIVE PRICES' : live.state === 'connecting' ? 'CONNECTING' : live.state === 'stale' ? 'PRICES STALE' : live.state === 'off' ? 'SIMULATED' : 'LIVE DATA OFF';
+  const age = live.updatedAt ? Math.max(0, Math.round((Date.now() - live.updatedAt) / 1000)) : null;
+  return (
+    <div className="bar-group" data-testid="live-chip" title={live.message}>
+      <span className="chip" style={{ borderColor: color, color }}>● {label}{age !== null && live.state !== 'off' ? ` · ${age}s` : ''}</span>
+      {live.state === 'needs-approval' && <button className="btn small" data-testid="live-allow" onClick={() => void connectLive(getSim, (s) => useUI.getState().setLive(s))}>Allow live prices</button>}
+    </div>
+  );
 }

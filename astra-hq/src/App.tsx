@@ -1,5 +1,6 @@
 import { Canvas } from '@react-three/fiber';
 import { useEffect, useState } from 'react';
+import { connectLive, disconnectLive } from './live/feed';
 import * as THREE from 'three';
 import { SceneRoot } from './scene/SceneRoot';
 import { PRESETS } from './scene/quality';
@@ -42,7 +43,9 @@ export function App() {
     // sound setting persists, but audio may only start after a user gesture
     const once = () => { if (useUI.getState().settings.sound) setSoundEnabled(true); };
     window.addEventListener('pointerdown', once, { once: true });
-    return () => window.removeEventListener('pointerdown', once);
+    // live market prices from the viewer's Co-Invest connector (read-only), when the page runs in claude.ai
+    void connectLive(getSim, (s) => useUI.getState().setLive(s));
+    return () => { disconnectLive(); window.removeEventListener('pointerdown', once); };
   }, []);
   if (!gl.ok) return <Fallback title="3D view unavailable" detail={gl.reason} />;
   if (contextLost) return <Fallback title="The graphics context was lost" detail="The browser reset the GPU context (often after a driver reset or running out of video memory). Reload the page; if it keeps happening, choose the Low graphics preset in Settings." />;

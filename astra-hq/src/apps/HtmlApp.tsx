@@ -120,7 +120,7 @@ export function HtmlApp({ view, onTab }: { view: AppView; onTab?: (i: number) =>
           </div>
         )}
         <span className="app-time">{view.time}</span>
-        <span className="sim-tag">Simulated Data</span>
+        <span className="sim-tag">{view.dataTag ?? 'Simulated Data'}</span>
       </div>
       {view.banner && <div className={`app-banner ${toneClass(view.banner.tone)}`}>{view.banner.text}</div>}
       <div className={`app-body layout-${view.layout}`}>

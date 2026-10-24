@@ -39,6 +39,10 @@ export interface StrategyResult {
   tested: number;
   symbols: string[];
   verdict: string;
+  /** 'backtest': chosen on practice sessions; 'forward': chosen from live regime data and proven on live paper trades. */
+  mode?: 'backtest' | 'forward';
+  /** Live paper results since the strategy went live. */
+  forward?: { trades: number; wins: number; pnl: number };
 }
 
 export interface ModuleResult { id: string; title: string; score: number; passed: boolean; day: number; minute: number }
@@ -50,6 +54,9 @@ export interface TrainingRecord {
   skill: number;
   modules: ModuleResult[];
   strategy?: StrategyResult;
+  /** Personal coaching after mistakes: one-to-one sessions with their manager. */
+  coaching?: { kind: string; text: string; day: number; status: 'due' | 'booked' | 'done' }[];
+  mistakes?: number;
 }
 
 export const CURRICULA: Record<RoleType, { id: string; title: string }[]> = {
@@ -302,4 +309,39 @@ export function trainStrategy(seed: number, symbols: string[]): StrategyResult {
     ? `Live: ${describeStrategy(best.s)} held up on unseen sessions (Sharpe ${valid.sharpe.toFixed(2)}, return ${pct(valid.total)}).`
     : `Not used: best in-sample ${describeStrategy(best.s)} (Sharpe ${best.m.sharpe.toFixed(2)}) did not hold up on unseen sessions (Sharpe ${valid.sharpe.toFixed(2)}, return ${pct(valid.total)}). Keep turnover low and hold core positions.`;
   return { strategy: best.s, active, train: best.m, valid, tested: STRATEGY_GRID.length, symbols, verdict };
+}
+
+// ------------------------------------------------------------------ live mode
+export interface Indicators { price: number; rsi?: number; sma20?: number; sma50?: number; sma200?: number }
+
+/**
+ * Live markets have no practice tape here, so the lab reads the current regime from real indicators
+ * (price vs 50/200-hour averages, RSI) and starts a forward test: small size, real prices, paper money.
+ * The strategy is promoted after 8 profitable round trips and suspended if it loses money.
+ */
+export function liveLabStrategy(symbols: string[], ind: Map<string, Indicators>): StrategyResult {
+  let trend = 0;
+  let read = 0;
+  const notes: string[] = [];
+  for (const sym of symbols) {
+    const i = ind.get(sym);
+    if (!i || i.sma50 === undefined || i.sma200 === undefined) continue;
+    read++;
+    const up = i.price > i.sma50 && i.sma50 > i.sma200;
+    const down = i.price < i.sma50 && i.sma50 < i.sma200;
+    trend += up ? 1 : down ? -1 : 0;
+    notes.push(`${sym} ${up ? 'up-trend' : down ? 'down-trend' : 'range'}${i.rsi !== undefined ? `, RSI ${i.rsi.toFixed(0)}` : ''}`);
+  }
+  const trending = read > 0 && Math.abs(trend) === read;
+  const strategy: TraderStrategy = trending
+    ? { kind: 'momentum', lookback: 20, threshold: 1.5, stopPct: 0.006 }
+    : { kind: 'meanrev', lookback: 20, threshold: 2.0, stopPct: 0.006 };
+  const none: BacktestMetrics = { total: 0, sharpe: 0, maxDD: 0, trades: 0, hitRate: 0, days: 0 };
+  const regime = read ? notes.join('; ') : 'no indicator data (connector unavailable)';
+  return {
+    strategy, active: read > 0, train: none, valid: none, tested: 2, symbols, mode: 'forward', forward: { trades: 0, wins: 0, pnl: 0 },
+    verdict: read
+      ? `Forward test: ${describeStrategy(strategy)} chosen from live regime (${regime}). Trades small on live prices (paper); promoted after 8 profitable round trips, suspended if it loses money.`
+      : 'Not used: no live indicator data, so no regime read. Hold core positions.',
+  };
 }

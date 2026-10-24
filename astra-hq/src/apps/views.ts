@@ -32,6 +32,14 @@ function instrumentRow(sim: Simulation, sym: string): string[] {
   return [sym, fmtPx(sym, px), fmtPct(sim.market.change(sym)), fmtPx(sym, px - spread), fmtPx(sym, px + spread)];
 }
 
+export function dataTag(sim: Simulation): string {
+  return sim.live ? 'Live prices · Paper' : 'Simulated Data';
+}
+
+/** Instrument slots by role (stable positions in INSTRUMENTS, whatever their current symbols). */
+const REF = { lead: 0, index: 6, rates: 7, energy: 9 } as const;
+const refSym = (k: keyof typeof REF) => INSTRUMENTS[REF[k]].sym;
+
 function feedBanner(sim: Simulation): AppView['banner'] {
   return sim.market.feedDelayed ? { text: `MARKET DATA DELAYED · ${sim.tech.incident.id} under investigation`, tone: 'warn' } : undefined;
 }
@@ -47,7 +55,7 @@ export function buildAppView(sim: Simulation, monitorId: string): AppView {
   const base: AppView = {
     key: monitorId, appId: st.appId, title: app.title, tabs: app.tabs, tab: st.tab,
     employeeName: e?.cfg.name ?? 'Unassigned', employeeId: e?.cfg.id, workstationLabel: ws.label,
-    time: fmtTime(sim.minute), minute: m, theme: app.theme, layout: 'stack', widgets: [], status: presence(sim, e),
+    time: fmtTime(sim.minute), minute: m, theme: app.theme, layout: 'stack', widgets: [], status: presence(sim, e), dataTag: dataTag(sim),
   };
   const v = base;
   const tab = st.tab;
@@ -59,7 +67,7 @@ export function buildAppView(sim: Simulation, monitorId: string): AppView {
         v.widgets.push({ type: 'table', title: 'Market overview', columns: ['Sym', 'Last', 'Chg', 'Bid', 'Ask'], align: ['l', 'r', 'r', 'r', 'r'], rows: INSTRUMENTS.map((i) => instrumentRow(sim, i.sym)), tones: INSTRUMENTS.map((i) => [undefined, undefined, tone(sim.market.change(i.sym))]) });
         break;
       }
-      const sym = t?.coverage[tab] ?? t?.coverage[0] ?? 'SX5F';
+      const sym = t?.coverage[tab] ?? t?.coverage[0] ?? refSym('index');
       const inst = INSTRUMENTS[INSTRUMENT_INDEX.get(sym)!];
       const pos = t?.positions.get(sym);
       const px = sim.market.price(sym);
@@ -77,7 +85,7 @@ export function buildAppView(sim: Simulation, monitorId: string): AppView {
       const t = e ? sim.finance.traders.get(e.cfg.id) : undefined;
       v.banner = feedBanner(sim);
       if (tab === 0) {
-        const syms = [...new Set([...(t?.coverage ?? []), ...Object.keys(BOOK_INDEX.get(bookOf(sim, e))!.base), 'SX5F'])];
+        const syms = [...new Set([...(t?.coverage ?? []), ...Object.keys(BOOK_INDEX.get(bookOf(sim, e))!.base), refSym('index')])];
         v.widgets.push({ type: 'table', title: 'Watchlist', columns: ['Sym', 'Last', 'Chg', 'Bid', 'Ask'], align: ['l', 'r', 'r', 'r', 'r'], rows: syms.map((s) => instrumentRow(sim, s)), tones: syms.map((s) => [undefined, undefined, tone(sim.market.change(s))]) });
       } else {
         const orders = t?.orders ?? [];
@@ -122,7 +130,7 @@ export function buildAppView(sim: Simulation, monitorId: string): AppView {
     }
     case 'res-report': {
       const w = e?.work;
-      const sym = w?.sym ?? 'AURX';
+      const sym = INSTRUMENT_INDEX.has(w?.sym ?? '') ? w!.sym : refSym('lead');
       const px = sim.market.price(sym);
       if (tab === 0) {
         v.theme = 'light';
@@ -147,14 +155,14 @@ export function buildAppView(sim: Simulation, monitorId: string): AppView {
           `${fmtTime(sim.minute)} ${sym} ${fmtPx(sym, px)} - watching the ${fmtPct(sim.market.change(sym))} move`,
           `${fmtTime(Math.max(0, m - 37))} Call with sector specialist (summary filed)`,
           `${fmtTime(Math.max(0, m - 85))} Updated peer multiples table`,
-          `${fmtTime(Math.max(0, m - 140))} Read-through from Kestrel logistics volumes`,
+          `${fmtTime(Math.max(0, m - 140))} Read-through from sector peers' latest results`,
           'TODO: send model to PM before the research review',
         ] });
       }
       break;
     }
     case 'res-model': {
-      const sym = e?.work.sym ?? 'AURX';
+      const sym = INSTRUMENT_INDEX.has(e?.work.sym ?? '') ? e!.work.sym : refSym('lead');
       const peers = [sym, ...INSTRUMENTS.filter((i) => i.sym !== sym && i.kind === 'equity').slice(0, 3).map((i) => i.sym)];
       const rows = peers.map((s, k) => {
         const px = sim.market.price(s);
@@ -456,7 +464,7 @@ function occupancyBars(sim: Simulation): Widget {
 export function buildPanelView(sim: Simulation, panelId: string, companyName: string): AppView {
   const p = PANELS.find((x) => x.id === panelId)!;
   const m = Math.floor(sim.minute);
-  const v: AppView = { key: panelId, appId: 'panel', title: p.label, tabs: [], tab: 0, employeeName: '', workstationLabel: roomById(p.roomId)?.name ?? '', time: fmtTime(sim.minute), minute: m, theme: 'dark', layout: 'stack', widgets: [] };
+  const v: AppView = { key: panelId, appId: 'panel', title: p.label, tabs: [], tab: 0, employeeName: '', workstationLabel: roomById(p.roomId)?.name ?? '', time: fmtTime(sim.minute), minute: m, theme: 'dark', layout: 'stack', widgets: [], dataTag: dataTag(sim) };
   switch (p.kind) {
     case 'roomDisplay': {
       const room = roomById(p.roomId)!;
@@ -495,13 +503,14 @@ export function buildPanelView(sim: Simulation, panelId: string, companyName: st
       break;
     }
     case 'marketWall': {
-      v.title = `${companyName} Markets · Simulated Data`;
+      v.title = `${companyName} Markets · ${dataTag(sim)}`;
       v.layout = 'grid';
       v.banner = feedBanner(sim);
       const shock = sim.market.shocks.find((s) => m >= s.minute && m < s.minute + 90);
       if (shock && !v.banner) v.banner = { text: `NEWS ${fmtTime(shock.minute)} · ${shock.label}`, tone: 'warn' };
       v.widgets.push({ type: 'table', title: 'Instruments', columns: ['Sym', 'Name', 'Last', 'Chg'], align: ['l', 'l', 'r', 'r'], rows: INSTRUMENTS.map((i) => [i.sym, i.name, fmtPx(i.sym, sim.market.price(i.sym)), fmtPct(sim.market.change(i.sym))]), tones: INSTRUMENTS.map((i) => [undefined, 'muted', undefined, tone(sim.market.change(i.sym))]) });
-      for (const sym of ['SX5F', 'CRDX', 'TY10']) v.widgets.push({ type: 'chart', title: `${sym} ${fmtPx(sym, sim.market.price(sym))} (${fmtPct(sim.market.change(sym))})`, series: sim.market.series(sym, 240), baseline: sim.market.prevClose[INSTRUMENT_INDEX.get(sym)!] });
+      if (sim.news.length) v.widgets.push({ type: 'text', title: 'Headlines (live, Co-Invest)', lines: sim.news.slice(0, 6).map((n) => `${n.title} — ${n.source}`) });
+      for (const sym of [refSym('index'), refSym('energy'), refSym('rates')]) v.widgets.push({ type: 'chart', title: `${sym} ${fmtPx(sym, sim.market.price(sym))} (${fmtPct(sim.market.change(sym))})`, series: sim.market.series(sym, 240), baseline: sim.market.prevClose[INSTRUMENT_INDEX.get(sym)!] });
       v.widgets.push(booksTable(sim));
       break;
     }

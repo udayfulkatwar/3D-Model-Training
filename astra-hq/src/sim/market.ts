@@ -35,7 +35,7 @@ export const INSTRUMENTS: Instrument[] = [
 ];
 
 export const INSTRUMENT_INDEX = new Map(INSTRUMENTS.map((i, k) => [i.sym, k]));
-const SECTORS = [...new Set(INSTRUMENTS.map((i) => i.sector))];
+let SECTORS = [...new Set(INSTRUMENTS.map((i) => i.sector))];
 const MINUTES_PER_DAY = 510; // 08:30-17:00 trading session
 /**
  * Mild intraday persistence of each fictional instrument's own moves (positive = trends, negative = mean
@@ -45,6 +45,49 @@ export const PERSISTENCE: Record<string, number> = {
   AURX: 0.12, ORBL: 0.14, MRDN: -0.12, KSTL: -0.1, VNTA: 0.08, HLNE: 0.1,
   SX5F: 0.06, TY10: -0.1, EURS: -0.08, CRDX: 0.12, HLN31: -0.12, KST29: -0.12,
 };
+
+/**
+ * Live mode: each office instrument slot is mapped to a real market read from the Co-Invest connector
+ * (read-only). Prices are real; positions, orders and P&L stay paper.
+ */
+export interface LiveSlot { from: string; sym: string; feed: string; name: string; sector: string; kind: InstrumentKind; vol: number; decimals: number }
+export const LIVE_UNIVERSE: LiveSlot[] = [
+  { from: 'AURX', sym: 'NVDA', feed: 'xyz:NVDA', name: 'NVIDIA', sector: 'Semiconductors', kind: 'equity', vol: 0.03, decimals: 2 },
+  { from: 'ORBL', sym: 'MU', feed: 'xyz:MU', name: 'Micron Technology', sector: 'Semiconductors', kind: 'equity', vol: 0.035, decimals: 2 },
+  { from: 'MRDN', sym: 'AAPL', feed: 'xyz:AAPL', name: 'Apple', sector: 'Technology', kind: 'equity', vol: 0.016, decimals: 2 },
+  { from: 'KSTL', sym: 'TSLA', feed: 'xyz:TSLA', name: 'Tesla', sector: 'Autos', kind: 'equity', vol: 0.035, decimals: 2 },
+  { from: 'VNTA', sym: 'SNDK', feed: 'xyz:SNDK', name: 'SanDisk', sector: 'Storage', kind: 'equity', vol: 0.04, decimals: 2 },
+  { from: 'HLNE', sym: 'SKHX', feed: 'xyz:SKHX', name: 'SK hynix', sector: 'Semiconductors', kind: 'equity', vol: 0.03, decimals: 2 },
+  { from: 'SX5F', sym: 'SPX', feed: 'xyz:SP500', name: 'S&P 500 (perp)', sector: 'Index', kind: 'index', vol: 0.01, decimals: 1 },
+  { from: 'TY10', sym: 'GOLD', feed: 'xyz:GOLD', name: 'Gold (perp)', sector: 'Metals', kind: 'future', vol: 0.012, decimals: 1 },
+  { from: 'EURS', sym: 'NDX', feed: 'xyz:XYZ100', name: 'NASDAQ 100 (perp)', sector: 'Index', kind: 'index', vol: 0.013, decimals: 1 },
+  { from: 'CRDX', sym: 'WTI', feed: 'xyz:CL', name: 'WTI crude oil (perp)', sector: 'Energy', kind: 'future', vol: 0.025, decimals: 2 },
+  { from: 'HLN31', sym: 'BTC', feed: 'BTC', name: 'Bitcoin (perp)', sector: 'Crypto', kind: 'future', vol: 0.03, decimals: 0 },
+  { from: 'KST29', sym: 'ETH', feed: 'ETH', name: 'Ether (perp)', sector: 'Crypto', kind: 'future', vol: 0.04, decimals: 2 },
+];
+
+let liveUniverse = false;
+export function isLiveUniverse(): boolean {
+  return liveUniverse;
+}
+
+/** Rename the instrument slots to the real markets (once). Returns the old→new symbol map. */
+export function applyLiveUniverse(): Map<string, string> {
+  const map = new Map(LIVE_UNIVERSE.map((s) => [s.from, s.sym]));
+  if (liveUniverse) return map;
+  liveUniverse = true;
+  for (const inst of INSTRUMENTS) {
+    const s = LIVE_UNIVERSE.find((x) => x.from === inst.sym);
+    if (!s) continue;
+    Object.assign(inst, { sym: s.sym, name: s.name, sector: s.sector, kind: s.kind, vol: s.vol, decimals: s.decimals, mult: 1 });
+  }
+  INSTRUMENT_INDEX.clear();
+  INSTRUMENTS.forEach((i, k) => INSTRUMENT_INDEX.set(i.sym, k));
+  SECTORS = [...new Set(INSTRUMENTS.map((i) => i.sector))];
+  return map;
+}
+
+export interface LiveQuote { px: number; change24h: number }
 
 export interface Shock {
   minute: number; // sim minute of day when it starts
@@ -66,6 +109,8 @@ export class Market {
   day = 0;
   shocks: Shock[] = [];
   feedDelayed = false;
+  /** Prices come from the live feed instead of the model. */
+  liveMode = false;
   /** Previous minute's idiosyncratic shock per instrument (for the persistence term). */
   private lastIdio: number[] = INSTRUMENTS.map(() => 0);
 
@@ -86,6 +131,37 @@ export class Market {
     this.history = this.prices.map((p) => [p]);
     this.historyStart = startMinute;
     this.lastMinute = startMinute;
+  }
+
+  /** Switch to live prices (keyed by the instrument's current symbol). */
+  applyLive(q: Map<string, LiveQuote>) {
+    this.liveMode = true;
+    this.shocks = [];
+    INSTRUMENTS.forEach((inst, k) => {
+      const v = q.get(inst.sym);
+      if (!v || !(v.px > 0)) return;
+      const prev = v.px / (1 + v.change24h / 100);
+      const ratio = prev / this.daily[k][this.daily[k].length - 1];
+      this.daily[k] = this.daily[k].map((x) => x * ratio);
+      this.prices[k] = v.px;
+      this.prevClose[k] = prev;
+      this.open[k] = prev;
+      this.history[k] = [v.px];
+    });
+  }
+
+  /** A new live snapshot: record a tick per changed price; the 24h change sets the reference close. */
+  updateLive(q: Map<string, LiveQuote>) {
+    INSTRUMENTS.forEach((inst, k) => {
+      const v = q.get(inst.sym);
+      if (!v || !(v.px > 0)) return;
+      this.prevClose[k] = v.px / (1 + v.change24h / 100);
+      if (v.px === this.prices[k] && this.history[k].length > 1) return;
+      this.prices[k] = v.px;
+      const h = this.history[k];
+      h.push(v.px);
+      if (h.length > 720) h.shift();
+    });
   }
 
   /** Begin a new session day: yesterday's close becomes prev close; history restarts. */
@@ -111,6 +187,7 @@ export class Market {
   }
 
   private stepMinute(m: number) {
+    if (this.liveMode) return; // live prices move only when the feed updates
     // Quieter outside the session; a common market factor plus a sector factor plus noise.
     const session = m >= 8 * 60 + 30 && m <= 17 * 60 ? 1 : 0.25;
     const g = (key: string | number, k: number) => gaussian(hashRand(this.seed, this.day, m, key, k, 'u'), hashRand(this.seed, this.day, m, key, k, 'v'));

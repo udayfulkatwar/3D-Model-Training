@@ -10,13 +10,13 @@ import { findPath, nearestWalkable, type Waypoint } from '../world/nav';
 import { fmtMoney, fmtTime } from '../util/math';
 import { hashRand } from '../util/rng';
 import { APPS, appFor, type AppId } from './apps';
-import { DAY_END, DAY_START, MARKET_CLOSE, REALTIME_MIN_PER_SEC, SIM_MIN_PER_REAL_SEC, WALK_SPEED, type Speed } from './constants';
+import { DAY_END, DAY_START, MARKET_CLOSE, MARKET_OPEN, REALTIME_MIN_PER_SEC, SIM_MIN_PER_REAL_SEC, WALK_SPEED, type Speed } from './constants';
 import { BOOKABLE_FOR_REVIEW, INCIDENT_START, SHOCK_MINUTE, scheduledEvents, type OfficeEvent } from './events';
 import { BOOK_INDEX, BOOKS, FIRM_CAPITAL, Finance, type RiskAlert } from './finance';
-import { INSTRUMENTS, Market, fmtPx } from './market';
+import { INSTRUMENTS, INSTRUMENT_INDEX, Market, applyLiveUniverse, fmtPx, isLiveUniverse, type LiveQuote } from './market';
 import { buildSchedule, workingHours, type Block } from './schedule';
 import { Tech } from './tech';
-import { CURRICULA, STRATEGY_GRID, TRAIN_DAYS, VALID_DAYS, baseSkill, certified, completeModule, describeStrategy, newRecord, practiceTape, skillFactor, trainStrategy, type TrainingRecord } from './training';
+import { CURRICULA, STRATEGY_GRID, liveLabStrategy, TRAIN_DAYS, VALID_DAYS, baseSkill, certified, completeModule, describeStrategy, newRecord, practiceTape, skillFactor, trainStrategy, type TrainingRecord } from './training';
 
 export type Activity = 'working' | 'reviewing' | 'walking' | 'meeting' | 'cafe' | 'returning' | 'discussing' | 'investigating' | 'break' | 'away';
 export const ACTIVITIES: Activity[] = ['working', 'reviewing', 'walking', 'meeting', 'cafe', 'returning', 'discussing', 'investigating', 'break', 'away'];
@@ -105,7 +105,7 @@ export interface Employee {
   startedBlocks: Set<string>;
   history: HistoryEntry[];
   schedule: Block[];
-  work: { title: string; words: number; sym: string; file: string; line: number };
+  work: { title: string; words: number; sym: string; file: string; line: number; published: number };
   lastAction: { t: number; text: string } | null;
   doorToClose: { id: string; x: number; z: number } | null;
   laneOffset: number;
@@ -118,7 +118,7 @@ export interface Employee {
   /** CEO courtesy: stand up when the owner enters the office, sit again afterwards. */
   greet: { stage: 'up' | 'hold' | 'down'; t: number } | null;
   /** Today's arrival and departure times (simulated minutes). */
-  hours: { arrive: number; leave: number };
+  hours: { arrive: number; leave: number; late: number };
   /** Access-control record for today: when the badge was used at the entrance. */
   badge: { in: number | null; out: number | null };
   liftTrip: LiftTrip | null;
@@ -128,9 +128,41 @@ export interface MonitorState { appId: AppId; tab: number; pinnedUntil: number; 
 
 export interface CafeOrder { id: number; t: number; empId: string; name: string; drink: string; status: 'queued' | 'preparing' | 'ready' | 'collected'; readyAt: number }
 
+/** Work passed between people: research ideas (research → PM → trader), error-trade corrections, build fixes. */
+export interface Ticket {
+  id: number;
+  t: number;
+  day: number;
+  kind: 'idea' | 'error-trade' | 'build-fix';
+  title: string;
+  from: string;
+  to: string;
+  status: 'open' | 'approved' | 'executed' | 'rejected' | 'fixed' | 'caught';
+  log: { t: number; text: string }[];
+  sym?: string;
+  side?: 'BUY' | 'SELL';
+  entry?: number;
+  execAt?: number;
+  result?: number;
+  orderId?: string;
+  fixAt?: number;
+  excess?: number;
+  px?: number;
+}
+
+/** Human error, as in any real office. Each one is followed up (and most lead to a coaching session). */
+export interface Mistake { id: number; t: number; day: number; empId: string; kind: 'fat-finger' | 'late' | 'build-failed'; text: string; caught: boolean; cost: number }
+
 export interface LogEntry { t: number; day: number; text: string; kind: 'event' | 'risk' | 'tech' | 'trade' | 'office' | 'door' }
 
 const DRINKS = ['Flat white', 'Espresso', 'Americano', 'Cappuccino', 'Green tea', 'Oat latte', 'Cortado', 'Sparkling water'];
+const LIVE_RESEARCH_TOPICS = [
+  { title: 'NVIDIA: data-centre demand and margin outlook', sym: 'NVDA' },
+  { title: 'Memory cycle: MU, SK hynix and SanDisk pricing', sym: 'MU' },
+  { title: 'Gold vs real yields: positioning review', sym: 'GOLD' },
+  { title: 'Crude oil supply risk and the WTI curve', sym: 'WTI' },
+  { title: 'Bitcoin and ether: funding, flows and volatility', sym: 'BTC' },
+];
 const RESEARCH_TOPICS = [
   { title: 'Sector rotation outlook: energy vs technology', sym: 'HLNE' },
   { title: 'Aurex Systems: cloud segment growth drivers', sym: 'AURX' },
@@ -168,6 +200,13 @@ export class Simulation {
   private orderSeq = 100;
   private ownerSeq = 1;
   private ceoGreetArmed = true;
+  /** Latest live quotes (Co-Invest, read-only) when live data is connected. */
+  liveQuotes: Map<string, LiveQuote> | null = null;
+  liveUpdatedAt = 0;
+  /** Recent market headlines from the live feed. */
+  news: { title: string; source: string }[] = [];
+  /** Live technical indicators per symbol (for the live strategy lab). */
+  indicators = new Map<string, { price: number; rsi?: number; sma20?: number; sma50?: number; sma200?: number }>();
   /** Clock runs at real time (1 simulated minute per real minute) instead of the 20× office clock. */
   realtime = false;
   /** Training records (skills, modules passed, traders' strategies). Survive resets and reloads. */
@@ -177,6 +216,10 @@ export class Simulation {
   /** Called after training results change (the app saves them locally). */
   onTrainingChange?: (records: TrainingRecord[]) => void;
   private academySeq = 1;
+  tickets: Ticket[] = [];
+  mistakes: Mistake[] = [];
+  private ticketSeq = 1;
+  private seenBuilds = new Set<number>();
   private eodSentDay = -1;
 
   constructor(config: OfficeConfig) {
@@ -201,7 +244,8 @@ export class Simulation {
     this.ownerMessages = [];
     this.ceoGreetArmed = true;
     this.market = new Market(this.seed, DAY_START);
-    this.addShocks();
+    if (this.liveQuotes) this.market.applyLive(this.liveQuotes);
+    else this.addShocks();
     const emps = this.config.employees;
     this.finance = new Finance(
       this.seed, this.market,
@@ -214,6 +258,15 @@ export class Simulation {
     for (const e of this.employees) this.wsOwner.set(e.ws.id, e.cfg.id);
     this.academyQueue = [];
     this.eodSentDay = -1;
+    this.tickets = [];
+    this.mistakes = [];
+    this.seenBuilds.clear();
+    this.finance.fatFinger = (empId, oid) => hashRand(this.seed, 'fatfinger', oid, this.day) < 0.006 * (1.5 - this.skillOf(empId) / 100);
+    this.finance.preTradeCatch = (_empId, oid) => {
+      const risk = this.employees.filter((x) => x.cfg.roleType === 'risk' && this.onSite(x));
+      const p = risk.length ? 0.55 + 0.004 * (risk.reduce((a, x) => a + this.skillOf(x.cfg.id), 0) / risk.length) : 0.25;
+      return hashRand(this.seed, 'pretrade', oid, this.day) < p;
+    };
     this.applyTraining();
     this.startDay();
     this.initMonitors();
@@ -226,7 +279,8 @@ export class Simulation {
   private makeEmployee(cfg: EmployeeConfig, index: number): Employee {
     const ws = WS_INDEX.get(cfg.workstationId)!;
     const seat = SEAT_INDEX.get(ws.seatId)!;
-    const topic = RESEARCH_TOPICS[index % RESEARCH_TOPICS.length];
+    const topics = isLiveUniverse() ? LIVE_RESEARCH_TOPICS : RESEARCH_TOPICS;
+    const topic = topics[index % topics.length];
     const e: Employee = {
       cfg, index, ws, floor: ws.floor, x: seat.x, y: seat.y, z: seat.z, heading: seat.heading, pose: 'sitType',
       activity: 'working', task: '', intent: { kind: 'desk' }, intentKey: 'desk', seatId: seat.id, target: seat, at: seat, phase: 'seated',
@@ -234,9 +288,9 @@ export class Simulation {
       speed: WALK_SPEED * (0.9 + hashRand(this.seed, 'speed', cfg.id) * 0.2),
       deskMode: 'working', deskModeUntil: DAY_START + 3 + Math.floor(hashRand(this.seed, 'dm', cfg.id) * 10),
       discussWith: null, coffeePhase: null, coffeeUntil: 0, startedBlocks: new Set(), history: [], schedule: [],
-      work: { title: topic.title, sym: topic.sym, words: 600 + Math.floor(hashRand(this.seed, 'words', cfg.id) * 900), file: DEV_FILES[index % DEV_FILES.length], line: 40 + Math.floor(hashRand(this.seed, 'line', cfg.id) * 200) },
+      work: { title: topic.title, sym: topic.sym, words: 600 + Math.floor(hashRand(this.seed, 'words', cfg.id) * 900), file: DEV_FILES[index % DEV_FILES.length], line: 40 + Math.floor(hashRand(this.seed, 'line', cfg.id) * 200), published: 0 },
       lastAction: null, doorToClose: null, laneOffset: (hashRand(this.seed, 'lane', cfg.id) - 0.5) * 0.24,
-      order: null, chat: [], talking: false, greet: null, hours: { arrive: DAY_START, leave: DAY_END }, badge: { in: null, out: null }, liftTrip: null,
+      order: null, chat: [], talking: false, greet: null, hours: { arrive: DAY_START, leave: DAY_END, late: 0 }, badge: { in: null, out: null }, liftTrip: null,
     };
     this.reservations.set(seat.id, cfg.id);
     return e;
@@ -248,12 +302,14 @@ export class Simulation {
       e.schedule = buildSchedule(this.seed, this.day, e.cfg, e.index, e.ws.floor, this.config.employees, this.events);
       e.startedBlocks.clear();
       e.hours = workingHours(this.seed, this.day, e.cfg, this.events, e.schedule);
+      e.work.published = Math.floor(e.work.words / 2000);
       this.placeAway(e);
       e.badge = { in: null, out: null };
       this.pushHistory(e, `Day ${this.day + 1}: due in at ${fmtTime(e.hours.arrive)}`);
     }
     this.applyTechSkill();
     if (this.academyQueue.length) this.scheduleCohorts();
+    this.scheduleCoaching();
     this.addLog(`Simulated day ${this.day + 1} begins. ${this.events.length} meetings scheduled.`, 'office');
   }
 
@@ -358,7 +414,7 @@ export class Simulation {
     this.minute = DAY_START;
     this.lastMinute = DAY_START;
     this.market.newDay(this.day, DAY_START);
-    this.addShocks();
+    if (!this.market.liveMode) this.addShocks();
     this.finance.newDay();
     this.tech.newDay(INCIDENT_START);
     this.cafeOrders = [];
@@ -394,6 +450,8 @@ export class Simulation {
     if (m === 17 * 60 + 20 && this.eodSentDay !== this.day) this.sendEndOfDayReport();
     for (const e of this.employees) this.decide(e, m);
     this.updateDeskWork(m);
+    this.updateWorkflow(m);
+    this.drainStrategyEvents();
     this.updateCafe(m);
     this.version++;
   }
@@ -428,6 +486,7 @@ export class Simulation {
 
   private onEventEnd(ev: OfficeEvent, m: number) {
     if (ev.academy) this.finishAcademySession(ev, m);
+    if (ev.kind === 'coaching') this.finishCoaching(ev, m);
     if (ev.kind === 'risk-review' && ev.alertId) {
       const a = this.finance.alerts.find((x) => x.id === ev.alertId);
       if (a && a.status !== 'resolved') {
@@ -484,7 +543,12 @@ export class Simulation {
         notes.push('Video call in progress (remote candidate)');
         break;
       case 'training':
-        notes.push('Module 2 of 3: information barriers');
+        if (ev.academy) { for (const a of ev.agenda) notes.push(`Module: ${a}`); notes.push(`In the room: ${this.presentAttendees(ev).length}/${ev.attendeeIds.length}`); }
+        else notes.push('Module 2 of 3: information barriers');
+        break;
+      case 'coaching':
+        notes.push('One-to-one coaching');
+        for (const a of ev.agenda) notes.push(a);
         break;
       case 'owner-meeting':
         notes.push('Called by the company owner');
@@ -756,7 +820,13 @@ export class Simulation {
     if (e.phase === 'away') {
       this.pushHistory(e, 'Arrived at the office (badged in at the entrance)');
       this.addLog(`${e.cfg.name} badged in at the entrance`, 'office');
-      if (e.badge.in === null) e.badge.in = Math.floor(this.minute);
+      if (e.badge.in === null) {
+        e.badge.in = Math.floor(this.minute);
+        if (e.hours.late > 0) {
+          const missed = this.events.find((ev) => ev.attendeeIds.includes(e.cfg.id) && ev.start < this.minute && ev.status !== 'completed' && ev.status !== 'cancelled');
+          this.recordMistake(e.cfg.id, 'late', `Arrived ${e.hours.late} min late (held up on the way in)${missed ? `; joined ${missed.title} late` : ''}`, false, 0);
+        }
+      }
       // called in early (e.g. by the owner): they stay for the day rather than going home again
       if (this.minute < e.hours.arrive) e.hours.arrive = Math.floor(this.minute);
     }
@@ -1243,7 +1313,9 @@ export class Simulation {
         case 'trader': {
           if (remoteMeeting) break;
           const o = this.finance.traderDecision(e.cfg.id, this.day, m);
-          if (o) {
+          if (o && o.status === 'cancelled') {
+            e.lastAction = { t: m, text: `Order for ${o.qty.toLocaleString()} ${o.sym} blocked by the risk pre-trade check (keyed 10× size); re-entering` };
+          } else if (o) {
             e.lastAction = { t: m, text: `${o.type === 'MKT' ? 'Executed' : 'Working'} ${o.side} ${o.qty.toLocaleString()} ${o.sym}${o.type === 'LMT' ? ` limit ${fmtPx(o.sym, o.limit!)}` : ` at ${fmtPx(o.sym, o.fillPx!)}`} - ${o.reason}` };
             if (hashRand(this.seed, 'logtrade', o.id) < 0.25 || o.reason.startsWith('Risk')) this.addLog(`${e.cfg.name}: ${e.lastAction.text}`, 'trade');
           }
@@ -1631,6 +1703,57 @@ export class Simulation {
     return reply;
   }
 
+  /** The owner's line in a conversation answered elsewhere (Claude, in the browser). */
+  ownerSaid(id: string, text: string) {
+    const e = this.byId.get(id);
+    const said = text.trim().slice(0, 600);
+    if (!e || !said) return;
+    e.chat.push({ t: Math.floor(this.minute), day: this.day, from: 'owner', text: said });
+    if (e.chat.length > 60) e.chat.shift();
+    this.pushHistory(e, `Spoke with the owner (${this.talkMode(id)})`);
+    this.version++;
+  }
+
+  /** An employee's reply (from Claude) goes to the chat and the owner's inbox. */
+  employeeSays(id: string, text: string) {
+    const e = this.byId.get(id);
+    if (e && text.trim()) this.ownerMessage(e, text.trim().slice(0, 1500));
+  }
+
+  /** Scripted reply without recording anything (fallback when Claude is unavailable). */
+  scriptedReply(id: string, text: string): string {
+    const e = this.byId.get(id);
+    return e ? this.composeReply(e, text.toLowerCase()) : '';
+  }
+
+  /** What an employee knows right now: the context their (Claude) replies are grounded in. */
+  briefingFor(id: string): string {
+    const e = this.byId.get(id);
+    if (!e) return '';
+    const m = Math.floor(this.minute);
+    const lines: string[] = [];
+    lines.push(`Time: ${fmtTime(m)}, day ${this.day + 1}. Market data: ${this.live ? 'LIVE prices from Co-Invest (read-only); all orders are paper' : 'simulated fictional market'}.`);
+    lines.push(`You: ${e.cfg.name}, ${e.cfg.title} (${ROLE_LABELS[e.cfg.roleType]}), ${e.cfg.department}. Desk ${e.ws.label}.`);
+    lines.push(`Now: ${ACTIVITY_LABEL[e.activity]}; ${e.task}; location ${this.roomName(e)}; talking ${this.talkMode(id)}.`);
+    lines.push(`Hours today: due ${fmtTime(e.hours.arrive)}-${fmtTime(e.hours.leave)}${e.badge.in !== null ? `, badged in ${fmtTime(e.badge.in)}` : ''}${e.badge.out !== null ? `, left ${fmtTime(e.badge.out)}` : ''}.`);
+    lines.push(`Work: ${this.statusLine(e)}`);
+    lines.push(`Training: ${this.trainingLine(e)}`);
+    const next = this.events.filter((ev) => ev.attendeeIds.includes(e.cfg.id) && ev.status !== 'completed' && ev.status !== 'cancelled').slice(0, 3);
+    if (next.length) lines.push(`Meetings: ${next.map((ev) => `${ev.title} ${fmtTime(ev.start)} ${roomById(ev.roomId)?.name} (${ev.status})`).join('; ')}`);
+    if (e.order) lines.push(`Owner's current instruction: ${e.order.kind === 'task' ? `task "${e.order.text}" due ${fmtTime(e.order.until)}` : e.order.kind === 'come' ? 'come to the owner' : `wait in ${roomById(e.order.roomId)?.name}`}`);
+    const t = this.finance.traders.get(e.cfg.id);
+    if (t) {
+      lines.push(`Positions: ${[...t.positions.values()].filter((p) => p.qty).map((p) => `${p.sym} ${p.qty} @ avg ${fmtPx(p.sym, p.avg)} (last ${fmtPx(p.sym, this.market.price(p.sym))})`).join('; ')}`);
+      lines.push(`Recent orders: ${t.orders.slice(0, 4).map((o) => `${fmtTime(o.t)} ${o.side} ${o.qty} ${o.sym} ${o.status} (${o.reason})`).join('; ') || 'none'}`);
+    }
+    if (e.cfg.roleType === 'ceo' || e.cfg.roleType === 'pm' || e.cfg.roleType === 'risk') {
+      for (const s of this.ceoReport().sections) lines.push(`${s.title}: ${s.lines.join(' | ')}`);
+    }
+    if (this.news.length && (e.cfg.roleType === 'ceo' || e.cfg.roleType === 'researcher' || e.cfg.roleType === 'trader' || e.cfg.roleType === 'pm')) lines.push(`Headlines: ${this.news.slice(0, 5).map((n) => n.title).join(' | ')}`);
+    lines.push(`Recent activity: ${e.history.slice(0, 5).map((h) => `${fmtTime(h.t)} ${h.text}`).join('; ')}`);
+    return lines.join('\n');
+  }
+
   private composeReply(e: Employee, q: string): string {
     const m = Math.floor(this.minute);
     const first = e.cfg.name.split(' ')[0];
@@ -1757,6 +1880,37 @@ export class Simulation {
     if (ownerSeated) this.pushHistory(e, 'Sat down after the owner took a seat');
   }
 
+  // ------------------------------------------------------------------ live market data (read-only)
+  get live(): boolean {
+    return !!this.liveQuotes;
+  }
+
+  /**
+   * Connect live prices: the instrument slots become real markets, the books are re-keyed and the day
+   * restarts with positions sized at live prices. Orders and P&L remain paper.
+   */
+  goLive(q: Map<string, LiveQuote>) {
+    const renamed = applyLiveUniverse();
+    for (const b of BOOKS) {
+      b.base = Object.fromEntries(Object.entries(b.base).map(([k, v]) => [renamed.get(k) ?? k, v]));
+      if (b.id === 'credit') { b.name = 'Digital Assets'; b.short = 'Digital'; }
+    }
+    this.liveQuotes = new Map(q);
+    this.liveUpdatedAt = Date.now();
+    const speed = this.speed;
+    this.reset();
+    this.speed = speed;
+    this.addLog('Live market data connected (Co-Invest, read-only). Paper trading on live prices.', 'office');
+  }
+
+  updateLive(q: Map<string, LiveQuote>) {
+    if (!this.liveQuotes) return;
+    for (const [k, v] of q) this.liveQuotes.set(k, v);
+    this.market.updateLive(q);
+    this.liveUpdatedAt = Date.now();
+    this.version++;
+  }
+
   // ------------------------------------------------------------------ training (ASTRA Academy)
   skillOf(id: string): number {
     return this.training.get(id)?.skill ?? baseSkill(this.seed, id);
@@ -1791,8 +1945,31 @@ export class Simulation {
     for (const r of this.training.values()) {
       const t = this.finance.traders.get(r.empId);
       // a strategy is tied to the symbols it was trained on; a new desk means training again
-      if (t && r.strategy && r.strategy.symbols.join() === t.coverage.join()) this.finance.strategies.set(r.empId, { s: r.strategy.strategy, active: r.strategy.active });
+      if (t && r.strategy && r.strategy.symbols.join() === t.coverage.join()) this.setStrategy(r.empId, r.strategy);
     }
+  }
+
+  private setStrategy(empId: string, r: NonNullable<TrainingRecord['strategy']>) {
+    const forward = r.forward ?? { trades: 0, wins: 0, pnl: 0 };
+    r.forward = forward;
+    this.finance.strategies.set(empId, { s: r.strategy, active: r.active, size: r.mode === 'forward' && forward.trades < 8 ? 0.1 : 0.25, forward, promote: r.mode === 'forward' });
+  }
+
+  /** Report forward-test promotions and suspensions, and keep the training records in step. */
+  private drainStrategyEvents() {
+    const evs = this.finance.strategyEvents.splice(0);
+    for (const ev of evs) {
+      const e = this.byId.get(ev.empId);
+      const rec = this.training.get(ev.empId);
+      if (!e) continue;
+      if (rec?.strategy && ev.kind === 'suspended') rec.strategy.active = false;
+      const msg = ev.kind === 'suspended'
+        ? `I've suspended my strategy: ${ev.trades} round trips lost ${fmtMoney(-ev.pnl)} on paper. Back to core positions until I retrain.`
+        : `My forward test passed: ${ev.trades} round trips made ${fmtMoney(ev.pnl)} on paper, so the strategy moves to full size.`;
+      this.ownerMessage(e, msg);
+      this.addLog(`${e.cfg.name}: strategy ${ev.kind} after ${ev.trades} trades (${fmtMoney(ev.pnl)})`, 'trade');
+    }
+    if (evs.length) this.trainingChanged();
   }
 
   /** Better-trained technologists find and fix the feed incident faster. */
@@ -1828,7 +2005,8 @@ export class Simulation {
     let lab = 0;
     for (const e of this.employees) {
       const rec = this.trainingRecord(e.cfg.id);
-      if (e.cfg.roleType !== 'trader' || rec.modules.some((x) => x.id === 'strat' && x.passed)) continue;
+      // a trader retrains when the strategy was suspended, or (live) when the regime may have changed
+      if (e.cfg.roleType !== 'trader' || (rec.modules.some((x) => x.id === 'strat' && x.passed) && (rec.strategy?.active || !this.live) && !(rec.strategy && !rec.strategy.active && rec.strategy.forward?.trades))) continue;
       if (e.order?.kind === 'task' && e.order.training) continue;
       const t = this.finance.traders.get(e.cfg.id);
       if (!t) continue;
@@ -1845,7 +2023,17 @@ export class Simulation {
       const key = e.cfg.roleType === 'trader' ? 'Trading' : e.cfg.department;
       groups.set(key, [...(groups.get(key) ?? []), e.cfg.id]);
     }
-    for (const ids of groups.values()) for (let i = 0; i < ids.length; i += 12) this.academyQueue.push(ids.slice(i, i + 12));
+    // pack departments into sessions of up to 12 (small teams share a session; traders stay separate, after the close)
+    const packs: string[][] = [];
+    for (const [key, ids] of [...groups.entries()].sort((a, b) => b[1].length - a[1].length)) {
+      for (let i = 0; i < ids.length; i += 12) {
+        const chunk = ids.slice(i, i + 12);
+        const fit = key === 'Trading' ? null : packs.find((p) => p.length + chunk.length <= 12 && !p.some((id) => this.byId.get(id)?.cfg.roleType === 'trader'));
+        if (fit) fit.push(...chunk);
+        else packs.push(chunk);
+      }
+    }
+    this.academyQueue.push(...packs);
     const before = this.events.length;
     this.scheduleCohorts();
     const sessions = this.events.slice(before).length ? this.events.filter((ev) => ev.academy && ev.status === 'scheduled') : [];
@@ -1856,9 +2044,11 @@ export class Simulation {
 
   /** Book Training Room slots (40 min) for waiting cohorts, avoiding the room's and attendees' other meetings. */
   private scheduleCohorts() {
-    let cursor = Math.ceil((Math.floor(this.minute) + 10) / 5) * 5;
+    const cursor = Math.ceil((Math.floor(this.minute) + 10) / 5) * 5;
     const keep: string[][] = [];
-    for (const cohort of this.academyQueue) {
+    // daytime cohorts first; the traders' session waits for the market close
+    const queue = [...this.academyQueue].sort((a, b) => Number(a.every((id) => this.byId.get(id)?.cfg.roleType === 'trader')) - Number(b.every((id) => this.byId.get(id)?.cfg.roleType === 'trader')));
+    for (const cohort of queue) {
       const traders = cohort.every((id) => this.byId.get(id)?.cfg.roleType === 'trader');
       let start = Math.max(cursor, traders ? MARKET_CLOSE + 5 : cursor);
       for (let tries = 0; tries < 60; tries++) {
@@ -1870,13 +2060,13 @@ export class Simulation {
       if (start + 40 > 18 * 60 + 45) { keep.push(cohort); continue; } // too late today: first thing tomorrow
       const recs = cohort.map((id) => this.trainingRecord(id));
       const modules = [...new Set(recs.map((r) => this.classroomModule(r)?.title).filter((x): x is string => !!x))];
-      const dept = traders ? 'Trading' : this.byId.get(cohort[0])!.cfg.department;
+      const depts = [...new Set(cohort.map((id) => this.byId.get(id)!.cfg.department))];
+      const dept = traders ? 'Trading' : depts.length > 2 ? `${depts.slice(0, 2).join(', ')} +${depts.length - 2}` : depts.join(' & ');
       this.events.push({
         id: `d${this.day}-academy-${this.academySeq++}`, kind: 'training', title: `ASTRA Academy: ${dept}`, roomId: 'g-training',
         start, end: start + 40, attendeeIds: cohort, status: 'scheduled', agenda: modules, notes: [], academy: true, dynamic: true,
       });
       this.addLog(`Training booked ${fmtTime(start)}: ${dept} (${modules.join('; ')})`, 'event');
-      cursor = start + 45;
     }
     this.academyQueue = keep;
     this.events.sort((a, b) => a.start - b.start);
@@ -1916,15 +2106,203 @@ export class Simulation {
   private runStrategyLab(e: Employee, m: number) {
     const t = this.finance.traders.get(e.cfg.id);
     if (!t) return;
-    const res = trainStrategy(this.seed, t.coverage);
+    const res = this.live ? liveLabStrategy(t.coverage, this.indicators) : trainStrategy(this.seed, t.coverage);
     const rec = this.trainingRecord(e.cfg.id);
     rec.strategy = res;
     completeModule(this.seed, rec, CURRICULA.trader[0], this.day, m, 20);
-    this.finance.strategies.set(e.cfg.id, { s: res.strategy, active: res.active });
+    this.setStrategy(e.cfg.id, res);
     this.pushHistory(e, `Training: strategy lab finished (${res.active ? 'strategy live' : 'no reliable edge found'})`);
     this.addLog(`${e.cfg.name} finished the strategy lab: ${res.active ? describeStrategy(res.strategy) + ' is live (paper)' : 'no strategy passed validation'}`, 'trade');
-    this.ownerMessage(e, `Strategy lab done. In-sample best: Sharpe ${res.train.sharpe.toFixed(2)}, ${res.train.trades} trades over ${TRAIN_DAYS} sessions. ${res.verdict}`);
+    this.ownerMessage(e, res.mode === 'forward' ? `Strategy lab done (live data). ${res.verdict}` : `Strategy lab done. In-sample best: Sharpe ${res.train.sharpe.toFixed(2)}, ${res.train.trades} trades over ${TRAIN_DAYS} sessions. ${res.verdict}`);
     this.trainingChanged();
+  }
+
+  // ------------------------------------------------------------------ workflow, mistakes and coaching
+  private ticket(t: Omit<Ticket, 'id' | 't' | 'day' | 'log'>, text: string): Ticket {
+    const k: Ticket = { id: this.ticketSeq++, t: Math.floor(this.minute), day: this.day, log: [{ t: Math.floor(this.minute), text }], ...t };
+    this.tickets.unshift(k);
+    if (this.tickets.length > 150) this.tickets.pop();
+    return k;
+  }
+
+  private step(k: Ticket, status: Ticket['status'], text: string) {
+    k.status = status;
+    k.log.push({ t: Math.floor(this.minute), text });
+  }
+
+  private recordMistake(empId: string, kind: Mistake['kind'], text: string, caught: boolean, cost: number): Mistake {
+    const mk: Mistake = { id: this.ticketSeq++, t: Math.floor(this.minute), day: this.day, empId, kind, text, caught, cost };
+    this.mistakes.unshift(mk);
+    if (this.mistakes.length > 120) this.mistakes.pop();
+    const e = this.byId.get(empId);
+    if (e) this.pushHistory(e, `Mistake: ${text}`);
+    const rec = this.trainingRecord(empId);
+    rec.mistakes = (rec.mistakes ?? 0) + 1;
+    // lateness is talked through informally; work errors get a one-to-one with the manager
+    if (kind !== 'late') {
+      rec.coaching = [...(rec.coaching ?? []), { kind, text, day: this.day, status: 'due' as const }].slice(-12);
+      this.scheduleCoaching();
+    }
+    this.addLog(`${this.name(empId)}: ${text}`, kind === 'fat-finger' ? 'risk' : kind === 'build-failed' ? 'tech' : 'office');
+    this.trainingChanged();
+    return mk;
+  }
+
+  /** Research → PM → trader → (risk pre-trade check) → ops confirmation; error-trade and build follow-ups. */
+  private updateWorkflow(m: number) {
+    // keying errors from the trading desk
+    for (const ev of this.finance.errorEvents.splice(0)) {
+      const inst = INSTRUMENTS[INSTRUMENT_INDEX.get(ev.sym) ?? 0];
+      if (ev.blocked) {
+        this.recordMistake(ev.empId, 'fat-finger', `Keyed ${ev.side} ${(ev.excess * 10 / 9).toLocaleString()} ${ev.sym} (10× the intended size); blocked by the risk pre-trade check`, true, 0);
+        this.ticket({ kind: 'error-trade', title: `Oversized ${ev.side} ${ev.sym} order blocked`, from: ev.empId, to: this.employees.find((x) => x.cfg.roleType === 'risk')?.cfg.id ?? ev.empId, status: 'caught', sym: ev.sym, side: ev.side, orderId: ev.orderId }, 'Pre-trade check: size 10× normal. Order blocked; trader re-entered the correct size.');
+      } else {
+        const ops = this.employees.find((x) => x.cfg.roleType === 'ops' && this.onSite(x)) ?? this.employees.find((x) => x.cfg.roleType === 'risk');
+        const k = this.ticket({ kind: 'error-trade', title: `Error trade: ${ev.side} ${ev.sym} 10× size`, from: ev.empId, to: ops?.cfg.id ?? ev.empId, status: 'open', sym: ev.sym, side: ev.side, orderId: ev.orderId, excess: ev.excess, px: ev.px, fixAt: m + 3 + Math.floor(hashRand(this.seed, 'fixdelay', ev.orderId) * 8) }, `Order went through at 10× size (${(ev.excess * inst.mult * ev.px / 1e6).toFixed(1)}m extra notional). Spotted by ${ops ? this.name(ops.cfg.id) : 'risk'} in reconciliation.`);
+        void k;
+      }
+    }
+    for (const k of this.tickets) {
+      if (k.kind === 'error-trade' && k.status === 'open' && k.fixAt !== undefined && m >= k.fixAt) {
+        const t = this.finance.traders.get(k.from);
+        const o = t?.orders.find((x) => x.id === k.orderId);
+        if (!t || !o || !k.sym || !k.side || k.excess === undefined) { this.step(k, 'fixed', 'Closed'); continue; }
+        if (o.status !== 'filled') {
+          o.status = 'cancelled';
+          this.step(k, 'fixed', 'Order cancelled before it filled. No cost.');
+          this.recordMistake(k.from, 'fat-finger', `Keyed a ${k.side} ${k.sym} order at 10× size; cancelled before it filled`, true, 0);
+          continue;
+        }
+        const fix = this.finance.placeOrder(k.from, k.sym, k.side === 'BUY' ? 'SELL' : 'BUY', k.excess, 'MKT', m, `Error correction: unwind the excess of ${o.id}`);
+        const inst = INSTRUMENTS[INSTRUMENT_INDEX.get(k.sym) ?? 0];
+        const cost = fix?.fillPx !== undefined && o.fillPx !== undefined ? (k.side === 'BUY' ? o.fillPx - fix.fillPx : fix.fillPx - o.fillPx) * k.excess * inst.mult : 0;
+        this.step(k, 'fixed', `Excess ${k.excess.toLocaleString()} ${k.sym} unwound by ${this.name(k.from)}; cost ${fmtMoney(cost)} (paper).`);
+        this.recordMistake(k.from, 'fat-finger', `Fat-finger ${k.side} ${k.sym} at 10× size went through; unwound ${m - k.t} min later, cost ${fmtMoney(cost)}`, false, cost);
+      }
+    }
+    // failed CI builds: the author fixes it
+    for (const b of this.tech.builds) {
+      if (b.status === 'running' || this.seenBuilds.has(b.id)) continue;
+      this.seenBuilds.add(b.id);
+      const author = this.employees.find((x) => x.cfg.id === b.author);
+      if (b.status === 'failed' && author) {
+        this.recordMistake(author.cfg.id, 'build-failed', `Build #${b.id} (${b.branch}) failed its tests`, true, 0);
+        this.ticket({ kind: 'build-fix', title: `Fix failing build #${b.id}`, from: author.cfg.id, to: author.cfg.id, status: 'open' }, `${b.message}: tests failed in CI`);
+      } else if (b.status === 'passed' && author) {
+        const open = this.tickets.find((k) => k.kind === 'build-fix' && k.status === 'open' && k.from === author.cfg.id);
+        if (open) this.step(open, 'fixed', `Fixed in build #${b.id}`);
+      }
+    }
+    // researchers publish notes with trade ideas for the PM of the book that holds the name
+    for (const e of this.employees) {
+      if (e.cfg.roleType !== 'researcher' || !this.presentAtDesk(e)) continue;
+      const n = Math.floor(e.work.words / 2000);
+      if (n <= e.work.published) continue;
+      e.work.published = n;
+      const sym = INSTRUMENT_INDEX.has(e.work.sym) ? e.work.sym : INSTRUMENTS[e.index % 6].sym;
+      const book = BOOKS.find((b) => sym in b.base) ?? BOOKS[0];
+      const pm = this.finance.pmByBook.get(book.id) ?? this.employees.find((x) => x.cfg.roleType === 'ceo')?.cfg.id;
+      if (!pm) continue;
+      const series = this.market.series(sym, 60);
+      const side: 'BUY' | 'SELL' = series.length > 1 && series[series.length - 1] < series[0] ? 'SELL' : 'BUY';
+      this.ticket({ kind: 'idea', title: `${side === 'BUY' ? 'Long' : 'Short'} ${sym}: ${e.work.title}`, from: e.cfg.id, to: pm, status: 'open', sym, side }, `${e.cfg.name} published a note (${e.work.words.toLocaleString()} words) and sent the idea to ${this.name(pm)}`);
+      this.pushHistory(e, `Published research note on ${sym}; idea sent to ${this.name(pm)}`);
+    }
+    for (const k of this.tickets) {
+      if (k.kind !== 'idea' || !k.sym || !k.side) continue;
+      const owner = this.byId.get(k.to);
+      if (k.status === 'open' && owner && this.presentAtDesk(owner) && hashRand(this.seed, 'pmreview', k.id, m) < 0.2) {
+        const quality = 0.45 + 0.004 * this.skillOf(k.from) + 0.002 * (this.skillOf(k.to) - 50);
+        if (hashRand(this.seed, 'pmdecide', k.id) < quality) {
+          const trader = [...this.finance.traders.values()].find((t) => t.coverage.includes(k.sym!)) ?? [...this.finance.traders.values()].find((t) => t.bookId === BOOKS.find((b) => k.sym! in b.base)?.id);
+          if (!trader) { this.step(k, 'rejected', 'No trader covers this name'); continue; }
+          k.to = trader.empId;
+          this.step(k, 'approved', `${owner.cfg.name} approved; sent to ${this.name(trader.empId)} to execute`);
+        } else {
+          this.step(k, 'rejected', `${owner.cfg.name}: not convinced (${hashRand(this.seed, 'why', k.id) < 0.5 ? 'thesis already priced in' : 'book already has enough of this risk'})`);
+        }
+        this.pushHistory(owner, `Reviewed research idea #${k.id} (${k.status})`);
+      } else if (k.status === 'approved' && owner && this.presentAtDesk(owner) && m >= MARKET_OPEN && m < MARKET_CLOSE - 10) {
+        const book = BOOK_INDEX.get(this.finance.traders.get(owner.cfg.id)?.bookId ?? 'eq')!;
+        const inst = INSTRUMENTS[INSTRUMENT_INDEX.get(k.sym) ?? 0];
+        const px = this.market.price(k.sym);
+        const notional = Math.abs(book.base[k.sym] ?? 20e6) * 0.1;
+        const qty = inst.kind === 'equity' ? Math.max(100, Math.round(notional / (px * inst.mult) / 100) * 100) : Math.max(1, Math.round(notional / (px * inst.mult)));
+        const o = this.finance.placeOrder(owner.cfg.id, k.sym, k.side, qty, 'MKT', m, `Research idea #${k.id} (approved by PM)`);
+        if (!o || o.status === 'cancelled') { this.step(k, 'rejected', 'Order blocked at pre-trade check'); continue; }
+        k.entry = o.fillPx ?? px;
+        k.execAt = m;
+        k.orderId = o.id;
+        this.step(k, 'executed', `${owner.cfg.name} bought/sold ${qty.toLocaleString()} ${k.sym} at ${fmtPx(k.sym, k.entry)}; Operations confirms`);
+      } else if (k.status === 'executed' && k.result === undefined && k.entry && k.execAt !== undefined && (m >= k.execAt + 120 || m >= MARKET_CLOSE)) {
+        k.result = (this.market.price(k.sym) / k.entry - 1) * (k.side === 'BUY' ? 1 : -1);
+        k.log.push({ t: m, text: `Idea result after ${m - k.execAt} min: ${(k.result * 100).toFixed(2)}%` });
+      }
+    }
+  }
+
+  /** The manager who coaches each role. */
+  private coachFor(id: string): string | null {
+    const e = this.byId.get(id);
+    if (!e) return null;
+    const ceo = this.employees.find((x) => x.cfg.roleType === 'ceo')?.cfg.id ?? null;
+    const lead = (role: RoleType) => this.employees.find((x) => x.cfg.roleType === role && x.cfg.id !== id)?.cfg.id ?? ceo;
+    switch (e.cfg.roleType) {
+      case 'trader': return this.finance.pmByBook.get(this.finance.traders.get(id)?.bookId ?? 'eq') ?? ceo;
+      case 'tech': return lead('tech');
+      case 'risk': return lead('risk');
+      case 'ceo': return null;
+      default: return ceo;
+    }
+  }
+
+  /** Book a 15-minute one-to-one with the manager for anyone with coaching due. */
+  private scheduleCoaching() {
+    const m = Math.floor(this.minute);
+    for (const e of this.employees) {
+      const rec = this.training.get(e.cfg.id);
+      const due = rec?.coaching?.filter((c) => c.status === 'due') ?? [];
+      if (!due.length) continue;
+      const coach = this.coachFor(e.cfg.id);
+      if (!coach) continue;
+      const booked = this.events.find((ev) => ev.kind === 'coaching' && ev.status === 'scheduled' && ev.attendeeIds[0] === e.cfg.id);
+      if (booked) {
+        for (const c of due) { c.status = 'booked'; booked.agenda.push(c.text); }
+        continue;
+      }
+      let start = Math.ceil((m + 20) / 5) * 5;
+      let room = '';
+      for (let tries = 0; tries < 40 && !room; tries++) {
+        const end = start + 15;
+        const busy = this.events.some((ev) => ev.status !== 'cancelled' && ev.status !== 'completed' && start < ev.end && end > ev.start && (ev.attendeeIds.includes(e.cfg.id) || ev.attendeeIds.includes(coach)));
+        if (!busy) room = ['f-m1b', 'f-m1a', 'g-interview'].find((r) => !this.events.some((ev) => ev.roomId === r && ev.status !== 'cancelled' && ev.status !== 'completed' && start < ev.end && end > ev.start)) ?? '';
+        if (!room) start += 15;
+      }
+      if (!room || start + 15 > Math.min(18 * 60 + 30, e.hours.leave)) continue; // tomorrow
+      for (const c of due) c.status = 'booked';
+      this.events.push({
+        id: `d${this.day}-coach-${this.academySeq++}`, kind: 'coaching', title: `1:1 coaching: ${e.cfg.name} with ${this.name(coach)}`, roomId: room,
+        start, end: start + 15, attendeeIds: [e.cfg.id, coach], status: 'scheduled', agenda: due.map((c) => c.text), notes: [], dynamic: true,
+      });
+      this.events.sort((a, b) => a.start - b.start);
+    }
+  }
+
+  private finishCoaching(ev: OfficeEvent, m: number) {
+    const [id, coach] = ev.attendeeIds;
+    const rec = this.trainingRecord(id);
+    const present = this.presentAttendees(ev).some((e) => e.cfg.id === id) || this.remoteAttendees(ev).some((e) => e.cfg.id === id);
+    const booked = rec.coaching?.filter((c) => c.status === 'booked') ?? [];
+    if (!present) { for (const c of booked) c.status = 'due'; this.scheduleCoaching(); return; }
+    for (const c of booked) c.status = 'done';
+    rec.skill = Math.min(100, Math.round(rec.skill + (100 - rec.skill) * 0.12));
+    const e = this.byId.get(id)!;
+    const topic = booked.some((c) => c.kind === 'fat-finger') ? 'order-entry checks (confirm size against the desk limit before sending)' : booked.some((c) => c.kind === 'build-failed') ? 'running the test suite locally before pushing' : 'what went wrong and how to avoid it';
+    this.pushHistory(e, `Coaching with ${this.name(coach)}: ${topic}`);
+    const c = this.byId.get(coach);
+    if (c) this.ownerMessage(c, `Had a one-to-one with ${e.cfg.name} about ${booked.length === 1 ? 'a recent mistake' : `${booked.length} recent mistakes`}: we went through ${topic}. Skill now ${rec.skill}/100.`);
+    this.trainingChanged();
+    void m;
   }
 
   // ------------------------------------------------------------------ CEO reporting
@@ -1969,6 +2347,16 @@ export class Simulation {
       `${recs.filter(certified).length}/${recs.length} fully certified · average skill ${avg.toFixed(0)}/100 · ${today} modules passed today`,
       `${recs.filter((r) => r.strategy).length} traders through the strategy lab: ${recs.filter((r) => r.strategy?.active).length} strategies live, ${notLive} rejected on unseen data`,
       sessions.length ? `Next session: ${sessions[0].title} at ${fmtTime(sessions[0].start)}${this.academyQueue.length ? ` (+${this.academyQueue.length} cohorts waiting)` : ''}` : this.academyQueue.length ? `${this.academyQueue.length} cohorts waiting for tomorrow` : 'No sessions booked',
+    ] });
+    const ideas = this.tickets.filter((k) => k.kind === 'idea' && k.day === this.day);
+    const results = ideas.filter((k) => k.result !== undefined);
+    const mistakes = this.mistakes.filter((x) => x.day === this.day);
+    const cost = mistakes.reduce((a, x) => a + x.cost, 0);
+    const coachingDone = recs.reduce((a, r) => a + (r.coaching ?? []).filter((c) => c.status === 'done' && c.day === this.day).length, 0);
+    sections.push({ title: 'Workflow and mistakes', lines: [
+      `Research ideas: ${ideas.length} sent to PMs, ${ideas.filter((k) => k.status === 'rejected').length} rejected, ${ideas.filter((k) => k.status === 'executed').length} executed${results.length ? `, ${results.filter((k) => (k.result ?? 0) > 0).length}/${results.length} in profit so far` : ''}`,
+      mistakes.length ? `Mistakes today: ${mistakes.length} (${[...new Set(mistakes.map((x) => x.kind))].map((k) => `${mistakes.filter((x) => x.kind === k).length} ${k}`).join(', ')}); ${mistakes.filter((x) => x.caught).length} caught before any cost; cost of the rest ${fmtMoney(cost)} (paper)` : 'No mistakes recorded today',
+      `${coachingDone} one-to-one coaching session${coachingDone === 1 ? '' : 's'} done today`,
     ] });
     const tasks = this.employees.filter((e) => e.order?.kind === 'task');
     if (tasks.length) sections.push({ title: 'Your requests in progress', lines: tasks.map((e) => `${e.cfg.name}: ${(e.order as { text: string }).text} (due ${fmtTime(e.order!.until)})`) });

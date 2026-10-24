@@ -257,7 +257,7 @@ function AboutTab() {
     <div className="small" style={{ lineHeight: 1.6 }}>
       <div className="section">
         <h3>What this is</h3>
-        <p>ASTRA Headquarters is a local <b>Office Simulation</b>. All people are fictional placeholders and all financial figures are <b>Simulated Data</b> produced by a seeded model in your browser. There is no backend, no real trading, no market data feed and no monitoring of real employees.</p>
+        <p>ASTRA Headquarters is a local <b>Office Simulation</b>. All people are fictional placeholders. Outside claude.ai all financial figures are <b>Simulated Data</b> from a seeded model in your browser. Opened in claude.ai, the page can read <b>live prices</b> from your Co-Invest connector (read-only: market data, headlines and indicators only) and use <b>Claude</b> for employee replies (your Claude plan, asked once). Every position, order and P&L is still <b>paper trading</b>: the page has no order tool and cannot move real money. There is no backend and no monitoring of real people.</p>
         <p>The design is an original office inspired by the financial industry; it is not a replica of any real firm.</p>
       </div>
       <div className="section">

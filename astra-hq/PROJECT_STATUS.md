@@ -82,8 +82,20 @@ Status legend: **Done** = implemented and covered by an automated check (unit or
 | CEO report (paper account, books, traders, risk, ops, tech, research, people, training) and 17:20 end-of-day report | Done | training.test.ts; browser check; screenshot 21 |
 | Training saved locally, survives reloads; role changes clear the record | Done | training.test.ts |
 
-Limitations: no real money or market data (by design and by the repository rules); non-trader "skill" is a modelled
-score that changes simulated output, not learning; strategy results apply to the fictional market model only.
+### Live data, Claude, workflow (added later)
+| Feature | Status | Evidence |
+|---|---|---|
+| Live Co-Invest prices/headlines (read-only) on every screen; instruments re-keyed to real markets; paper books at live prices | Done (stubbed in tests) | live.test.ts; browser check with a stubbed claude.ai runtime; real connector only inside claude.ai |
+| Claude replies grounded in each employee's live state, with page tools (task, room, come, back to work; CEO: meeting, training) | Done (stubbed in tests) | browser check (stub Claude calls `go_to_room`, employee walks to the Boardroom) |
+| Live strategy lab: regime read from indicators, forward test, promote/suspend | Done | live.test.ts |
+| Research → PM → trader → risk pre-trade → ops workflow with tracked idea results | Done | workflow.test.ts; browser check |
+| Mistakes (fat finger, failed builds, lateness), corrections with cost, one-to-one coaching | Done | workflow.test.ts |
+
+Not verified here: the real Co-Invest connector and real Claude calls from the published page (they need a signed-in
+claude.ai viewer). The shapes used were taken from real read-only calls made while building.
+
+Limitations: no real money or real orders (by design and by the repository rules); non-trader "skill" is a modelled
+score that changes simulated output, not learning; backtests use the fictional practice tape, live forward tests use real prices with paper money, and neither guarantees a profit.
 
 Limitation: replies are scripted from keywords and live data, not free conversation; anything unrecognised is acknowledged and can be assigned as a task.
 

@@ -77,7 +77,10 @@ describe('training programme in the office', () => {
 
   it('books Training Room sessions (max 12) and passes modules that raise skill', () => {
     const sessions = sim.events.filter((e) => e.academy);
-    expect(sessions.length).toBeGreaterThanOrEqual(3);
+    expect(sessions.length).toBeGreaterThanOrEqual(2);
+    // small departments share sessions; everyone is booked today or waiting for tomorrow
+    const booked = new Set([...sessions.flatMap((x) => x.attendeeIds), ...sim.academyQueue.flat()]);
+    for (const e of sim.employees) expect(booked.has(e.cfg.id) || sim.trainingRecord(e.cfg.id).modules.some((x) => x.passed && x.id !== 'strat')).toBe(true);
     for (const s of sessions) {
       expect(s.roomId).toBe('g-training');
       expect(s.attendeeIds.length).toBeLessThanOrEqual(12);

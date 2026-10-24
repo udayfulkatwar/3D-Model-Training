@@ -29,6 +29,8 @@ export interface AppView {
   theme: Theme;
   layout: 'stack' | 'split' | 'grid';
   banner?: { text: string; tone: Tone };
+  /** Data provenance tag shown in the header ('Simulated Data', or live prices with paper trading). */
+  dataTag?: string;
   status?: string;
   widgets: Widget[];
 }
