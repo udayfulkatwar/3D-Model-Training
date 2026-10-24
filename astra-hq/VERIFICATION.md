@@ -22,7 +22,7 @@ real touch hardware. No frame-rate claim is made for real hardware.
 |---|---|
 | `npm install` | OK, 0 vulnerabilities reported |
 | `npm run build` | OK. Chunks (gzip): app 89 kB, react 64 kB, three + r3f 272 kB, post-processing 156 kB (lazy, High preset only), CSS 4 kB |
-| `npm test` | **64/64 passed** (9 files) |
+| `npm test` | **80/80 passed** (11 files) |
 | `npm run e2e` | **68/68 passed** (viewport 960×570, Low preset for responsiveness under software rendering) |
 
 ### Unit tests (`tests/`)
@@ -66,6 +66,12 @@ real touch hardware. No frame-rate claim is made for real hardware.
   or unwound with the cost booked; work mistakes lead to coaching; the CEO report shows it.
 - **world-markets.test.ts (2)** — exchange sessions across time zones, lunch breaks, weekends and the US daylight-saving
   change; a world markets screen in each of the ten rooms.
+
+- **research.test.ts (5)** — no look-ahead, costs on every change, engine self-test, edge found in a persistent series and
+  noise rejected out of sample, stress test, regime/volatility, Co-Invest candle parsing (forming bar dropped).
+- **work.test.ts (6)** — the real office on an accelerated clock with test candles: 24/7 on site, CEO objectives,
+  org chart and senior-assigned tasks for all 30, reports and reviews, strategy tests → Risk → PM → paper trades,
+  reconciliation with zero breaks, kill switch, persistence.
 
 ### Browser acceptance (`e2e/run.mjs`)
 

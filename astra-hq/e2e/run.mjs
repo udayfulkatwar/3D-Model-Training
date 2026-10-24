@@ -335,22 +335,17 @@ await step('risk breach chain', async () => {
   await page.click('[data-testid=close-panel]');
 });
 
-await step('clock controls', async () => {
-  await A(() => { const s = window.__astra.sim(); s.speed = 1; });
-  await page.click('[data-testid=pause]');
+await step('clock controls (test harness only; the real office has none)', async () => {
+  const ui = await A(() => document.querySelectorAll('[data-testid=pause], [data-testid^=speed-], [data-testid=reset]').length);
+  check('No pause, speed or reset controls in the UI', ui === 0, `${ui} controls`);
+  await A(() => { window.__astra.sim().paused = true; });
   const m0 = await A(() => window.__astra.sim().minute);
   await wait(2500);
   const m1 = await A(() => window.__astra.sim().minute);
-  check('Pause freezes the simulation clock', m1 === m0 && await A(() => window.__astra.sim().paused));
-  await page.click('[data-testid=pause]');
-  await page.click('[data-testid=speed-5]');
-  const sp = await A(() => window.__astra.sim().speed);
-  check('Speed buttons set 5x', sp === 5);
-  await page.click('[data-testid=speed-1]');
-  await page.click('[data-testid=reset]');
-  await wait(500);
+  check('Harness pause freezes the clock', m1 === m0);
+  await A(() => { const s = window.__astra.sim(); s.paused = false; s.reset(); });
   const after = await A(() => ({ minute: window.__astra.sim().minute, trades: window.__astra.sim().finance.trades.length, alerts: window.__astra.sim().finance.alerts.length }));
-  check('Reset restarts the simulated day', after.minute < 7 * 60 + 42 && after.trades === 0 && after.alerts === 0, JSON.stringify(after));
+  check('Harness reset restarts the seeded day', after.minute < 7 * 60 + 42 && after.trades === 0 && after.alerts === 0, JSON.stringify(after));
 });
 
 await step('interactions: chair, coffee, CEO desk', async () => {

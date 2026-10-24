@@ -82,6 +82,18 @@ Status legend: **Done** = implemented and covered by an automated check (unit or
 | CEO report (paper account, books, traders, risk, ops, tech, research, people, training) and 17:20 end-of-day report | Done | training.test.ts; browser check; screenshot 21 |
 | Training saved locally, survives reloads; role changes clear the record | Done | training.test.ts |
 
+### Real office mode (current default)
+| Feature | Status | Evidence |
+|---|---|---|
+| Wall-clock time, 24/7, no speed/pause/reset; all staff on site | Done | work.test.ts (accelerated clock); browser check |
+| Only live data; no made-up prices, trades, breaks or scripted events | Done | live.test.ts; browser check |
+| CEO objectives → senior-assigned tasks → work on real data → report → review → next task; meetings on problems | Done | work.test.ts; browser work-board check |
+| Strategy research on real candles (walk-forward, costs, robustness), Risk stress test, PM allocation, paper execution, kill switch, retirement | Done | research.test.ts, work.test.ts; browser check with stubbed candles |
+| Monitors show each person's task and real data; Owner work board and strategies tabs | Done | browser checks; screenshots 25-26 |
+| Office memory across reloads | Done | work.test.ts |
+| Works while the page is closed | **Not possible** without a server (repository rule: no paid services); resumes on reopen |
+| Real orders on Co-Invest (even paper) | **Not done**: the connector needs your approval per order; the office keeps its own paper ledger |
+
 ### Live data, Claude, workflow (added later)
 | Feature | Status | Evidence |
 |---|---|---|
