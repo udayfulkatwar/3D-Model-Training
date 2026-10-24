@@ -1,6 +1,6 @@
 # Verification results
 
-Run on 2026-10-22 in a cloud container. Raw results: [docs/e2e-results.json](docs/e2e-results.json),
+Run on 2026-10-24 in a cloud container. Raw results: [docs/e2e-results.json](docs/e2e-results.json),
 [docs/perf-swiftshader.json](docs/perf-swiftshader.json); screenshots in [docs/screenshots/](docs/screenshots/).
 
 ## Tested environment
@@ -22,8 +22,8 @@ real touch hardware. No frame-rate claim is made for real hardware.
 |---|---|
 | `npm install` | OK, 0 vulnerabilities reported |
 | `npm run build` | OK. Chunks (gzip): app 89 kB, react 64 kB, three + r3f 272 kB, post-processing 156 kB (lazy, High preset only), CSS 4 kB |
-| `npm test` | **38/38 passed** (4 files) |
-| `npm run e2e` | **58/58 passed** (viewport 960×570, Low preset for responsiveness under software rendering) |
+| `npm test` | **47/47 passed** (5 files) |
+| `npm run e2e` | **61/61 passed** (viewport 960×570, Low preset for responsiveness under software rendering) |
 
 ### Unit tests (`tests/`)
 
@@ -34,7 +34,7 @@ real touch hardware. No frame-rate claim is made for real hardware.
   open doors let the player through; the stair climb reaches the first floor; the player cannot step into the top-floor
   stair void.
 - **sim.test.ts (12)** — exactly 30 employees with the required role mix and valid desks/monitors; a full simulated day
-  (07:40-18:00) with seat-occupancy and walkable-ground invariants checked every 2.5 simulated seconds; briefing attended
+  (06:30-18:00) with seat-occupancy and walkable-ground invariants checked every 2.5 simulated seconds; briefing attended
   in person; incident with the tech team in the server room; staggered lunch; breach → alert → acknowledgement → review
   with the PM → de-risking → alert closed; activity history for everyone; no route failures; server-room door opened and
   closed by staff; trader positions = book positions, book P&L = sum of trader P&L, gross/notional/firm totals agree;
@@ -51,11 +51,18 @@ real touch hardware. No frame-rate claim is made for real hardware.
   to greet the owner entering the office, stays standing until the owner sits, then sits, and does not greet again during
   the same visit.
 
+- **day.test.ts (8)** — the day starts with nobody in the building; all 30 badge in at the entrance (briefing attendees
+  before 08:00) and are on site by 10:00; staggered role-based hours; employees ride the lift (wait, board, ride with the
+  car, never more than 6, all trips finished); more than 15 people take restroom breaks in the ground-floor restrooms;
+  seat invariants hold all day; everyone has badged out and the building is empty by 19:25; restroom spots are walkable;
+  lift doors re-open for someone in the doorway; the real-time clock runs one simulated minute per real minute.
+
 ### Browser acceptance (`e2e/run.mjs`)
 
-All 58 checks passed, including:
+All 61 checks passed, including:
 
 - Loads with *Office Simulation* / *Simulated Data* labels; 30 employees; Enter Office → walkthrough (pointer lock was granted in headless Chromium); spawn at reception.
+- The day starts with an empty building; the real-time clock option runs 1 simulated minute per real minute; by 07:50 staff have badged in at the entrance and reached their floors, some by lift (screenshot `19-morning-arrivals.png`).
 - Keyboard movement; collision stops at the reception desk (z = 14.76, desk edge 14.45 + radius) and the exterior wall; position stays valid.
 - Closed door blocks; `E` with the crosshair on the door opens it; the player walks through.
 - Stairs: flight A to the mid landing (y = 2.00), flight B to the first floor (y = 4.00).
