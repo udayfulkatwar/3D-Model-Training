@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-24T11:50:24.963Z",
+  "date": "2026-10-24T13:05:48.781Z",
   "browser": "Chromium 141.0.7390.37 headless",
   "renderer": "SwiftShader (software)",
   "results": [
@@ -26,17 +26,17 @@
     {
       "name": "W moves the player forward (north)",
       "ok": true,
-      "detail": "17.60 -> 16.79"
+      "detail": "17.60 -> 16.91"
     },
     {
       "name": "Collision stops the player at the reception desk",
       "ok": true,
-      "detail": "stopped at z=14.75"
+      "detail": "stopped at z=14.76"
     },
     {
       "name": "Exterior wall blocks movement",
       "ok": true,
-      "detail": "stopped at x=0.43"
+      "detail": "stopped at x=0.45"
     },
     {
       "name": "Player position stays valid",
@@ -56,12 +56,12 @@
     {
       "name": "Open door lets the player through",
       "ok": true,
-      "detail": "z=4.01"
+      "detail": "z=3.92"
     },
     {
       "name": "Flight A climbs to the mid landing",
       "ok": true,
-      "detail": "y=2.00 z=1.12"
+      "detail": "y=2.00 z=0.72"
     },
     {
       "name": "Flight B reaches the first floor",
@@ -71,7 +71,7 @@
     {
       "name": "Player can walk into the elevator car",
       "ok": true,
-      "detail": "z=5.60"
+      "detail": "z=4.92"
     },
     {
       "name": "Elevator carries the player to the second floor",
@@ -81,7 +81,7 @@
     {
       "name": "Player exits the elevator on the second floor",
       "ok": true,
-      "detail": "z=8.00 y=8.00"
+      "detail": "z=7.33 y=8.00"
     },
     {
       "name": "Overview cutaway selects floor 0",
@@ -176,25 +176,25 @@
     {
       "name": "Simulated breach creates an alert and a review meeting with the PM",
       "ok": true,
-      "detail": "{\"alert\":\"action\",\"review\":\"completed\",\"pm\":true,\"room\":\"f-m1b\"}"
+      "detail": "{\"alert\":\"action\",\"review\":\"completed\",\"pm\":true,\"room\":\"s-board\"}"
     },
     {
       "name": "Risk application lists the alert lifecycle",
       "ok": true,
-      "detail": "Risk Monitor · LimitsLimitsAlerts14:25Simulated DataALERT RA00262: Macro drawdown 1.16% > 1.00% · ACTIONRisk alerts 13:3"
+      "detail": "Risk Monitor · LimitsLimitsAlerts14:25Simulated DataALERT RA00251: Macro drawdown 1.07% > 1.00% · ACTIONRisk alerts 13:3"
     },
     {
-      "name": "Pause freezes the simulation clock",
+      "name": "No pause, speed or reset controls in the UI",
+      "ok": true,
+      "detail": "0 controls"
+    },
+    {
+      "name": "Harness pause freezes the clock",
       "ok": true,
       "detail": ""
     },
     {
-      "name": "Speed buttons set 5x",
-      "ok": true,
-      "detail": ""
-    },
-    {
-      "name": "Reset restarts the simulated day",
+      "name": "Harness reset restarts the seeded day",
       "ok": true,
       "detail": "{\"minute\":390,\"trades\":0,\"alerts\":0}"
     },
@@ -311,17 +311,37 @@
     {
       "name": "Renderer statistics collected for each preset",
       "ok": true,
-      "detail": "{\"low\":{\"fps\":1,\"calls\":133,\"triangles\":199472,\"textures\":174,\"geometries\":409},\"medium\":{\"fps\":1,\"calls\":133,\"triangles\":199832,\"textures\":39,\"geometries\":136},\"high\":{\"fps\":0,\"calls\":278,\"triangles\":401325,\"textures\":61,\"geometries\":160}}"
+      "detail": "{\"low\":{\"fps\":1,\"calls\":133,\"triangles\":199472,\"textures\":174,\"geometries\":409},\"medium\":{\"fps\":1,\"calls\":133,\"triangles\":199832,\"textures\":39,\"geometries\":136},\"high\":{\"fps\":0,\"calls\":299,\"triangles\":401577,\"textures\":61,\"geometries\":160}}"
     },
     {
       "name": "Live mode: real instrument symbols with feed prices, LIVE chip, read-only tools only",
       "ok": true,
-      "detail": "{\"live\":true,\"syms\":12,\"nvda\":100.35369481967044,\"chip\":\"● LIVE PRICES · 0s\",\"calls\":[\"Co-Invest/analyze_markets_batch\",\"Co-Invest/get_news\"]}"
+      "detail": "{\"live\":true,\"syms\":12,\"nvda\":100.1267180677706,\"chip\":\"● LIVE PRICES · 0s\",\"calls\":[\"Co-Invest/analyze_markets_batch\",\"Co-Invest/get_news\"]}"
     },
     {
       "name": "Market wall shows live-priced instruments and headlines (paper trading tag)",
       "ok": true,
-      "detail": "Market Display WallTrading Floor · First FloorClose ✕ASTRA Markets · Live prices · Paper06:30Live prices · PaperInstrumentsSymNameLastChgNVD"
+      "detail": "Market Display WallTrading Floor · First FloorClose ✕ASTRA Markets · Live prices · Paper13:04Live prices · PaperInstrumentsSymNameLastChgNVD"
+    },
+    {
+      "name": "Real office: wall-clock time, no speed/pause/reset, all 30 on site, everyone working on a task from their senior",
+      "ok": true,
+      "detail": "{\"realMode\":true,\"clockOk\":true,\"speedButtons\":0,\"onSite\":30,\"withTask\":30,\"assignedBySenior\":true,\"objectives\":5,\"charts\":10}"
+    },
+    {
+      "name": "Owner work board shows objectives, the reporting lines and tasks",
+      "ok": true,
+      "detail": "Today's objectives (set by the CEO)● Test at least 60 strategy set-ups on real Co-Invest history and only trade what pas"
+    },
+    {
+      "name": "Traders test strategies on (stubbed) Co-Invest candles with the walk-forward engine",
+      "ok": true,
+      "detail": "{\"tested\":3,\"strats\":0}"
+    },
+    {
+      "name": "A trader monitor shows the current task, who assigned it and real candles",
+      "ok": true,
+      "detail": "ASTRA Trader · ChartsPrimarySecondaryMarket13:49Live prices · PaperCurrent taskTest Moving-average trend on MU 4h (walk-forward)Progress0%Assigned byJonathan Ha"
     },
     {
       "name": "Claude reply is shown and its tool call acts in the office (sent to the Boardroom)",
